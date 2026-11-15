@@ -1,0 +1,5 @@
+
+# Accueil — documentation Maison Claire
+Version 1.0 — public : tous les utilisateurs de l'organisation A
+
+Cette base rassemble les procédures internes de Maison Claire : livraisons, réclamations, achats et factures. Elle dit ce qui devrait se passer. Les données de l'application disent ce qui s'est passé.
