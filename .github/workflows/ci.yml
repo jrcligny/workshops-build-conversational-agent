@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.15"
+      - name: Installer Python et les dépendances
+        run: uv sync --extra dev --python 3.15
+      - name: Tests des applications, du proxy et du cadre
+        run: uv run pytest tests/application tests/documentation tests/proxy tests/socle
+      - name: Les tests d'atelier doivent échouer sur la coquille vide
+        run: uv run atelier verifier-coquille
