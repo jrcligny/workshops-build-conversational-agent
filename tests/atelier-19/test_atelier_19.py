@@ -14,12 +14,13 @@ RACINE = Path(__file__).resolve().parents[2]
 
 def _somme(racine: Path) -> str:
     h = hashlib.sha256()
-    for chemin in sorted(racine.rglob("*")):
-        if not chemin.is_file() or chemin.name == "somme-parcours.sha256":
-            continue
+    fichiers = [
+        c for c in racine.rglob("*") if c.is_file() and c.name != "somme-parcours.sha256"
+    ]
+    for chemin in sorted(fichiers, key=lambda c: c.relative_to(racine).as_posix()):
         rel = chemin.relative_to(racine).as_posix()
         h.update(rel.encode())
-        h.update(chemin.read_bytes())
+        h.update(chemin.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
     return h.hexdigest()
 
 

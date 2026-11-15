@@ -63,9 +63,12 @@ def test_somme_des_parcours_d_evaluation():
     racine = RACINE / "tests" / "evaluation"
     attendu = (racine / "somme-parcours.sha256").read_text(encoding="utf-8").strip()
     h = hashlib.sha256()
-    for chemin in sorted(racine.rglob("*")):
-        if not chemin.is_file() or chemin.name == "somme-parcours.sha256":
-            continue
+    fichiers = [
+        c
+        for c in racine.rglob("*")
+        if c.is_file() and c.name != "somme-parcours.sha256"
+    ]
+    for chemin in sorted(fichiers, key=lambda c: c.relative_to(racine).as_posix()):
         h.update(chemin.relative_to(racine).as_posix().encode())
-        h.update(chemin.read_bytes())
+        h.update(chemin.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
     assert h.hexdigest() == attendu
