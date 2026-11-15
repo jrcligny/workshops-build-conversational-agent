@@ -50,11 +50,20 @@ class ConversationIn(BaseModel):
 
 class MessageIn(BaseModel):
     texte: str
+    pieces_jointes: list[str] = []
 
 
 @app.get("/sante")
 def sante():
     return {"statut": "ok"}
+
+
+@app.get("/pieces-jointes")
+def lister_pieces_jointes():
+    """Point d'entrée du contrat pour l'atelier 15. La zone est vide dans la coquille."""
+    from services.pieces_jointes.registre import lister
+
+    return {"pieces_jointes": lister()}
 
 
 @app.post("/conversations")
@@ -80,7 +89,7 @@ def envoyer_message(conversation_id: str, corps: MessageIn):
 
     def flux():
         try:
-            evenements = list(harness().tour(conversation_id, corps.texte, utilisateur, historique))
+            evenements = list(harness().tour(conversation_id, corps.texte, utilisateur, historique, pieces_jointes=corps.pieces_jointes))
         except HarnessNonImplemente as exc:
             ev = Evenement(type="erreur", data={"detail": str(exc)})
             yield _sse(ev)

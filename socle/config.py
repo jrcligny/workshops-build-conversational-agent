@@ -18,6 +18,7 @@ class Reglages(BaseSettings):
     azure_openai_deploiement_juge: str = ""
     azure_openai_deploiement_embeddings: str = ""
     azure_openai_deploiement_repli: str = ""
+    azure_openai_deploiement_reclassement: str = ""
 
     secret_jetons: str = "changez-moi-en-local"
     jeton_observation: str = "essai-pedagogique"

@@ -28,3 +28,5 @@ Alors seulement l'équipe :
 7. Archive le rapport de calibrage. Le *harness* de validation n'est pas distribué.
 
 Tant que la phase B n'a pas eu lieu, les items qualitatifs restent « à calibrer » et ne sont pas bloquants en CI.
+
+Les défauts provisoires (seuil de compaction, schéma de métadonnées du corpus, noms des déploiements Azure) sont recensés dans [decisions.md](decisions.md).

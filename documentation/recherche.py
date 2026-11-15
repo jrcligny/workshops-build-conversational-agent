@@ -1,14 +1,9 @@
-
-"""Recherche hybride (lexicale FTS5 + vectorielle) avec filtrage par droits."""
+"""Recherche hybride : FTS5 (lexical) + KNN sqlite-vec (vectoriel), filtrage par droits."""
 
 from __future__ import annotations
 
 from documentation.indexation import connecter
-from documentation.vecteurs import cosinus, unpacks, vecteur
-
-PUBLICS_ELARGIS = {
-    "tous": {"charge_clientele", "acheteur", "comptable", "controleur_gestion", "sans_ecriture", "tous"},
-}
+from documentation.vecteurs import packs, vecteur
 
 
 def _autorise(passage: dict, organisation: str, role: str) -> bool:
@@ -30,48 +25,49 @@ def rechercher(
 ) -> dict:
     conn = connecter(db_path)
     try:
-        tous = [dict(r) for r in conn.execute("SELECT * FROM passages").fetchall()]
-    finally:
-        conn.close()
-    visibles = [p for p in tous if _autorise(p, organisation, role)]
-    if not visibles:
-        return {"passages": [], "aucun_passage": True, "requete": requete}
+        tous = [dict(r) for r in conn.execute("SELECT rowid AS _rowid, * FROM passages").fetchall()]
+        visibles = [p for p in tous if _autorise(p, organisation, role)]
+        if not visibles:
+            return {"passages": [], "aucun_passage": True, "requete": requete}
 
-    # Branche lexicale : mots de la requête présents dans le texte (complément à FTS, robuste).
-    mots = [m.lower() for m in requete.split() if len(m) > 2]
-    scores_lex: dict[str, float] = {}
-    conn = connecter(db_path)
-    try:
+        mots = [m.lower() for m in requete.split() if len(m) > 2]
+        scores_lex: dict[str, float] = {}
         try:
-            # FTS5 : on essaie une requête simple, puis un repli.
             q = " OR ".join(mots) if mots else requete
             rows = conn.execute(
                 "SELECT id, bm25(passages_fts) AS score FROM passages_fts WHERE passages_fts MATCH ? ORDER BY score",
                 (q,),
             ).fetchall()
             for row in rows:
-                # bm25 : plus le score est petit (souvent négatif), plus c'est pertinent. On inverse.
                 scores_lex[row["id"]] = -float(row["score"])
-        except Exception:
+        except Exception:  # noqa: BLE001
             scores_lex = {}
+        if not scores_lex:
+            for p in visibles:
+                texte = (p["texte"] + " " + p["titre"] + " " + p["section"]).lower()
+                scores_lex[p["id"]] = sum(texte.count(m) for m in mots)
+
+        rowid_vers_id = {int(p["_rowid"]): p["id"] for p in tous}
+        k_vec = max(k * 4, min(len(tous), 50), 8)
+        rows_vec = conn.execute(
+            """
+            SELECT rowid, distance
+            FROM passages_vec
+            WHERE embedding MATCH ? AND k = ?
+            ORDER BY distance
+            """,
+            (packs(vecteur(requete)), k_vec),
+        ).fetchall()
+        scores_vec: dict[str, float] = {}
+        for row in rows_vec:
+            ident = rowid_vers_id.get(int(row["rowid"]))
+            if ident is None:
+                continue
+            # distance_metric=cosine : 0 = identique, 1 = orthogonal. Similarité = 1 - distance.
+            scores_vec[ident] = max(0.0, 1.0 - float(row["distance"]))
     finally:
         conn.close()
-    if not scores_lex:
-        for p in visibles:
-            texte = (p["texte"] + " " + p["titre"] + " " + p["section"]).lower()
-            scores_lex[p["id"]] = sum(texte.count(m) for m in mots)
 
-    qvec = vecteur(requete)
-    scores_vec = {p["id"]: cosinus(qvec, unpacks(p["vecteur"])) for p in visibles}
-
-    # Fusion simple (somme normalisée des rangs inversés).
-    def rangs(scores: dict[str, float]) -> dict[str, float]:
-        ordonnes = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
-        n = max(len(ordonnes), 1)
-        return {ident: (n - i) / n for i, (ident, _) in enumerate(ordonnes)}
-
-    # Scores bruts (pas seulement des rangs) : une requête sans correspondance
-    # lexicale et avec un cosinus faible peut être déclarée vide au-delà du seuil.
     max_lex = max((max(scores_lex.values()), 1.0)) if scores_lex else 1.0
     fusion: dict[str, float] = {}
     for p in visibles:
@@ -111,9 +107,7 @@ def get_passage(passage_id: str, db_path: str | None = None) -> dict | None:
         row = conn.execute("SELECT * FROM passages WHERE id = ?", (passage_id,)).fetchone()
         if not row:
             return None
-        data = dict(row)
-        data.pop("vecteur", None)
-        return data
+        return dict(row)
     finally:
         conn.close()
 

@@ -1,6 +1,6 @@
 # Contrat d'interface agent ↔ tests
 
-Ce contrat est stable pour tous les ateliers. Les capacités non encore utilisées (étapes, interruption, confirmation, sources, mentions) existent dans le protocole et restent inactives jusqu'à l'atelier qui les active.
+Ce contrat est stable pour tous les ateliers. Les capacités non encore utilisées (étapes, interruption, confirmation, sources, mentions, pièces jointes) existent dans le protocole et restent inactives jusqu'à l'atelier qui les active.
 
 ## Point d'entrée de chat
 
@@ -12,6 +12,28 @@ Ce contrat est stable pour tous les ateliers. Les capacités non encore utilisé
 | Multi-tour | Le même identifiant de conversation est réutilisé. Le *harness* doit rejouer l'historique dans l'entrée du modèle. |
 
 Les tests utilisent le client en ligne de commande interne (`tests/communs/client_chat.py`), pas un navigateur.
+
+## Pièces jointes (réservé à l'atelier 15)
+
+Le contrat prévoit déjà le point d'entrée, sans fichier fourni dans la coquille :
+
+| Élément | Contrat |
+|---|---|
+| Liste | `GET /pieces-jointes` renvoie `{ "pieces_jointes": [...] }` à partir de la zone `services/pieces_jointes/`. Dans la coquille, la liste est vide. |
+| Tour | Le corps de `POST /conversations/{id}/messages` accepte un champ optionnel `pieces_jointes` (liste d'identifiants). Il est transmis au *harness* (`tour(..., pieces_jointes=...)`). |
+| Événement réservé | `piece_jointe` pourra signaler une lecture de document joint. |
+
+Aucun devis d'essai n'est déposé dans la coquille. Vous alimenterez la zone à l'atelier 15.
+
+## Serveur MCP (coquille vide, à brancher à l'atelier 09)
+
+La coquille inclut `mon-agent/serveur_mcp.py` : un serveur MCP qui démarre et répond au handshake, écrit avec le SDK Python officiel `mcp`. Il n'expose **aucun outil métier**. Transport prévu : HTTP en flux (`streamable-http`), mode sans état, point d'entrée `/mcp` (port 8004 par défaut).
+
+```bash
+uv run python mon-agent/serveur_mcp.py
+```
+
+À l'atelier 09, vous y migrerez les outils et les brancherez sur l'API métier. Les tests de l'atelier 09 restent rouges tant que ce branchement n'est pas fait.
 
 ## Traces
 
@@ -28,4 +50,13 @@ Si vous passez par le client `socle.modele.client.ClientModele`, les appels au m
 
 ## Harness à implémenter
 
-Dans `mon-agent/harness.py`, une classe `Harness` expose `tour(conversation_id, message, utilisateur, historique)` et cède des `Evenement`. La coquille livrée lève `NotImplementedError` : c'est voulu.
+Dans `mon-agent/harness.py`, une classe `Harness` expose `tour(conversation_id, message, utilisateur, historique, pieces_jointes=None)` et cède des `Evenement`. La coquille livrée lève `NotImplementedError` : c'est voulu.
+
+## Autres emplacements de la coquille
+
+| Emplacement | Rôle | État dans la coquille |
+|---|---|---|
+| `services/confinement/` | Interface et politique du confinement (atelier 10d) | Présent, politique inactive, liste d'autorisation vide |
+| `services/catalogue/` | Catalogue versionné de *skills* (atelier 14) | Manifeste valide, zéro *skill* |
+| `services/pieces_jointes/` | Zone en lecture seule des documents joints (atelier 15) | Vide |
+| `mon-agent/mode-local/` | Accueil du mode de développement (atelier 19, *coding agent* facultatif) | Structure vide (`specifications/`, `controles/`) |

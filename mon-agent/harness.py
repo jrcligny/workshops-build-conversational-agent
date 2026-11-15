@@ -25,6 +25,7 @@ class Harness:
         message: str,
         utilisateur: UtilisateurEssai,
         historique: list[Message],
+        pieces_jointes: list[str] | None = None,
     ) -> Iterator[Evenement]:
         raise NotImplementedError(
             "À vous : implémentez le system prompt et la boucle conversationnelle "

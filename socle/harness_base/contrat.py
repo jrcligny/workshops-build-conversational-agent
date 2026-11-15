@@ -23,7 +23,7 @@ class UtilisateurEssai:
 
 @dataclass
 class Evenement:
-    type: str  # texte, fin, etape, erreur, sources, mention, confirmation_demandee
+    type: str  # texte, fin, etape, erreur, sources, mention, confirmation_demandee, piece_jointe
     data: dict = field(default_factory=dict)
 
 
@@ -34,8 +34,13 @@ class ContratHarness(Protocol):
         message: str,
         utilisateur: UtilisateurEssai,
         historique: list[Message],
+        pieces_jointes: list[str] | None = None,
     ) -> Iterator[Evenement]:
-        """Conduit un tour : assemble le system prompt et l'historique, appelle le modèle, émet des événements et une trace."""
+        """Conduit un tour : assemble le system prompt et l'historique, appelle le modèle, émet des événements et une trace.
+
+        `pieces_jointes` est réservé à l'atelier 15 : identifiants de fichiers de la zone
+        `services/pieces_jointes/`. La coquille n'en joint aucun.
+        """
         ...
 
 

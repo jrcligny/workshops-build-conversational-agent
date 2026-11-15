@@ -1,4 +1,3 @@
-
 """Embeddings simulés déterministes. Aucun modèle réel n'est appelé en conception."""
 
 from __future__ import annotations
@@ -6,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+import struct
 
 DIM = 64
 
@@ -24,16 +24,5 @@ def vecteur(texte: str, dim: int = DIM) -> list[float]:
     return [x / norme for x in acc]
 
 
-def cosinus(a: list[float], b: list[float]) -> float:
-    return sum(x * y for x, y in zip(a, b, strict=False))
-
-
 def packs(v: list[float]) -> bytes:
-    import struct
     return struct.pack(f"{len(v)}f", *v)
-
-
-def unpacks(blob: bytes) -> list[float]:
-    import struct
-    n = len(blob) // 4
-    return list(struct.unpack(f"{n}f", blob))

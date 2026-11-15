@@ -99,3 +99,28 @@ def test_branche_lexicale_code_statut(observation, services):
     assert r.status_code == 200
     textes = " ".join(p["texte"] + p["titre"] for p in r.json()["passages"]).lower()
     assert "reglee" in textes or "réglée" in textes
+
+
+def test_vec_version(repertoire_session):
+    from documentation.indexation import connecter
+    conn = connecter()
+    try:
+        version = conn.execute("select vec_version()").fetchone()[0]
+        assert version
+        assert str(version).lower().startswith("v") or str(version)[0].isdigit()
+    finally:
+        conn.close()
+
+
+def test_index_utilise_une_table_vec0(repertoire_session):
+    from documentation.indexation import connecter
+    conn = connecter()
+    try:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE name = 'passages_vec'"
+        ).fetchone()
+        assert row is not None
+        assert "vec0" in row[0]
+        assert "distance_metric=cosine" in row[0] or "float[" in row[0]
+    finally:
+        conn.close()
