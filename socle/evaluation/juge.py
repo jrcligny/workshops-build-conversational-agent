@@ -1,16 +1,18 @@
-
-"""Juge : en conception, scripté ou rejoué ; plus tard, via le proxy Azure."""
+"""Juge : en conception, grille structurelle ou rejeu ; plus tard, via le proxy Azure."""
 
 from __future__ import annotations
 
 from typing import Any
 
 
-def juger_script(grille: dict[str, Any], dialogue: dict[str, Any], verdict_attendu: str | None = None) -> dict[str, Any]:
-    """Juge déterministe de conception.
+def juger(grille: dict[str, Any], dialogue: dict[str, Any], verdict_attendu: str | None = None) -> dict[str, Any]:
+    """Applique une grille écrite.
 
-    Si un verdict attendu est fourni (rejeu manuscrit), il est renvoyé tel quel.
-    Sinon le juge se limite à des contrôles structurels ; il ne calibre pas une grille.
+    En conception (sans modèle juge réel) : les exigences structurelles
+    (motifs requis ou interdits dans la réponse ou la trace) sont vérifiées
+    par programme. L'appréciation de sens, si la grille la demande, est
+    notée « à calibrer » et n'échoue pas une fois les exigences structurelles
+    satisfaites. Un verdict de rejeu manuscrit, s'il est fourni, l'emporte.
     """
     if verdict_attendu:
         return {
@@ -18,20 +20,66 @@ def juger_script(grille: dict[str, Any], dialogue: dict[str, Any], verdict_atten
             "justification": "verdict rejoué (conception)",
             "extraits": [],
             "mode": "rejoue",
+            "grille": grille.get("id"),
         }
-    # Contrôle structurel minimal, sans prétendre évaluer le sens.
-    texte = (dialogue.get("reponse") or "").strip()
-    if not texte:
+
+    reponse = (dialogue.get("reponse") or "")
+    trace = str(dialogue.get("trace") or "")
+    corpus = {
+        "reponse": reponse,
+        "trace": trace,
+        "tout": reponse + "\n" + trace,
+    }
+    echecs: list[str] = []
+    extraits: list[str] = []
+    for exigence in grille.get("exigences") or []:
+        typ = exigence.get("type")
+        motifs = [str(m) for m in (exigence.get("motifs") or [])]
+        champ = exigence.get("champ", "reponse")
+        texte = corpus.get(champ, reponse)
+        texte_l = texte.lower()
+        if typ == "interdit":
+            for motif in motifs:
+                if motif.lower() in texte_l:
+                    echecs.append(f"motif interdit trouvé ({motif!r})")
+                    extraits.append(motif)
+        elif typ == "requis_un_de":
+            if motifs and not any(motif.lower() in texte_l for motif in motifs):
+                echecs.append("aucun des motifs requis n'apparaît : " + ", ".join(motifs))
+        elif typ == "requis_tous":
+            manquants = [m for m in motifs if m.lower() not in texte_l]
+            if manquants:
+                echecs.append("motifs requis absents : " + ", ".join(manquants))
+
+    if not reponse.strip() and (grille.get("exigences") or grille.get("juge_sens")):
         return {
             "reussi": False,
             "justification": "aucune réponse d'assistant à juger",
             "extraits": [],
             "mode": "simule",
+            "grille": grille.get("id"),
         }
+    if echecs:
+        return {
+            "reussi": False,
+            "justification": " ; ".join(echecs),
+            "extraits": extraits,
+            "mode": "simule",
+            "grille": grille.get("id"),
+        }
+    justification = "exigences structurelles de la grille satisfaites"
+    if grille.get("juge_sens"):
+        justification += " ; appréciation de sens à calibrer en phase B (juge réel)"
     return {
-        "reussi": False,
-        "justification": "juge réel non disponible en conception ; item à calibrer en phase B",
-        "extraits": [texte[:200]],
+        "reussi": True,
+        "justification": justification,
+        "extraits": [reponse[:200]] if reponse else [],
         "mode": "simule",
-        "a_calibrer": True,
+        "grille": grille.get("id"),
+        "a_calibrer": bool(grille.get("juge_sens")),
     }
+
+
+# Compatibilité avec l'ancien nom.
+def juger_script(grille: dict[str, Any], dialogue: dict[str, Any], verdict_attendu: str | None = None) -> dict[str, Any]:
+    return juger(grille, dialogue, verdict_attendu=verdict_attendu)

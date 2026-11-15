@@ -60,3 +60,14 @@ Dans `mon-agent/harness.py`, une classe `Harness` expose `tour(conversation_id, 
 | `services/catalogue/` | Catalogue versionné de *skills* (atelier 14) | Manifeste valide, zéro *skill* |
 | `services/pieces_jointes/` | Zone en lecture seule des documents joints (atelier 15) | Vide |
 | `mon-agent/mode-local/` | Accueil du mode de développement (atelier 19, *coding agent* facultatif) | Structure vide (`specifications/`, `controles/`) |
+
+
+## Événements et gestes réservés (ateliers 06, 07, 10b)
+
+| Élément | Contrat |
+|---|---|
+| Étape | Événement SSE `etape` pendant un tour à plusieurs cycles (atelier 06). |
+| Interruption | `POST /conversations/{id}/interruption`, ou champ `interrompre` du message. Le *harness* reçoit `interruption_demandee=True` et arrête le tour sans nouvel appel (événement `interruption`). |
+| Compaction | Événement SSE `compaction` (ou `mention` qui l'annonce) lorsque l'historique a été compacté (atelier 07). La trace décrit le moment, les échanges remplacés, le résumé et les éléments conservés à l'identique. |
+| Confirmation | `POST /conversations/{id}/confirmation` avec `{ "confirme": true }`. Le tour suivant reçoit `confirmation=True` (atelier 10b). L'événement `confirmation_demandee` précède le geste. |
+| Limites | Champ optionnel `limites` de `POST /conversations` (`duree_s`, `budget_jetons`), transmis au *harness* (atelier 10d). |

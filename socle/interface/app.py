@@ -1,4 +1,3 @@
-
 """Interface de chat minimale : flux typés, client utilisé par les tests."""
 
 from __future__ import annotations
@@ -18,6 +17,8 @@ app = FastAPI(title="Interface de chat des ateliers", version="0.1.0")
 
 _conversations: dict[str, dict] = {}
 _historiques: dict[str, list[Message]] = defaultdict(list)
+_confirmations: dict[str, bool] = {}
+_interruptions: set[str] = set()
 _harness = None
 _urls: dict[str, str] = {}
 
@@ -37,6 +38,8 @@ def harness():
 def reinitialiser_conversations() -> None:
     _conversations.clear()
     _historiques.clear()
+    _confirmations.clear()
+    _interruptions.clear()
     global _harness
     _harness = None
 
@@ -46,11 +49,17 @@ class ConversationIn(BaseModel):
     role: str = "charge_clientele"
     organisation: str = "organisation-a"
     jeton_application: str | None = None
+    limites: dict | None = None
 
 
 class MessageIn(BaseModel):
     texte: str
     pieces_jointes: list[str] = []
+    interrompre: bool = False
+
+
+class ConfirmationIn(BaseModel):
+    confirme: bool = True
 
 
 @app.get("/sante")
@@ -74,6 +83,24 @@ def creer_conversation(corps: ConversationIn):
     return {"id": identifiant, "utilisateur": corps.model_dump()}
 
 
+@app.post("/conversations/{conversation_id}/confirmation")
+def confirmer(conversation_id: str, corps: ConfirmationIn):
+    """Geste de confirmation de l'utilisateur (atelier 10b)."""
+    if conversation_id not in _conversations:
+        raise HTTPException(status_code=404, detail="conversation inconnue")
+    _confirmations[conversation_id] = bool(corps.confirme)
+    return {"ok": True, "confirme": bool(corps.confirme)}
+
+
+@app.post("/conversations/{conversation_id}/interruption")
+def interrompre(conversation_id: str):
+    """Demande d'interruption du tour en cours (atelier 06)."""
+    if conversation_id not in _conversations:
+        raise HTTPException(status_code=404, detail="conversation inconnue")
+    _interruptions.add(conversation_id)
+    return {"ok": True}
+
+
 @app.post("/conversations/{conversation_id}/messages")
 def envoyer_message(conversation_id: str, corps: MessageIn):
     if conversation_id not in _conversations:
@@ -86,10 +113,24 @@ def envoyer_message(conversation_id: str, corps: MessageIn):
         jeton_application=meta.get("jeton_application"),
     )
     historique = list(_historiques[conversation_id])
+    interruption = conversation_id in _interruptions or corps.interrompre
+    confirmation = _confirmations.get(conversation_id, False)
+    limites = meta.get("limites")
 
     def flux():
         try:
-            evenements = list(harness().tour(conversation_id, corps.texte, utilisateur, historique, pieces_jointes=corps.pieces_jointes))
+            evenements = list(
+                harness().tour(
+                    conversation_id,
+                    corps.texte,
+                    utilisateur,
+                    historique,
+                    pieces_jointes=corps.pieces_jointes,
+                    interruption_demandee=interruption,
+                    confirmation=confirmation,
+                    limites=limites,
+                )
+            )
         except HarnessNonImplemente as exc:
             ev = Evenement(type="erreur", data={"detail": str(exc)})
             yield _sse(ev)
@@ -112,8 +153,6 @@ def envoyer_message(conversation_id: str, corps: MessageIn):
         if not any(ev.type == "fin" for ev in evenements):
             yield _sse(Evenement(type="fin", data={"ok": True, "texte": texte}))
         # L'historique n'est mis à jour par le socle que si le harness a produit une fin réussie.
-        # La conservation pédagogique de l'historique reste à la charge du harness étudiant ;
-        # le socle mémorise toutefois les tours réussis pour les tests multi-tours du contrat.
         if texte:
             _historiques[conversation_id].append(Message(role="user", contenu=corps.texte))
             _historiques[conversation_id].append(Message(role="assistant", contenu=texte))

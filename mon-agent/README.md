@@ -7,3 +7,9 @@ C'est ici que vous construisez votre agent.
 - `mode-local/` est la structure d'accueil vide de l'atelier 19 (spécification d'un contrôle ; *coding agent* facultatif).
 
 Les tests des ateliers restent rouges tant que le critère de réussite n'est pas atteint.
+
+Livrables ajoutés au fil des ateliers :
+
+- à l'atelier 11 : `requetes_trace.py`, avec les fonctions `part_lectures_intermediaires` et `domaines_incompatibles` ;
+- à l'atelier 17 : un rapport de parcours (`rapport-parcours.md` ou équivalent) ;
+- à l'atelier 19 : spécification et essais sous `mode-local/`.

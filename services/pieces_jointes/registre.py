@@ -4,18 +4,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
-DOSSIER = Path(__file__).resolve().parent
+from socle.config import reglages
+
 EXTENSIONS = {".txt", ".md", ".pdf", ".csv"}
 
 
 def dossier() -> Path:
-    return DOSSIER
+    return Path(reglages.pieces_jointes_dir)
 
 
 def lister() -> list[dict]:
     """Fichiers déposés dans la zone, hors documentation et sentinelles."""
+    racine = dossier()
+    if not racine.is_dir():
+        return []
     pieces = []
-    for chemin in sorted(DOSSIER.iterdir()):
+    for chemin in sorted(racine.iterdir()):
         if not chemin.is_file():
             continue
         if chemin.name.startswith("."):

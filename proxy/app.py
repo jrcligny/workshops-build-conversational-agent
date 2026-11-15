@@ -18,6 +18,7 @@ logger = logging.getLogger("proxy")
 app = FastAPI(title="Proxy de modèles", version="0.1.0")
 _JOURNAL: list[dict] = []
 _SCRIPTS: list[dict] = []
+_PANNES: dict[str, bool] = {}
 
 
 class ChatIn(BaseModel):
@@ -65,6 +66,12 @@ def chat(corps: ChatIn, etudiant: dict = Depends(exiger_etudiant)):
     if corps.stream:
         # En conception, le flux est simulé par une unique réponse ; l'interface découpe au besoin.
         pass
+    if _PANNES.get("modele_principal"):
+        modele = corps.model or ""
+        # Le modèle de repli, s'il est demandé explicitement, reste joignable.
+        if "repli" not in modele.lower() and "fallback" not in modele.lower():
+            _journaliser(etudiant["sub"], "/v1/chat/completions", modele, 0, 503)
+            raise HTTPException(status_code=503, detail="modèle principal indisponible")
     if _mode() == "reel":
         if not reglages.azure_openai_api_key:
             raise HTTPException(status_code=503, detail="mode réel indisponible : aucune clé Azure n'est configurée")
@@ -122,6 +129,19 @@ def api_usage(etudiant_id: str):
     return usage(etudiant_id)
 
 
+class PanneProxyIn(BaseModel):
+    type: str
+    active: bool = True
+
+
+@app.post("/_test/pannes")
+def armer_panne_proxy(corps: PanneProxyIn):
+    """Arme une panne de test (modèle principal indisponible, atelier 18)."""
+    _PANNES[corps.type] = corps.active
+    return {"type": corps.type, "active": corps.active}
+
+
 def vider_journal() -> None:
     _JOURNAL.clear()
     _SCRIPTS.clear()
+    _PANNES.clear()

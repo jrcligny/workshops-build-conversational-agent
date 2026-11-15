@@ -29,6 +29,7 @@ class Reglages(BaseSettings):
     documentation_db: str = "documentation.db"
     traces_dir: str = "traces"
     mon_agent_dir: str = "mon-agent"
+    pieces_jointes_dir: str = "services/pieces_jointes"
 
     # Horloge figée du jeu de données (Europe/Paris, date conventionnelle du dépôt)
     horloge_figee: str = "2026-03-15T10:00:00"

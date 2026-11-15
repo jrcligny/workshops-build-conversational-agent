@@ -56,3 +56,16 @@ def test_mode_local_coding_agent_accueil_vide():
         if p.name != ".gitkeep"
     ]
     assert livrables == []
+
+
+def test_somme_des_parcours_d_evaluation():
+    import hashlib
+    racine = RACINE / "tests" / "evaluation"
+    attendu = (racine / "somme-parcours.sha256").read_text(encoding="utf-8").strip()
+    h = hashlib.sha256()
+    for chemin in sorted(racine.rglob("*")):
+        if not chemin.is_file() or chemin.name == "somme-parcours.sha256":
+            continue
+        h.update(chemin.relative_to(racine).as_posix().encode())
+        h.update(chemin.read_bytes())
+    assert h.hexdigest() == attendu

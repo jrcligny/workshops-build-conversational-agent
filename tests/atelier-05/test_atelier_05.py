@@ -2,28 +2,29 @@
 
 import pytest
 
-from socle.traces.tracer import lire_tout
+from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
 
 pytestmark = pytest.mark.atelier
 
 
-def _tour_reussi(client_chat, message: str):
-    tour = client_chat.tour(message)
-    assert tour.ok, f"le tour doit aboutir (texte + fin) ; reçu : ok={tour.ok}, erreur={tour.erreur!r}"
-    assert "texte" in tour.types
-    assert "fin" in tour.types
-    traces = lire_tout()
-    assert traces, "une trace de tour est exigée"
-    return tour, traces[-1]
-
 def test_homonymes_plusieurs_candidats(client_chat):
-    tour, trace = _tour_reussi(client_chat, "Quelles sont les commandes de Léa Martin ?")
+    tour, trace = tour_reussi(client_chat, "Quelles sont les commandes de Léa Martin ?")
     texte = tour.texte.lower()
-    assert ("lille" in texte and "lyon" in texte) or "plusieurs" in texte or "homonym" in texte
-    assert trace.get("outils")
+    assert "lille" in texte and "lyon" in texte
+    # l'agent ne choisit pas un des deux à la place de l'utilisateur
+    assert "laquelle" in texte or "plusieurs" in texte or "homonym" in texte or "deux" in texte or "?" in tour.texte
+    assert outils(trace)
 
 
-def test_filtre_retard(client_chat, observation):
+def test_filtre_retard_applique_par_l_outil(client_chat, observation):
     observation.reinitialiser("volume")
-    tour, _ = _tour_reussi(client_chat, "Quelles sont les commandes en retard de Transports Morel ?")
+    tour, trace = tour_reussi(client_chat, "Quelles sont les commandes en retard de Transports Morel ?")
     assert tour.texte
+    assert outils(trace)
+    plat_outils = str(outils(trace)).lower()
+    assert "retard" in plat_outils or "en_retard" in plat_outils or "late" in plat_outils
+    # le filtre est dans l'appel, pas seulement dans une sélection faite par le modèle après coup
+    assert any(
+        "retard" in str((o.get("arguments") or o.get("parametres") or o)).lower()
+        for o in outils(trace)
+    )

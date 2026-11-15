@@ -39,5 +39,6 @@ uv run atelier verifier 03         # reste rouge tant que l'atelier 03 n'est pas
 - [Installation](docs/installation.md)
 - [Contrat d'interface](docs/contrat-interface.md)
 - [Procédure de validation de l'équipe](docs/validation-equipe.md) (phase B, une fois Azure disponible)
+- [Inventaire des tests d'atelier](docs/inventaire-tests.md)
 - [Décisions provisoires](docs/decisions.md)
 - [Avant de commencer](AVANT-DE-COMMENCER.md)
