@@ -13,6 +13,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent_context  # noqa: E402
+import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
 import agent_tools  # noqa: E402
 
@@ -29,15 +30,21 @@ SYSTEM_PROMPT = (
     "et la référence la plus proche trouvée, en signalant la différence, puis donne son statut.\n"
     "- status 'not_found' : dis que la commande est introuvable, sans rien proposer d'autre.\n"
     "- status 'error' : dis que tu n'as pas pu consulter l'application.\n"
-    "Pour un client désigné par son nom : search_customers, puis list_customer_orders avec son id. "
+    "Pour un nom (client par défaut, sinon fournisseur ou utilisateur) : find_by_name, puis query avec l'id "
+    "trouvé. Quand l'utilisateur passe à un autre client (« passons à X »), recherche-le aussitôt avec "
+    "find_by_name. "
     "Si plusieurs clients correspondent (homonymes), ne choisis jamais à la place de l'utilisateur : "
     "liste-les tous avec leur ville et demande lequel il veut, sauf si l'utilisateur a déjà donné un critère "
-    "qui en désigne un seul (sa ville, par exemple). "
-    "Pour les commandes en retard, utilise filter='late' : ne filtre jamais toi-même une liste. "
-    "Si une liste est tronquée, dis-le.\n"
-    "Quand l'utilisateur désigne un client par son nom, identifie-le avec search_customers ; quand il choisit "
-    "parmi des homonymes, utilise l'id correspondant. Pour « celle-là », « ce client », appuie-toi sur l'état "
-    "de la conversation.\n"
+    "qui en désigne un seul (sa ville, par exemple). Quand il choisit parmi des homonymes, utilise l'id "
+    "correspondant. Pour « celle-là », « ce client », appuie-toi sur l'état de la conversation.\n"
+    "Toute autre lecture passe par query(source, filters, aggregate) sur orders, customers, invoices, "
+    "suppliers ou purchase_requests ; filters est un objet {champ: valeur} (codes ou libellés), "
+    "describe_source donne les champs et valeurs. Commandes d'un client : source orders, "
+    "filters {customer_id}. Commandes en retard : ajoute \"late\": true dans filters ; ne filtre jamais "
+    "toi-même une liste. Pour un nombre, un total ou une moyenne, utilise aggregate (count, total, average) "
+    "plutôt qu'une liste. Si une liste est tronquée, dis-le et donne le total. Si un outil renvoie une erreur, "
+    "corrige ta requête d'après son message (champs et valeurs autorisés) ; si tu ne peux pas, explique "
+    "l'erreur à l'utilisateur en citant les valeurs valides.\n"
     "Enchaîne les outils nécessaires dans le même tour ; demande en une seule fois les appels "
     "indépendants les uns des autres (par exemple une commande et un client).\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
@@ -53,7 +60,6 @@ CYCLE_LIMIT_INSTRUCTION = (
     "en commençant par « Réponse partielle » et en disant précisément ce qui n'a pas pu être vérifié."
 )
 PER_TOOL_LIMITS = {"get_order": 1}
-TOOLS = ["get_order", "search_customers", "list_customer_orders"]
 
 
 class _InProcessModelClient(ModelClient):
@@ -134,8 +140,15 @@ class Harness:
             *replayed,
             {"role": "user", "content": message},
         ]
-        tool_specs = [agent_tools.TOOL_SPECS[name] for name in TOOLS]
-        client: agent_tools.BusinessClient | None = None
+        # The tools live behind the MCP server; the user's token travels with every call.
+        token = user.app_token or agent_tools._user_scoped_token(user)
+        tool_specs = agent_mcp.tool_specs(token)
+        tools = {spec["function"]["name"] for spec in tool_specs}
+
+        def lookup(customer_id: str) -> dict | None:
+            rows = agent_mcp.call(token, "query", {"source": "customers", "filters": {"id": customer_id}}).get("rows")
+            return rows[0] if rows else None
+
         tool_calls_done: list[dict] = []
         model_calls: list[dict] = []
         mentions: list[str] = []
@@ -173,7 +186,7 @@ class Harness:
                 repeated = any(t["name"] == name and t["arguments"] == arguments for t in tool_calls_done)
                 if len(tool_calls_done) >= MAX_TOOL_CALLS:
                     result = {"status": "error", "error": "tool budget exhausted for this message: answer now"}
-                elif name not in TOOLS:
+                elif name not in tools:
                     result = {"status": "error", "error": f"unknown tool {name}"}
                 elif repeated:
                     result = {"status": "error", "error": "identical call already made in this turn: use its result"}
@@ -181,15 +194,14 @@ class Harness:
                     result = {"status": "error", "error": f"{name} already used for this message: answer now"}
                 else:
                     yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
-                    client = client or agent_tools.BusinessClient(user)
                     try:
-                        result = agent_tools.TOOL_FUNCTIONS[name](client, arguments)
+                        result = agent_mcp.call(token, name, arguments)
                     except Exception as exc:  # noqa: BLE001
                         result = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
-                    tool_calls_done.append({"name": name, "arguments": arguments, "result": result, "cycle": cycle})
-                    self.memory.update(
-                        conversation_id, name, arguments, result, lambda cid: agent_tools.get_customer(client, cid)
+                    tool_calls_done.append(
+                        {"name": name, "arguments": arguments, "result": result, "cycle": cycle, "via": "mcp"}
                     )
+                    self.memory.update(conversation_id, name, arguments, result, lookup)
                 messages.append(
                     {"role": "tool", "tool_call_id": call.get("id"), "content": json.dumps(result, ensure_ascii=False)}
                 )
@@ -237,6 +249,7 @@ class Harness:
                     "calls": model_calls,
                 },
                 "output": text,
+                "transport": "mcp",
                 "tools": tool_calls_done,
                 "cycles": cycle,
                 "max_cycles": MAX_CYCLES,
@@ -259,8 +272,9 @@ class Harness:
 def _step_label(name: str, arguments: dict) -> str:
     labels = {
         "get_order": "Consultation de la commande {reference}",
-        "search_customers": "Recherche du client {name}",
-        "list_customer_orders": "Liste des commandes du client {customer_id}",
+        "find_by_name": "Recherche de {name}",
+        "describe_source": "Description de la source {source}",
+        "query": "Lecture de la source {source}",
     }
     try:
         return labels.get(name, name).format(**arguments)
