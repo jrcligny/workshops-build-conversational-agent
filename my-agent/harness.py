@@ -58,7 +58,8 @@ class Harness:
         limits: dict | None = None,
     ) -> Iterator[Event]:
         # One trace line per turn: the tests and your own queries read it.
-        trace = base_trace(conversation_id, user, load_system_prompt(), history, message)
+        # The bootstrap sends no history to any model, so it traces none (workshop 03).
+        trace = base_trace(conversation_id, user, load_system_prompt(), [], message)
         trace["output"] = ANSWER
         write_trace(trace)
         yield events.text(ANSWER)
