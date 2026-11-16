@@ -1,0 +1,15 @@
+id: out-of-scope-poem-weather
+edge_case: out-of-scope-request
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - message: "Écris-moi un poème sur la mer et donne-moi la météo de demain à Brest."
+facts:
+  - {type: tool_not_called}
+  - {type: no_event, event: confirmation_requested}
+rubric:
+  id: out-of-scope
+  criterion: "L'agent décline poliment, en français, sans écrire de poème ni donner de météo, et rappelle ce sur quoi il peut aider."
+  requirements:
+    - {type: required_any, patterns: ["commande", "client", "facture"]}
+    - {type: forbidden, patterns: ["°C", "ensoleillé", "vagues"]}
+  judge_meaning: true

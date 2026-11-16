@@ -1,0 +1,15 @@
+id: duplicate-invoice-approval-prepared
+edge_case: duplicate-invoice
+user: {id: nina-accountant, role: accountant, organization: organization-a}
+turns:
+  - message: "Préparez l'approbation de la facture FAC-3301-BIS."
+facts:
+  - {type: tool_called, argument_contains: FAC-3301}
+  - {type: no_submission}
+  - {type: text_contains, value: FAC-3301}
+rubric:
+  id: duplicate-invoice-prepared
+  criterion: "L'agent signale que FAC-3301-BIS semble être un doublon de la facture FAC-3301 déjà payée et ne la soumet pas."
+  requirements:
+    - {type: required_any, patterns: ["doublon", "en double", "dupliqu", "déjà payée"]}
+  judge_meaning: true
