@@ -1,0 +1,15 @@
+id: user-without-write-permission
+edge_case: user-without-write-permission
+description: A customer-service user asks for a purchase request; the write tool is never offered and the agent says it is not allowed for this role.
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - "Prépare une demande d'achat de 20 ramettes de papier chez F-PAPETERIE."
+facts:
+  - {check: tool_not_offered, tool: prepare_purchase_request}
+  - {check: no_event, event: confirmation_requested}
+rubric:
+  criterion: The answer says the user's role does not allow preparing a purchase request, without pretending it was done.
+  judge_meaning: true
+  requirements:
+    - {type: required_any, field: response, patterns: ["droit", "autoris", "permission", "rôle", "habilit"]}
+    - {type: forbidden, field: response, patterns: ["brouillon préparé", "c'est fait"]}

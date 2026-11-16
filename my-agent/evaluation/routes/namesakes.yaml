@@ -1,0 +1,17 @@
+id: namesakes
+edge_case: namesakes
+description: Two customers share a name; the agent asks which one, and records the current customer only after the choice.
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - "Quelles sont les commandes de Léa Martin ?"
+  - "Celle de Lille."
+facts:
+  - {check: tool_called, tool: find_by_name, turn: 1}
+  - {check: state_lacks, turn: 1, path: current_customer}
+  - {check: state_contains, turn: 2, path: current_customer, any: ["C-MARTIN-LILLE"]}
+rubric:
+  criterion: The first answer asks which Léa Martin (Lille or Lyon) instead of choosing; the second answers for the Lille customer.
+  judge_meaning: true
+  turn: 1
+  requirements:
+    - {type: required_all, field: response, patterns: ["lille", "lyon"]}

@@ -17,6 +17,7 @@ import agent_attachments  # noqa: E402
 import agent_context  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
+import agent_observability  # noqa: E402
 import agent_sandbox  # noqa: E402
 import agent_skills  # noqa: E402
 import mcp_server  # noqa: E402
@@ -27,6 +28,10 @@ from workshop_kit.shell.model_client import ModelClient, _split  # noqa: E402
 
 SYSTEM_PROMPT = (
     "Tu es l'assistant du service client. Tu réponds toujours en français, brièvement et poliment.\n"
+    "Ton périmètre : les commandes, clients, factures, fournisseurs, demandes d'achat et la documentation "
+    "interne de l'entreprise. Toute demande hors de ce périmètre (poème, météo, culture générale, conseils "
+    "personnels…) est déclinée poliment, sans appeler d'outil et sans y répondre même partiellement : "
+    "rappelle ce sur quoi tu peux aider.\n"
     "Tes seules sources sur les commandes sont tes outils. Pour une commande désignée par sa référence, "
     "appelle get_order une seule fois, puis réponds à partir de son résultat uniquement.\n"
     "- status 'found' : donne le statut (libellé français) et les dates utiles.\n"
@@ -69,7 +74,9 @@ SYSTEM_PROMPT = (
     "ce qui vient des données de l'application (« D'après les données … »). Si search_documents ne renvoie "
     "aucun passage, ou si les passages renvoyés ne traitent pas la question, dis que tu n'as rien trouvé dans "
     "la documentation accessible ; n'invente rien. "
-    "Ne cite pas toi-même d'adresse de source : l'interface affiche les sources.\n"
+    "Ne cite pas toi-même d'adresse de source : l'interface affiche les sources. Après chaque phrase qui "
+    "s'appuie sur un passage, ajoute son marqueur [source: <id du passage>] ; ne mets aucun marqueur pour "
+    "un passage qui ne traite pas la question.\n"
     "Procédures métier (skills) : avant de préparer une demande d'achat, de contrôler ou d'approuver une "
     "facture, ou de faire le point sur les retards d'un client, charge la skill correspondante avec load_skill "
     "puis suis ses instructions ; les outils de préparation n'apparaissent qu'une fois la skill chargée, et "
@@ -420,11 +427,12 @@ class Harness:
                 )
         if submission and submission["outcome"].get("status") == "submitted":
             mentions.append("Soumission effectuée après votre confirmation, en votre nom.")
-        sources = _sources(tool_calls_done)
+        text, cited = _cited_passages(text)
+        sources = _sources(tool_calls_done, cited)
 
         last = model_calls[-1] if model_calls else {"id": None, "usage": {}, "stop_reason": None}
         tracer.write(
-            {
+            agent_observability.mask({
                 "conversation_id": conversation_id,
                 "turn_id": tracer.new_id(),
                 "user": {"id": user.id, "role": user.role, "organization": user.organization},
@@ -451,6 +459,7 @@ class Harness:
                 "transport": "mcp",
                 "identity": agent_mcp.identity_record(user, token),
                 "tools": tool_calls_done,
+                "tools_offered": sorted(spec["function"]["name"] for spec in tool_specs),
                 "cycles": cycle,
                 "max_cycles": MAX_CYCLES,
                 "stop": stop,
@@ -472,7 +481,7 @@ class Harness:
                 "unverified": unverified,
                 **({"submission": submission} if submission else {}),
                 **({"compaction": compacted} if compacted else {}),
-            }
+            })
         )
         if compacted:
             mentions.insert(0, "Le début de la conversation a été résumé pour garder le contexte sous contrôle.")
@@ -513,13 +522,30 @@ def _unverified_references(text: str, tool_calls_done: list[dict], state: dict) 
     return cited
 
 
-def _sources(tool_calls_done: list[dict]) -> list[dict]:
-    """Documentation sources actually returned by search_documents in this turn, deduplicated."""
+_SOURCE_MARKER = re.compile(r"\s*\[source\s*:\s*([^\]]+)\]", re.IGNORECASE)
+
+
+def _cited_passages(text: str) -> tuple[str, set[str]]:
+    """Removes the [source: id] markers from the answer and returns the cited passage ids."""
+    cited: set[str] = set()
+    for group in _SOURCE_MARKER.findall(text or ""):
+        cited.update(part.strip() for part in re.split(r"[,;]", group) if part.strip())
+    return _SOURCE_MARKER.sub("", text or "").strip(), cited
+
+
+def _sources(tool_calls_done: list[dict], cited: set[str]) -> list[dict]:
+    """Documentation sources returned by search_documents in this turn AND cited by the answer, deduplicated.
+
+    The search may rank off-topic passages: a passage the answer does not rely on is never displayed, and a
+    cited id the tool did not return is ignored (the model cannot invent a source).
+    """
     seen: dict[tuple, dict] = {}
     for call in tool_calls_done:
         if call["name"] != "search_documents":
             continue
         for passage in call["result"].get("passages") or []:
+            if passage.get("id") not in cited:
+                continue
             key = (passage.get("document_id"), passage.get("version"), passage.get("section"))
             seen.setdefault(
                 key,

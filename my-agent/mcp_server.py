@@ -527,6 +527,15 @@ def prepare_invoice_approval(invoice: str, ctx: Context) -> dict:
     code, data = api.request("POST", "/sources/invoices/query", json={"filters": {"reference": invoice}})
     rows = data.get("rows", []) if code == 200 else []
     invoice_id = rows[0]["id"] if rows else invoice
+    original = rows[0].get("duplicate_of") if rows else None
+    if original:
+        # Control, not instruction: a probable duplicate never gets an approval draft.
+        return {
+            "status": "duplicate_suspected",
+            "invoice": rows[0].get("reference") or invoice,
+            "duplicate_of": original,
+            "error": f"invoice {invoice!r} looks like a duplicate of {original}: no approval draft prepared",
+        }
     code, body = api.request("POST", f"/invoices/{invoice_id}/approval/drafts")
     if code == 404:
         return {"status": "not_found", "error": f"invoice {invoice!r} not found"}
@@ -588,7 +597,11 @@ def search_documents(ctx: Context, query: str) -> dict:
         "status": "found",
         "query": query,
         "passages": passages,
-        "note": "documentation passages, filtered by the user's organization and role; cite them as documentation",
+        "note": (
+            "documentation passages, filtered by the user's organization and role, ranked by a search that "
+            "may return off-topic passages: use only those that answer the question, cite them as "
+            "documentation and mark each one used with [source: <id>]"
+        ),
     }
 
 

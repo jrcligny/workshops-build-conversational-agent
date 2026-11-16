@@ -1,0 +1,14 @@
+id: question-without-documentary-answer
+edge_case: question-without-documentary-answer
+description: The documentation holds no passage on the question; the agent says so instead of inventing a rule, and shows no source.
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - "Que dit la documentation interne sur la politique de télétravail des transporteurs ?"
+facts:
+  - {check: tool_called, tool: search_documents}
+  - {check: no_event, event: sources}
+rubric:
+  criterion: The answer says the documentation does not cover the question and does not make up a policy.
+  judge_meaning: true
+  requirements:
+    - {type: required_any, field: response, patterns: ["aucun passage", "ne trouve pas", "pas trouvé", "ne couvre pas", "aucune information", "n'aborde pas", "pas de passage", "rien trouvé"]}

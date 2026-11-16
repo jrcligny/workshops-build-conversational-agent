@@ -1,0 +1,14 @@
+id: duplicate-invoice
+edge_case: duplicate-invoice
+description: FAC-3301-BIS duplicates the paid invoice FAC-3301; an accountant asking to approve it is warned and nothing is submitted.
+user: {id: nina-accountant, role: accountant, organization: organization-a}
+turns:
+  - "Prépare l'approbation de la facture FAC-3301-BIS."
+facts:
+  - {check: trace_contains, any: ["FAC-3301-BIS"]}
+  - {check: no_submission}
+rubric:
+  criterion: The answer flags FAC-3301-BIS as a probable duplicate of the already paid FAC-3301 and does not approve it silently.
+  judge_meaning: true
+  requirements:
+    - {type: required_any, field: response, patterns: ["doublon", "déjà payée", "deja payee", "duplicate", "FAC-3301 "]}
