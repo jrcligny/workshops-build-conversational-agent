@@ -2,8 +2,8 @@
 
 import pytest
 
-from workshop_kit.testing.chat_client import ChatClient
-from workshop_kit.testing.turns import apply_rubric, flat, successful_turn, tools
+from workshop_tests.testing.chat_client import ChatClient
+from workshop_tests.testing.turns import apply_rubric, flat, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 

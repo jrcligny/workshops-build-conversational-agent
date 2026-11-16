@@ -13,9 +13,10 @@ The chat interface is `workshop_kit/shell/chat_app.py`.
 | Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the shell. |
 | Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
 
-The tests use the internal client (`workshop_kit/testing/chat_client.py`), not a browser.
+The tests use the internal client (`workshop_tests/testing/chat_client.py`), not a browser.
 The standard Chainlit UI in `workshop_kit/chat-ui/` consumes the same HTTP/SSE
-contract from its own Python environment. Run `uv run workshop serve` to start
+contract from its own Python environment. From the repository root, run
+`uv run --project workshop_kit/bootstrap workshop serve` to start
 the complete environment, including that UI.
 
 ## Attachments (reserved for workshop 15)
@@ -35,10 +36,12 @@ No sample quote is dropped in the shell. You will fill the area in workshop 15.
 The shell includes `my-agent/mcp_server.py`: an MCP server that starts and answers the handshake, written with the official Python SDK `mcp`. It exposes **no business tool**. Planned transport: streamable HTTP (`streamable-http`), stateless mode, endpoint `/mcp` (port 8004 by default).
 
 ```powershell
-uv run python my-agent/mcp_server.py
+uv run --project my-agent python my-agent/mcp_server.py
 ```
 
-In workshop 09, you will move the tools there and wire them to the business API. The workshop 09 tests stay red until this is done.
+Run this command from the repository root; the MCP server uses its own project,
+lockfile and environment. In workshop 09, you will move the tools there and wire
+them to the business API. The workshop 09 tests stay red until this is done.
 
 ## Traces
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from workshop_kit.testing.turns import flat, successful_turn
+from workshop_tests.testing.turns import flat, successful_turn
 
 pytestmark = pytest.mark.workshop
 

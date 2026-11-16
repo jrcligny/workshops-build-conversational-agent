@@ -1,12 +1,12 @@
 [project]
-name = "workshops-build-conversational-agent"
+name = "workshop-tests"
 version = "0.1.0"
-description = "Environment and end-to-end tests for the workshops of the book on conversational agents"
-readme = "README.md"
+description = "Shared fixtures, evaluation helpers and dependencies for workshop and kit tests"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.115",
+    "workshop-tools",
     "httpx>=0.27",
+    "fastapi>=0.115",
     "mcp>=2.3.0",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
@@ -16,34 +16,23 @@ dependencies = [
     "sqlite-vec>=0.1.9",
     "sse-starlette>=2.1",
     "uvicorn>=0.32",
-]
-
-[project.optional-dependencies]
-dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
 ]
 
-[project.scripts]
-workshop = "workshop_kit.cli:main"
+[tool.uv]
+package = false
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["workshop_kit"]
+[tool.uv.sources]
+workshop-tools = { path = "../workshop_kit/bootstrap", editable = true }
 
 [tool.pytest.ini_options]
-testpaths = ["tests/kit", "workshops"]
-pythonpath = ["."]
-# Workshop folders have hyphenated names and no __init__.py: importlib mode
-# collects the colocated tests without package names.
-addopts = "-q --strict-markers --import-mode=importlib"
+testpaths = ["../workshop_kit/tests", "../workshops"]
+pythonpath = [".."]
+# Fixture loading and source paths remain explicit when running from another cwd.
+addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures"
 asyncio_default_fixture_loop_scope = "function"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-]
+filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "business_api: tests of the business API test app (must pass)",
     "docs_search: tests of the document search test app (must pass)",
@@ -51,7 +40,3 @@ markers = [
     "shell: tests of the framework and of the empty shell (must pass)",
     "workshop: success-criterion tests of a workshop (must fail on the empty shell)",
 ]
-
-[tool.ruff]
-line-length = 100
-target-version = "py313"

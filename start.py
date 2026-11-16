@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
+TOOLS = ROOT / "workshop_kit" / "bootstrap"
 
 
 def main(argv=None):
@@ -25,8 +26,8 @@ def main(argv=None):
     # Do not let an unrelated active environment influence project selection.
     env = {key: value for key, value in os.environ.items() if key != "VIRTUAL_ENV"}
     commands = [
-        [uv, "sync", "--extra", "dev", "--locked"],
-        [uv, "run", "--no-sync", "workshop", "serve", "--port-offset", str(args.port_offset)],
+        [uv, "sync", "--project", str(TOOLS), "--locked"],
+        [uv, "run", "--project", str(TOOLS), "--no-sync", "workshop", "serve", "--port-offset", str(args.port_offset)],
     ]
     if args.reset_data:
         commands[-1].append("--reset-data")

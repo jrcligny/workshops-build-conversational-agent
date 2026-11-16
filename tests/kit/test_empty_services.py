@@ -67,12 +67,16 @@ def test_student_files_only_in_my_agent():
     kit = REPO_ROOT / "workshop_kit"
     data_files = []
     for folder, directories, filenames in kit.walk():
-        directories[:] = [d for d in directories if d != "__pycache__"]
+        directories[:] = [d for d in directories if d not in {"__pycache__", ".venv", ".pytest_cache"}]
         if folder == kit:
             directories.remove("chat-ui")
         data_files.extend(
             (folder / name).relative_to(REPO_ROOT).as_posix()
             for name in filenames if Path(name).suffix != ".py"
+            and not (name in {"pyproject.toml", "uv.lock", ".python-version"} and folder in {
+                kit / "apps" / "business_api", kit / "apps" / "docs_search",
+                kit / "llm_proxy", kit / "shell",
+            })
         )
     assert data_files == []
     ui = kit / "chat-ui"

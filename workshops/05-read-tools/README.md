@@ -15,7 +15,7 @@ Your agent has two new read tools. Searching for a customer returns every matchi
 The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
 
 ```powershell
-uv run workshop start 05
-uv run workshop check 05
-uv run workshop check 05 --non-regression   # workshops 03 to 05
+uv run --project workshop_kit/bootstrap workshop start 05
+uv run --project workshop_kit/bootstrap workshop check 05
+uv run --project workshop_kit/bootstrap workshop check 05 --non-regression   # workshops 03 to 05
 ```

@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from workshop_kit.cli import WORKSHOP_IDS, workshop_tests_dir, workshop_dir
+from workshop_tools.cli import WORKSHOP_IDS, workshop_tests_dir, workshop_dir
 
 pytestmark = pytest.mark.shell
 

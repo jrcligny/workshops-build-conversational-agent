@@ -15,7 +15,7 @@ Only the three skills of the versioned catalog load; a request for a skill forei
 The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
 
 ```powershell
-uv run workshop start 14
-uv run workshop check 14
-uv run workshop check 14 --non-regression   # workshops 03 to 14
+uv run --project workshop_kit/bootstrap workshop start 14
+uv run --project workshop_kit/bootstrap workshop check 14
+uv run --project workshop_kit/bootstrap workshop check 14 --non-regression   # workshops 03 to 14
 ```

@@ -22,27 +22,30 @@ my-agent/            the ONLY folder students edit
   local-mode/        landing structure of workshop 19 (specifications/, controls/)
 workshops/           one folder per workshop: README.md (guide), state.yaml, tests/
 workshop_kit/        provided infrastructure (Python package), never edited by students
+  bootstrap/         CLI project, with its own pyproject.toml, uv.lock and .venv
+    src/workshop_tools/ CLI (cli.py) and six-service launcher (devstack.py)
   chat-ui/           standard Chainlit UI, with its own Python project and dependencies
   shell/             settings, harness contract, chat interface, model client, tracer
   llm_proxy/         OpenAI-compatible proxy (simulated / replay; live Azure OpenAI later)
   apps/business_api/ business API test app (FastAPI + SQLite)
   apps/docs_search/  document search test app (SQLite FTS5 + sqlite-vec)
   services/          readers for my-agent/sandbox, my-agent/skills, my-agent/attachments
+  tests/             tests of the provided infrastructure (must pass)
+workshop_tests/      non-package test project, with its own config, lockfile and environment
   evaluation/        LLM judge and evaluation-route checksum
   testing/           shared test helpers and pytest fixtures
-  cli.py             the `workshop` command
+ruff.toml            editor/static lint configuration only, not a Python project
 corpus/              documentation sources (.txt) and metadata.yaml
 docs/                interface contract, installation, decisions, test inventory, team validation
-tests/kit/           tests of the infrastructure itself (must pass)
 ```
 
 Three test suites live in this repository:
 
 - `workshops/*/tests/`: the success criteria of each workshop. **They fail until the workshop is done** (red, then green).
-- `tests/kit/`: the tests of the provided infrastructure, which must always pass.
+- `workshop_kit/tests/`: the tests of the provided infrastructure, which must always pass.
 - `workshop_kit/chat-ui/tests/`: the chat UI's tests, run with that project's own dependencies; they must always pass too.
 
-Students only touch `my-agent/`. There is no exception: the files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live in `my-agent/` too, and `workshop_kit/` loads them through configurable paths (`sandbox_policy_file`, `skills_dir`, `attachments_dir` in `workshop_kit/shell/config.py`, overridable from `.env`). The supplied UI resources live in `workshop_kit/chat-ui/`; outside this UI project, `workshop_kit/` contains only Python code. A kit test checks this separation.
+Students only touch `my-agent/`. The files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live there too. The supplied UI resources live in `workshop_kit/chat-ui/`; service dependency manifests and lockfiles live alongside their applications. The remaining kit files are Python code. A kit test checks this separation.
 
 ## Quick start
 
@@ -50,22 +53,24 @@ See [docs/installation.md](docs/installation.md) for details. In short, on Windo
 
 ```powershell
 uv python install 3.13
-uv sync --extra dev --python 3.13
+uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project workshop_tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run pytest tests/kit
-uv run workshop check-shell   # succeeds when every workshop test fails on the empty shell
-uv run workshop check 03      # stays red until workshop 03 is done
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the empty shell
+uv run --project workshop_kit/bootstrap workshop check 03      # stays red until workshop 03 is done
 ```
 
 On Linux or macOS (bash):
 
 ```bash
 uv python install 3.13
-uv sync --extra dev --python 3.13
+uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project workshop_tests --locked --python 3.13
 cp .env.example .env
-uv run pytest tests/kit
-uv run workshop check-shell
-uv run workshop check 03
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_kit/bootstrap workshop check-shell
+uv run --project workshop_kit/bootstrap workshop check 03
 ```
 
 ## Start the complete environment
@@ -79,19 +84,24 @@ python start.py
 
 On Linux, use `python3 start.py` if Python is named `python3`.
 The script works from any directory when given its absolute path.
-Or, on any supported OS after installing the kit dependencies:
+It uses only the standard library, synchronizes the tooling project, then runs
+the service launcher; it never installs test dependencies.
+Or, from the repository root on any supported OS:
 
 ```bash
-uv run workshop serve
+uv run --project workshop_kit/bootstrap workshop serve
 ```
 
 This starts the business API, document search, model proxy, MCP server,
 conversation API and browser UI. Open <http://127.0.0.1:8080>.
 Each Python project keeps its own dependencies, lockfile and virtual environment;
-the launcher installs the UI project separately. Ctrl+C stops all six services.
+the launcher synchronizes each of the six application projects independently.
+There is no root Python project, lockfile or virtual environment. Commands use
+`workshop_kit/bootstrap/`; tests use `workshop_tests/`, separately from the six applications.
+Ctrl+C stops all six services.
 Existing datasets are preserved unless `--reset-data` is requested.
 
-If the default ports are occupied, use `uv run workshop serve --port-offset 10`
+If the default ports are occupied, use `uv run --project workshop_kit/bootstrap workshop serve --port-offset 10`
 (chat on port 8090), or `python start.py --port-offset 10`. The launcher
 does not reuse or stop pre-existing services. See the [UI guide](workshop_kit/chat-ui/README.md).
 
@@ -104,6 +114,8 @@ The licence is not decided yet. No `LICENSE` file is published for now.
 - [Chainlit chat UI](workshop_kit/chat-ui/README.md) (French browser chat, steps and tool calls)
 - [Getting started](GETTING_STARTED.md)
 - [Installation](docs/installation.md)
+- [Workshop tooling](workshop_kit/bootstrap/README.md)
+- [Test environment](workshop_tests/README.md)
 - [Interface contract](docs/interface-contract.md)
 - [Workshop test inventory](docs/test-inventory.md)
 - [Team validation procedure](docs/team-validation.md) (phase B, once Azure is available)

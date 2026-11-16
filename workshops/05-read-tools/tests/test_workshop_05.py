@@ -2,7 +2,7 @@
 
 import pytest
 
-from workshop_kit.testing.turns import successful_turn, tools
+from workshop_tests.testing.turns import successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 

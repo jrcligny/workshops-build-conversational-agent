@@ -5,10 +5,11 @@ French and contains no system prompt, agent loop, tools, or model calls.
 
 ## Why a separate environment?
 
-Both projects use Python **3.13**, but Chainlit 2.12 requires `mcp>=1.28.1,<2`,
-whereas the kit requires `mcp>=2.3`. This directory therefore has its own
-project, environment, and lockfile inside `workshop_kit/chat-ui/`. Do not install Chainlit into the kit's
-environment or downgrade the kit's MCP SDK.
+All six applications use Python **3.13**, but Chainlit 2.12 requires
+`mcp>=1.28.1,<2`, whereas the agent and shared tests require `mcp>=2.3`.
+This directory therefore has its own project, environment, and lockfile inside
+`workshop_kit/chat-ui/`. Do not install Chainlit into the agent or shared test
+environment or downgrade their MCP SDK. There is no root Python project.
 
 ## Run (from the repository root)
 
@@ -19,11 +20,12 @@ python start.py
 ```
 
 Use `python3 start.py` on Linux if needed. This is the same cross-platform script;
-it installs the kit dependencies first and does not need an activated environment.
-Or, after installing the kit dependencies, on any supported OS:
+it uses only the standard library, synchronizes `workshop_kit/bootstrap/`, then starts
+the launcher without installing test dependencies. No activated environment is
+needed. Alternatively, from the repository root on any supported OS:
 
 ```powershell
-uv run workshop serve
+uv run --project workshop_kit/bootstrap workshop serve
 ```
 
 The launcher synchronizes this UI project's dependencies with its own lockfile,
@@ -31,7 +33,7 @@ starts all six services, initializes missing databases, and checks readiness.
 Open <http://127.0.0.1:8080>. Ctrl+C stops the processes it created. Existing data
 is preserved unless you request `--reset-data`.
 
-If the default ports are occupied, `uv run workshop serve --port-offset 10`
+If the default ports are occupied, `uv run --project workshop_kit/bootstrap workshop serve --port-offset 10`
 shifts all six ports (chat: 8090, conversation API: 8010). It never reuses or kills
 unrelated services. See [installation](../../docs/installation.md) for all ports
 and the per-service logs in `.workshop/logs/`.
@@ -129,12 +131,16 @@ From the repository root:
 
 ```powershell
 uv sync --project workshop_kit/chat-ui --extra dev
-uv run --project workshop_kit/chat-ui pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
-uv run pytest tests/kit
+uv run --project workshop_kit/chat-ui --extra dev pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
+uv sync --project workshop_tests --locked --python 3.13
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
 ```
 
-`--confcutdir` keeps the kit's root pytest fixtures (which import MCP 2) out of
-the isolated UI test environment. CI runs both suites on Windows and Linux.
+`--confcutdir` bounds UI test configuration discovery to the UI project. Shared
+fixtures (which import MCP 2) are loaded explicitly by the separate
+`workshop_tests/pyproject.toml` configuration, never by a root `conftest.py`.
+Do not use that test configuration for UI tests. CI runs both suites on Windows
+and Linux.
 
 ## Local development only
 

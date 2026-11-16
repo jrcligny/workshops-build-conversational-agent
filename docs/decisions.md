@@ -30,7 +30,7 @@ it. The judge thresholds and rubrics are calibrated at that point too: see
     maintain).
 - **Status:** revisable as long as the index stays rebuildable from the
   versioned corpus. Changing the schema will require adapting
-  `workshop_kit/apps/docs_search/indexing.py` and `tests/kit/test_docs_search.py`.
+  `workshop_kit/apps/docs_search/indexing.py` and `workshop_kit/tests/test_docs_search.py`.
 
 ## Azure deployment names
 

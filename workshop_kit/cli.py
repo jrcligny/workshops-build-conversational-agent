@@ -176,6 +176,7 @@ def main(argv: list[str] | None = None) -> int:
     serve = sub.add_parser("serve", help="Start all services, including the Chainlit chat UI")
     serve.add_argument("--port-offset", type=int, default=0, help="Shift all six default ports")
     serve.add_argument("--reset-data", action="store_true", help="Reset the business dataset and document index")
+    serve.add_argument("--check", action="store_true", help="Validate startup of all isolated services, then stop")
 
     args = parser.parse_args(argv)
     if args.command == "check":
@@ -187,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "serve":
         from workshop_kit.devstack import serve as serve_stack
 
-        return serve_stack(args.port_offset, args.reset_data)
+        return serve_stack(args.port_offset, args.reset_data, check_only=args.check)
     return 2
 
 

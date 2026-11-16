@@ -2,7 +2,7 @@
 
 import pytest
 
-from workshop_kit.evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french
+from workshop_tests.evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french
 
 pytestmark = pytest.mark.shell
 

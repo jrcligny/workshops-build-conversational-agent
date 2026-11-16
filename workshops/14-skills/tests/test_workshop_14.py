@@ -3,8 +3,8 @@
 import pytest
 from workshop_kit.services.skills_catalog.catalog import load_manifest
 from workshop_kit.shell.config import settings
-from workshop_kit.testing.chat_client import ChatClient
-from workshop_kit.testing.turns import flat, model_input, successful_turn, tools
+from workshop_tests.testing.chat_client import ChatClient
+from workshop_tests.testing.turns import flat, model_input, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 
