@@ -85,7 +85,11 @@ def mcp_server_url():
     port = free_port()
     server = start_uvicorn(module.application(), port)
     wait_for_port("127.0.0.1", port)
-    yield f"http://127.0.0.1:{port}{module.MCP_PATH}"
+    url = f"http://127.0.0.1:{port}{module.MCP_PATH}"
+    # Same variable as `workshop serve`: the harness reaches this server through MCP_URL.
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("MCP_URL", url)
+        yield url
     server.should_exit = True
 
 

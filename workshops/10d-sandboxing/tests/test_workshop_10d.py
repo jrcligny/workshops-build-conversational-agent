@@ -52,7 +52,7 @@ def test_no_file_access_during_a_normal_turn(chat_client):
     assert not refused, f"every destination contacted is in the allowlist: {refused}"
 
 
-def test_turn_stopped_at_the_limit(services):
+def test_turn_stopped_at_the_limit(services, reset_state):
     client = ChatClient(services["interface"])
     client.open(limits={"duration_s": 0, "token_budget": 1})
     turn, trace = successful_turn(client, "Faites une revue complète et détaillée de toutes les commandes de Transports Morel.")

@@ -19,7 +19,7 @@ from workshop_tests.testing.turns import model_input, successful_turn, tool_argu
 
 pytestmark = pytest.mark.workshop
 
-APPROVE = "Approuvez la facture FAC-3301-BIS."
+APPROVE = "Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant."  # a duplicate of FAC-3301: the skill may flag it, the draft still waits for confirmation
 
 
 def _client(services, user_id: str, role: str) -> ChatClient:
@@ -81,7 +81,7 @@ def test_write_according_to_permissions(services, observation):
     assert any(w in turn.text.lower() for w in ("droit", "autoris", "permission"))
 
 
-def test_skill_still_present_after_compaction(services):
+def test_skill_still_present_after_compaction(services, reset_state):
     client = _client(services, "nina-accountant", "accountant")
     _, trace = successful_turn(client, "Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS.")
     loaded = trace.get("skills_loaded") or []

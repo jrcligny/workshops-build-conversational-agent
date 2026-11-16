@@ -8,7 +8,7 @@ answer text.
 import pytest
 
 from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import apply_rubric_repeatedly, business_log, events_of, successful_turn, tools
+from workshop_tests.testing.turns import apply_rubric_repeatedly, business_log, events_of, model_input, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 
@@ -38,7 +38,7 @@ def test_no_memory_announced_on_opening(chat_client):
     )
 
 
-def test_no_persistence_between_conversations(services):
+def test_no_persistence_between_conversations(services, reset_state):
     def run():
         client = ChatClient(services["interface"])
         client.open()
@@ -50,8 +50,9 @@ def test_no_persistence_between_conversations(services):
     apply_rubric_repeatedly(NO_PROMISE_RUBRIC, run)
     other = ChatClient(services["interface"])
     other.open()
-    turn, _ = successful_turn(other, "Quelle est ma préférence d'affichage des montants ?")
-    assert "hors taxe" not in turn.text.lower(), "a new conversation starts with no memory of the previous one"
+    turn, trace = successful_turn(other, "Quelle est ma préférence d'affichage des montants ?")
+    assert PREFERENCE.lower() not in str(model_input(trace)).lower(), "nothing from the previous conversation reaches the model input"
+    assert "vous préférez les montants hors taxe" not in turn.text.lower(), "a new conversation starts with no memory of the previous one"
 
 
 def test_rereads_rather_than_assumes(chat_client, observation):

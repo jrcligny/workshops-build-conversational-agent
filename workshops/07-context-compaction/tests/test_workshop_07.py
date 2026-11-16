@@ -94,7 +94,11 @@ def test_compaction_above_threshold_keeps_user_messages(chat_client):
     missing = [m for m in messages[:-1] if m not in replayed]
     assert not missing, f"user messages are replayed verbatim after compaction; missing: {missing[:2]}"
     assert model_input(trace).get("message") == messages[-1]
-    assert len(history(trace)) < 2 * len(messages) - 1, "the replayed history is shorter than the full history"
+    previous_turns = len(messages) - 1
+    answers = [m for m in history(trace) if m.get("role") == "assistant"]
+    assert len(answers) < previous_turns, "earlier answers are replaced by a summary, not all replayed"
+    assert event.get("kept_user_messages", 0) >= 1, "compaction.kept_user_messages counts the earlier user messages kept verbatim"
+    assert event.get("threshold") == int(settings.compaction_message_threshold), "compaction.threshold is the configured threshold"
 
 
 def test_compaction_reported_in_the_interface(chat_client):
