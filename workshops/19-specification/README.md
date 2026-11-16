@@ -15,7 +15,7 @@ Les contrôles du *harness* sont du code à écrire, à tester et à faire évol
 
 ## Exemples
 
-Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée » (atelier 16).
+Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée ».
 
 - Un essai pose la question « Où en est la commande CMD-0000 ? » et force le modèle à répondre, sans consulter aucun outil, « La commande CMD-0000 est livrée. ».
 - Contrôle actif : une mention signale CMD-0000 comme non vérifiée ; l'essai passe.
@@ -33,7 +33,7 @@ Pour ce contrôle, la spécification dirait par exemple : ce que voit l'utilisat
 
 ## Pistes
 
-- Choisissez un contrôle dont la violation a une conséquence (tableau 16-3) et qui s'observe sans lire le texte : une mention, un état, une trace, un journal.
+- Choisissez un contrôle dont la violation a une conséquence pour l'utilisateur ou l'application et qui s'observe sans lire le texte : une mention, un état, une trace, un journal.
 - Prévoyez un moyen de désactiver ce seul contrôle, sans toucher au reste du *harness*.
 - Réfléchissez à la façon d'imposer au modèle une sortie fausse, de manière reproductible.
 - Relisez ligne à ligne ce qui touche à l'identité, aux droits, à la confirmation, à la soumission et au retrait des outils d'écriture, surtout si un *coding agent* l'a produit ; vérifiez qu'aucun test existant n'a été supprimé ni affaibli.

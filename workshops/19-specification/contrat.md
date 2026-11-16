@@ -24,13 +24,13 @@ Ce document détaille ce que vérifient les tests de l'atelier. Pour l'objectif 
 - **Parcours** : l'empreinte de `workshops/17-evaluation/routes/` est égale à `routes.sha256`.
 - **Part réservée** : aucun fichier de `my-agent/local-mode/` ne contient le texte `17-evaluation/routes/reserved` (barres obliques ou inverses).
 
-Restent libres : le contrôle choisi (par exemple un des contrôles de l'atelier 16), le nom des fichiers, la façon d'injecter la sortie fausse, l'usage ou non d'un *coding agent*.
+Restent libres : le contrôle choisi (par exemple un contrôle déjà présent dans votre *harness* : borne d'un résultat, confirmation d'écriture, filtre de rôle, signalement d'une référence non consultée), le nom des fichiers, la façon d'injecter la sortie fausse, l'usage ou non d'un *coding agent*.
 
 ## Exemples techniques
 
 ### Questions à essayer
 
-Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée » (atelier 16). Un essai fait répondre au modèle, sans aucun appel d'outil, « La commande CMD-0000 est livrée. » à la question « Où en est la commande CMD-0000 ? ». Contrôle actif : une `mention` signale CMD-0000 comme non vérifiée, l'essai passe. Contrôle désactivé : aucune mention, l'essai échoue.
+Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée ». Un essai fait répondre au modèle, sans aucun appel d'outil, « La commande CMD-0000 est livrée. » à la question « Où en est la commande CMD-0000 ? ». Contrôle actif : une `mention` signale CMD-0000 comme non vérifiée, l'essai passe. Contrôle désactivé : aucune mention, l'essai échoue.
 
 Squelette de spécification attendu (le contenu est le vôtre) :
 
@@ -84,7 +84,7 @@ Pour observer le contrôle dans une conversation, lancez `uv run --project works
 
 - Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `workshop_tests/testing/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
 - `workshop_kit/llm_proxy/app.py` (`/_test/scripts`, `/_test/token`) et `workshop_kit/llm_proxy/simulated.py` (`if_contains`, `content`, `tool`) décrivent les scripts. Les fixtures partagées effacent les scripts entre deux tests.
-- Choisissez un contrôle dont la violation a une conséquence (tableau 16-3) et qui s'observe par le code : événement, état, trace, journal.
+- Choisissez un contrôle dont la violation a une conséquence pour l'utilisateur ou l'application et qui s'observe par le code : événement, état, trace, journal.
 - Relisez ligne à ligne ce qui touche à l'identité, aux droits, à la confirmation, à la soumission et au retrait des outils d'écriture, surtout si un *coding agent* l'a produit ; vérifiez qu'aucun test existant n'a été supprimé ni affaibli.
 - `my-agent/local-mode/README.md` décrit le mode local ; il conserve tous les contrôles du *harness*.
 

@@ -52,17 +52,16 @@ jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 | 10b | [10b-writes](10b-writes/) | Écritures |
 | 10c | [10c-groupings](10c-groupings/) | Regroupements |
 | 10d | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
-| 11 | [11-architecture](11-architecture/) | Un seul agent : requêtes sur la trace |
 | 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire persistante |
 | 13 | [13-document-search](13-document-search/) | Recherche documentaire |
 | 14 | [14-skills](14-skills/) | *Skills* |
 | 15 | [15-read-without-obeying](15-read-without-obeying/) | Lire sans obéir |
-| 16 | [16-controls](16-controls/) | De la consigne au contrôle |
 | 17 | [17-evaluation](17-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
 | 18 | [18-failures](18-failures/) | Pannes et livraison |
 | 19 | [19-specification](19-specification/) | Spécifier un contrôle |
 
 Les chapitres 1 et 2 n'ont pas d'atelier : ils posent le cadre (ce qu'est un agent
-conversationnel, pourquoi on le vérifie par répétition). La liste complète des tests est
+conversationnel, pourquoi on le vérifie par répétition). Les ateliers ne sont pas renumérotés :
+les numéros 11 et 16 restent libres, ces chapitres ayant été retirés du livre. La liste complète des tests est
 dans [docs/test-inventory.md](../docs/test-inventory.md), et les noms qu'ils lisent sont dans
 [docs/interface-contract.md](../docs/interface-contract.md#names-read-by-the-tests).

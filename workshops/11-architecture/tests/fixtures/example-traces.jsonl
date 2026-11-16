@@ -1,4 +1,0 @@
-{"turn_id": "t1", "conversation_id": "c1", "user": "camille-renard", "role": "customer_service", "context": {"total_size": 4000, "intermediate_reads": 2500}, "tools": [{"name": "query", "domain": "orders"}]}
-{"turn_id": "t2", "conversation_id": "c1", "user": "camille-renard", "role": "customer_service", "context": {"total_size": 3500, "intermediate_reads": 800}, "tools": [{"name": "query", "domain": "orders"}, {"name": "query", "domain": "invoices"}]}
-{"turn_id": "t3", "conversation_id": "c2", "user": "camille-renard", "role": "customer_service", "context": {"total_size": 2000, "intermediate_reads": 200}, "tools": [{"name": "query", "domain": "customers"}, {"name": "query", "domain": "orders"}]}
-{"turn_id": "t4", "conversation_id": "c3", "user": "nina-accountant", "role": "accountant", "context": {"total_size": 1000, "intermediate_reads": 0}, "tools": []}

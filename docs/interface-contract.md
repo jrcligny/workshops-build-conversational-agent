@@ -101,12 +101,10 @@ synonym), `approximate`, `not_found`, `error` and `denied`.
 | 10b | | `confirmation_requested` (`draft_id`) | `POST /conversations/{id}/confirmation`; purchase requests by `paul-buyer` (buyer) |
 | 10c | | | no tool whose name contains `python`, `exec`, `code`, `eval`, `shell`; median refused |
 | 10d | `limit_reached` (`duration` or `token_budget`) | `mention` | `my-agent/sandbox/policy.yaml`; runtime probes on files opened and hosts contacted |
-| 11 | per turn: `turn_id`, `context.intermediate_reads`, `tools[].domain` | | `my-agent/trace_queries.py`: `intermediate_reads_share(traces)`, `incompatible_domains(traces, permissions)` |
 | 12 | `memory` (`loaded`, `written`, `deleted`; entries `topic`, `value`, `origin`, `recorded_at`, `user`, `organization`), `input` | `mention` (first turn), `memory` (`action`, `topic`, `value`) | `MEMORY_DIR` (files on disk, read at call time); topics `amount_display` (`excluding_tax`, `including_tax`), `answer_format` (`table`, `text`); `origin: "user"` |
 | 13 | `tools[].result.passages[]`, `no_passage` | `sources` (`sources[]`: `title`, `version`, `address`) | |
 | 14 | `skills_loaded[]` (`id`, `version`, `cycle`), `offered_tools` (one list per model call) | | `my-agent/skills/` manifest: `id`, `title`, `version`, `path`; approvals by `nina-accountant` |
 | 15 | `offered_tools` | no `confirmation_requested` | attachment read by id (`sample-quote.txt`) |
-| 16 | `state` (workshop 08), `tools[].result.truncated` | `mention` | |
 | 17 | `model.usage`, `model.duration_ms`, `model.calls`, `tools[].duration_ms` | | routes YAML (`workshop_tests/evaluation/route_runner.py`), `my-agent/routes/`, `my-agent/route-report.json` |
 | 18 | `fallback` (`from`, `to`, `reason`), `unknown_outcome.draft_id`, `versions` (`instructions`, `tools`, `skills`, `index`) | | single submission attempt; one fallback call |
 | 19 | | | `my-agent/local-mode/specifications/*.md`, `controls/test_*.py`, `MY_AGENT_DISABLE_CONTROL=1` |

@@ -16,7 +16,7 @@ TEST_PROJECT = REPO_ROOT / "workshop_tests"
 WORKSHOPS_DIR = REPO_ROOT / "workshops"
 SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"
 
-# Workshop id -> folder under workshops/. Chapter 10 is split into 10a to 10d.
+# Workshop id -> folder under workshops/. Chapter 10 is split into 10a to 10d; chapters 11 and 16 have no workshop.
 WORKSHOPS = {
     "03": "03-system-prompt",
     "04": "04-first-tool",
@@ -29,12 +29,10 @@ WORKSHOPS = {
     "10b": "10b-writes",
     "10c": "10c-groupings",
     "10d": "10d-sandboxing",
-    "11": "11-architecture",
     "12": "12-long-term-memory",
     "13": "13-document-search",
     "14": "14-skills",
     "15": "15-read-without-obeying",
-    "16": "16-controls",
     "17": "17-evaluation",
     "18": "18-failures",
     "19": "19-specification",
