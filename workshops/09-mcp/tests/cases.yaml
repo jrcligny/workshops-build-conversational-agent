@@ -1,0 +1,22 @@
+# Public cases of workshop 09, read by test_workshop_09.py (the checks are in checks.py).
+two_clients_get_the_same_catalog:
+  # the specialised read tools of chapter 5, replaced by the generic query
+  replaced_tools: [search_customer, search_customers, list_orders, list_customer_orders]
+  generic_properties: [source, filters]
+
+tools_served_by_mcp:
+  question: "Combien de commandes a Martin Durand ?"
+
+malformed_filter_actionable_error:
+  question: "Listez les commandes dont le statut vaut DELIV."
+  allowed_values: [delivered, shipped]   # named by result.error
+
+accountant_aggregate:
+  user: {user_id: nina-accountant, role: accountant, organization: organization-a}
+  question: "Quel est le montant total des factures en attente d'approbation ?"
+  source: invoices
+  filters: {status: pending}
+  aggregate: total                       # computed by the application
+  aggregate_message: "the total is computed by the application (aggregate: total)"
+  ignored_spaces: [" ", "\u202f"]        # removed from the answer before the comma form is searched
+  dot_form_in_raw_text: true             # the dot form is searched in the answer as is
