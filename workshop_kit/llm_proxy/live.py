@@ -82,8 +82,20 @@ def chat(
         payload["model"] = deployment
     if tools:
         payload["tools"] = tools
+        # Recent reasoning models only accept function tools on chat completions without reasoning.
+        payload["reasoning_effort"] = "none"
     if temperature is not None:
         payload["temperature"] = temperature
+    try:
+        return _post(url, payload, deployment, timeout)
+    except LiveError as exc:
+        if "reasoning_effort" in payload and exc.status_code == 400 and "reasoning_effort" in exc.detail:
+            payload.pop("reasoning_effort")
+            return _post(url, payload, deployment, timeout)
+        raise
+
+
+def _post(url: str, payload: dict[str, Any], deployment: str, timeout: float) -> dict[str, Any]:
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
