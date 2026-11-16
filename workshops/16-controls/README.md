@@ -71,7 +71,7 @@ Lancez `uv run --project workshop_kit/bootstrap workshop serve` (ajoutez `--rese
 
 ## Vérifier
 
-Prérequis : à partir de l'atelier 04, le mode live est la voie de référence (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : événements `mention`, champs `state` et `tools` de la trace, données de l'application. Lancez la non-régression : les contrôles ajoutés ne doivent pas casser la compaction (07), la mémoire de travail (08) ni les *skills* (14).
+Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : événements `mention`, champs `state` et `tools` de la trace, données de l'application. Lancez la non-régression : les contrôles ajoutés ne doivent pas casser la compaction (07), la mémoire de travail (08) ni les *skills* (14).
 
 ```powershell
 uv run --project workshop_kit/bootstrap workshop start 16

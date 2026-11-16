@@ -112,7 +112,8 @@ and the test is skipped, with an explicit reason, once the target reaches the ma
 
 ## Simulated and live modes
 
-The live mode is the reference from workshop 04 on: the simulated model does not call tools
-on its own, so a test passed in simulated mode from workshop 04 on would reward a hard-coded
-workflow. The simulated mode stays the default for workshop 03, the CI, `check-shell` and
-`check-inert`.
+The live mode is the reference for every workshop, workshop 03 included: the guides and the
+rubrics are written for a real model. From workshop 04 on it is also required, because the
+simulated model does not call tools on its own and a test passed in simulated mode would reward
+a hard-coded workflow. The simulated mode only serves the CI, `check-shell` and `check-inert`;
+it remains usable to start workshop 03 without Azure access.

@@ -8,7 +8,7 @@ Main target: Windows, with Python 3.13 (from python.org or uv). See [docs/instal
 
 The agent you build answers in French, and the workshop guides are in French (code and technical docs stay English; see `docs/decisions.md`).
 
-Two test applications (business API and document search), a model proxy in simulated mode, a chat interface and traces live in `workshop_kit/`, which you do not edit. The CLI and launcher live in `workshop_kit/bootstrap/`; shared fixtures, evaluation helpers and test dependencies live in `workshop_tests/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The shell also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
+Two test applications (business API and document search), a model proxy (simulated or live), a chat interface and traces live in `workshop_kit/`, which you do not edit. The CLI and launcher live in `workshop_kit/bootstrap/`; shared fixtures, evaluation helpers and test dependencies live in `workshop_tests/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The shell also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
 
 ## What you write
 
@@ -16,9 +16,9 @@ Your agent, in `my-agent/harness.py`: first the *system prompt* and the conversa
 
 ## Models
 
-No real model is needed to start. The default mode is **simulated** (scripted chat, deterministic embeddings, scripted judge). The **live** mode (`PROXY_MODE=live` in `.env`) forwards chat completions to Azure OpenAI through the proxy, which keeps the key on the server; it needs `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT` (plus `AZURE_OPENAI_FALLBACK_DEPLOYMENT` for workshop 18). Embeddings stay deterministic in every mode. The tests honour `PROXY_MODE` from `.env`. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
+The `.env.example` default is **simulated** (scripted chat, deterministic embeddings, scripted judge): enough to start, and the mode of the CI. The **live** mode (`PROXY_MODE=live` in `.env`) forwards chat completions to Azure OpenAI through the proxy, which keeps the key on the server; it needs `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT` (plus `AZURE_OPENAI_FALLBACK_DEPLOYMENT` for workshop 18). Embeddings stay deterministic in every mode. The tests honour `PROXY_MODE` from `.env`. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
 
-**Which mode for which workshop.** Workshop 03 works in simulated mode. From workshop 04 on, the agent must decide on its own which tool to call: the simulated model does not, so the **live mode is the reference** (set `PROXY_MODE=live` and `MODEL_MODE=live`). A test passed in simulated mode from workshop 04 on would only reward a hard-coded workflow.
+**Which mode for which workshop.** The **live mode is the reference** for every workshop (set `PROXY_MODE=live` and `MODEL_MODE=live`). Workshop 03 can be started in simulated mode while you wait for Azure access, but validate it in live mode. From workshop 04 on, live mode is required: the agent must decide on its own which tool to call, which the simulated model does not do, so a test passed in simulated mode would only reward a hard-coded workflow. The simulated mode is the one of the CI, `check-shell` and `check-inert`.
 
 **Judge.** Facts checked by code come first; a rubric then judges the meaning, with a judge model when `JUDGE_BASE_URL` (and `JUDGE_API_KEY`) are set. A rubric replayed on fresh conversations passes when `JUDGE_K` runs out of `JUDGE_N` pass (3 out of 5 by default): count a few model calls per judged test.
 

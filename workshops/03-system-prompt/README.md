@@ -92,8 +92,11 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 
 ## Vérifier
 
-Cet atelier se fait en mode simulé : aucun outil, aucun accès Azure nécessaire. Le proxy
-renvoie une réponse simulée. À partir de l'atelier 04, le mode live devient nécessaire.
+Le mode live est la voie de référence : `PROXY_MODE=live`, `MODEL_MODE=live`,
+`AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT` (voir
+`.env.example`). En attendant un accès Azure, vous pouvez commencer en mode simulé : le proxy
+renvoie alors une réponse scriptée, qui ne dit rien de la qualité de votre prompt. Validez
+l'atelier en live.
 
 Les tests restent rouges tant que le critère n'est pas atteint. Les contrôles de code
 passent d'abord, puis la rubrique. Le juge combine une couche structurelle (motifs

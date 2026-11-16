@@ -98,7 +98,7 @@ Pour observer le contrôle dans une conversation, lancez `uv run --project works
 
 ## Vérifier
 
-Prérequis : à partir de l'atelier 04, le mode live est la voie de référence (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`) ; les scripts du proxy restent prioritaires en mode live. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : structure de la spécification, codes de sortie de vos essais, empreinte des parcours. Aucune rubrique de juge dans cet atelier. Lancez la non-régression : elle rejoue tous les ateliers, dont les parcours de l'atelier 17.
+Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`) ; les scripts du proxy restent prioritaires en mode live. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : structure de la spécification, codes de sortie de vos essais, empreinte des parcours. Aucune rubrique de juge dans cet atelier. Lancez la non-régression : elle rejoue tous les ateliers, dont les parcours de l'atelier 17.
 
 ```powershell
 uv run --project workshop_kit/bootstrap workshop start 19

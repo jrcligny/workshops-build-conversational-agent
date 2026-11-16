@@ -97,7 +97,7 @@ Valeurs du jeu `volume` pour Transports Morel (C-VOLUMEX) : 420 commandes, total
 
 ## Vérifier
 
-À partir de l'atelier 04, le mode live est la voie de référence. Dans `.env`, mettez `PROXY_MODE=live` et `MODEL_MODE=live`, et renseignez `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`.
+Le mode live est la voie de référence de tous les ateliers (indispensable depuis l'atelier 04). Dans `.env`, mettez `PROXY_MODE=live` et `MODEL_MODE=live`, et renseignez `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`.
 
 Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par le code (arguments et résultats des outils, valeur dans la réponse) est vérifié d'abord. Le sens est ensuite jugé par la rubrique : juge sémantique s'il est configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, et `AZURE_OPENAI_JUDGE_DEPLOYMENT`), répété selon la règle k sur n.
 

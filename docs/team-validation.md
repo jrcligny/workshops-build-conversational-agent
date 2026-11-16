@@ -19,7 +19,7 @@ delegates checks to the test project's environment and pytest configuration;
 
 The CI replays points 1 and 4 on every commit.
 
-From workshop 04 on, the live mode is the reference for students (the simulated model does not call tools); the simulated mode stays the one of the CI, `check-shell` and `check-inert`.
+The live mode is the reference for students in every workshop, and is required from workshop 04 on (the simulated model does not call tools); the simulated mode stays the one of the CI, `check-shell` and `check-inert`.
 
 ## Phase B — Calibration, once Azure OpenAI is available
 

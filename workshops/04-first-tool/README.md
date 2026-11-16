@@ -101,7 +101,7 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
 
 ## Vérifier
 
-À partir de cet atelier, le mode live est nécessaire : `PROXY_MODE=live`,
+Le mode live, voie de référence de tous les ateliers, devient indispensable : `PROXY_MODE=live`,
 `MODEL_MODE=live`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et
 `AZURE_OPENAI_CHAT_DEPLOYMENT` (voir `.env.example`).
 

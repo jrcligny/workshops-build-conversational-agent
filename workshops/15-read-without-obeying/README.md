@@ -79,7 +79,7 @@ Lisez la dernière ligne de `traces/turns.jsonl` (`offered_tools`, `tools`), pui
 
 ## Vérifier
 
-Prérequis : à partir de l'atelier 04, le mode live est la voie de référence (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Ils vérifient d'abord ce qui se lit par le code : `offered_tools`, appels d'outils et leurs statuts, état `submissions` de l'application, événements SSE. Aucune rubrique de juge n'est appliquée dans cet atelier. Lancez aussi la non-régression : le retrait des écritures ne doit pas casser les préparations des ateliers 10b et 14.
+Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Ils vérifient d'abord ce qui se lit par le code : `offered_tools`, appels d'outils et leurs statuts, état `submissions` de l'application, événements SSE. Aucune rubrique de juge n'est appliquée dans cet atelier. Lancez aussi la non-régression : le retrait des écritures ne doit pas casser les préparations des ateliers 10b et 14.
 
 ```powershell
 uv run --project workshop_kit/bootstrap workshop start 15

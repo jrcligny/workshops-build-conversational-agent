@@ -19,10 +19,12 @@ uv run --project workshop_kit/bootstrap workshop check 03
 uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
 ```
 
-**Mode du modèle.** L'atelier 03 se fait en mode simulé. À partir de l'atelier 04, c'est
-l'agent qui décide quel outil appeler, ce que le modèle simulé ne fait pas : le **mode live**
-est la référence (`PROXY_MODE=live`, `MODEL_MODE=live`, voir
-[GETTING_STARTED.md](../GETTING_STARTED.md)).
+**Mode du modèle.** Le **mode live** est la référence pour tous les ateliers
+(`PROXY_MODE=live`, `MODEL_MODE=live`, voir [GETTING_STARTED.md](../GETTING_STARTED.md)).
+L'atelier 03 peut se commencer en mode simulé en attendant un accès Azure, mais se valide en
+live. À partir de l'atelier 04, le live est indispensable : c'est l'agent qui décide quel
+outil appeler, ce que le modèle simulé ne fait pas. Le mode simulé sert à la CI, à
+`check-shell` et à `check-inert`.
 
 **Lecture des résultats.** Les faits vérifiables par le code (état de l'application,
 journaux, traces, événements) sont contrôlés d'abord. Une rubrique juge ensuite le sens de
