@@ -5,7 +5,7 @@ version: "1"
 skills:
   - id: customer-delays
     title: Retards d'un client
-    version: "1.1"
+    version: "1.2"
     path: customer-delays
     description: Faire le point sur les commandes en retard d'un client et sur la procédure applicable.
     unlocks: []

@@ -527,8 +527,11 @@ def _customer_orders(
             f"partial list: only an extract of {len(orders)} orders is shown; total "
             + (f"is a MINIMUM: at least {data.get('total')} orders (application retrieval cap)" if minimum
                else f"{data.get('total')} (exact)")
+            + (f". Write 'au moins {data.get('total')} commandes' in the answer, as is, without another call to count them"
+               if minimum else "")
             + ". Say the answer is partial and give the total"
-            + (f"; next portion with offset={data.get('next_offset')}" if data.get("next_offset") is not None else "")
+            + (f"; next portion with offset={data.get('next_offset')}, only when the user asks for it"
+               if data.get("next_offset") is not None else "")
             + ". Amounts and delivery details come from get_order."
         )
     return result
