@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent_context  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
+import mcp_server  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
 from workshop_kit.shell.harness_contract import Event, Message, TestUser  # noqa: E402
@@ -96,6 +97,7 @@ class Harness:
         self.model = model_client()
         self.compactor = agent_context.Compactor(self._summarize)
         self.memory = agent_memory.WorkingMemory()
+        self.drafts: dict[str, dict] = {}
 
     def _summarize(self, request: list[dict[str, Any]]) -> str:
         response = self.model.generate(request, None)
@@ -135,17 +137,38 @@ class Harness:
             yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "summary"})
         state_before = self.memory.get(conversation_id)
         state_text = self.memory.render(conversation_id)
-        messages: list[dict[str, Any]] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            *([{"role": "system", "content": state_text}] if state_text else []),
-            *replayed,
-            {"role": "user", "content": message},
-        ]
         # The tools live behind the MCP server; the user's token travels with every call and the tool server
         # exchanges it for an application token on behalf of the user.
         token = agent_mcp.user_token(user)
-        tool_specs = agent_mcp.tool_specs(token)
+        allowed_writes = mcp_server.allowed_tools(user.role)
+        tool_specs = [
+            spec
+            for spec in agent_mcp.tool_specs(token)
+            if spec["function"]["name"] not in mcp_server.HARNESS_ONLY_TOOLS
+            and (spec["function"]["name"] not in mcp_server.WRITE_PERMISSIONS or spec["function"]["name"] in allowed_writes)
+        ]
         tools = {spec["function"]["name"] for spec in tool_specs}
+
+        # A draft is submitted only after the user's gesture in the interface, by the harness, never by the model.
+        submission: dict | None = None
+        pending = self.drafts.get(conversation_id)
+        yielded: list[Event] = []
+        if pending and confirmation and not pending["confirmed_at_creation"]:
+            yielded.append(
+                Event(type="step", data={"cycle": 0, "tool": "submit_draft", "label": "Soumission du brouillon confirmé"})
+            )
+            outcome = agent_mcp.call(token, "submit_draft", {"draft_id": pending["id"]})
+            submission = {"draft": pending, "outcome": outcome, "by": "harness", "on_behalf_of": user.id, "via": "mcp"}
+            self.drafts.pop(conversation_id, None)
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": _permissions_note(user.role, allowed_writes)},
+            *([{"role": "system", "content": state_text}] if state_text else []),
+            *([{"role": "system", "content": _draft_note(pending, submission)}] if pending else []),
+            *replayed,
+            {"role": "user", "content": message},
+        ]
+        yield from yielded
 
         def lookup(customer_id: str) -> dict | None:
             rows = agent_mcp.call(token, "query", {"source": "customers", "filters": {"id": customer_id}}).get("rows")
@@ -231,6 +254,31 @@ class Harness:
             if not any(word in text.lower() for word in ("partiel", "incomplet")):
                 text = "Réponse partielle (liste tronquée par l'application). " + text
 
+        # A draft prepared in this turn waits for the user's gesture: ask for it, and never announce it as done.
+        new_drafts = [t["result"]["draft"] for t in tool_calls_done if t["result"].get("status") == "draft"]
+        confirmation_request = None
+        if new_drafts:
+            draft = new_drafts[-1]
+            self.drafts[conversation_id] = {
+                "id": draft.get("id"),
+                "type": draft.get("type"),
+                "payload": draft.get("payload"),
+                "confirmed_at_creation": bool(confirmation),
+            }
+            confirmation_request = {
+                "draft_id": draft.get("id"),
+                "type": draft.get("type"),
+                "payload": draft.get("payload"),
+                "message": "Brouillon préparé : rien n'est soumis tant que vous ne l'avez pas confirmé.",
+            }
+            if _announces_done(text):
+                text = (
+                    "J'ai préparé un brouillon ; il n'est pas encore soumis. "
+                    "Confirmez-le avec le bouton de confirmation pour que je le soumette."
+                )
+        if submission and submission["outcome"].get("status") == "submitted":
+            mentions.append("Soumission effectuée après votre confirmation, en votre nom.")
+
         last = model_calls[-1] if model_calls else {"id": None, "usage": {}, "stop_reason": None}
         tracer.write(
             {
@@ -260,6 +308,10 @@ class Harness:
                 "cycle_limit_reached": stop == "cycle_limit",
                 "interrupted": stop == "interrupted",
                 "state": self.memory.get(conversation_id),
+                "permissions": {"role": user.role, "write_tools": sorted(allowed_writes)},
+                "confirmation": bool(confirmation),
+                "pending_draft": self.drafts.get(conversation_id),
+                **({"submission": submission} if submission else {}),
                 **({"compaction": compacted} if compacted else {}),
             }
         )
@@ -269,7 +321,55 @@ class Harness:
             yield Event(type="mention", data={"content": mention})
         for chunk in _split(text):
             yield Event(type="text", data={"content": chunk})
+        if confirmation_request:
+            yield Event(type="confirmation_requested", data=confirmation_request)
         yield Event(type="end", data={"ok": True})
+
+
+_DRAFT_LABELS = {"purchase_request": "demande d'achat", "invoice_approval": "approbation de facture"}
+_WRITE_LABELS = {
+    "prepare_purchase_request": "préparer une demande d'achat",
+    "prepare_invoice_approval": "préparer l'approbation d'une facture",
+}
+
+
+def _permissions_note(role: str, allowed: set[str]) -> str:
+    can = [label for tool, label in _WRITE_LABELS.items() if tool in allowed]
+    cannot = [label for tool, label in _WRITE_LABELS.items() if tool not in allowed]
+    lines = [f"Droits d'écriture de l'utilisateur (rôle {role}) :"]
+    if can:
+        lines.append("- il peut " + " et ".join(can) + " : prépare uniquement un brouillon ; la soumission se fait "
+                     "après son geste de confirmation dans l'interface. N'annonce jamais une action comme faite "
+                     "(« soumise », « envoyée », « approuvée ») tant qu'elle n'a pas été soumise.")
+    if cannot:
+        lines.append("- il n'a pas la permission de " + " ni de ".join(cannot) + " : s'il le demande, réponds en "
+                     "commençant par « Vous n'avez pas la permission de … » et précise qu'aucun brouillon n'a été "
+                     "préparé.")
+    return "\n".join(lines)
+
+
+def _draft_note(pending: dict, submission: dict | None) -> str:
+    label = _DRAFT_LABELS.get(pending.get("type"), "action")
+    if submission:
+        outcome = submission["outcome"]
+        if outcome.get("status") == "submitted":
+            return (f"Le brouillon de {label} {pending['id']} vient d'être soumis par le harnais après le geste de "
+                    f"confirmation de l'utilisateur, en son nom. Résultat de l'application : "
+                    f"{json.dumps(outcome.get('result'), ensure_ascii=False)}. Annonce-le simplement.")
+        return (f"La soumission du brouillon de {label} {pending['id']} n'a pas abouti : "
+                f"{json.dumps(outcome, ensure_ascii=False)}. Dis-le sans prétendre qu'elle est faite.")
+    return (f"Brouillon de {label} {pending['id']} en attente ({json.dumps(pending.get('payload'), ensure_ascii=False)}) : "
+            "il n'est PAS soumis. Il ne le sera qu'après un clic sur le bouton de confirmation de l'interface ; "
+            "un message écrit ne suffit pas.")
+
+
+_DONE_WORDS = ("j'ai soumis", "j'ai envoyé", "a été envoyée", "a été soumise", "est soumise", "c'est soumis",
+               "soumission effectuée", "soumission faite", "a été approuvée", "j'ai approuvé")
+
+
+def _announces_done(text: str) -> bool:
+    lowered = text.lower().replace("’", "'")
+    return any(word in lowered for word in _DONE_WORDS)
 
 
 def _step_label(name: str, arguments: dict) -> str:
@@ -278,6 +378,8 @@ def _step_label(name: str, arguments: dict) -> str:
         "find_by_name": "Recherche de {name}",
         "describe_source": "Description de la source {source}",
         "query": "Lecture de la source {source}",
+        "prepare_purchase_request": "Préparation du brouillon de demande d'achat",
+        "prepare_invoice_approval": "Préparation du brouillon d'approbation de la facture {invoice}",
     }
     try:
         return labels.get(name, name).format(**arguments)

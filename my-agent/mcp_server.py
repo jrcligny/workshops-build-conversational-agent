@@ -32,7 +32,7 @@ ACCEPTED_TYPES = {"entry", "application"}
 EXCHANGED_TOKEN_MINUTES = 5
 
 
-def exchange(authorization: str | None) -> str:
+def exchange(authorization: str | None) -> tuple[str, dict]:
     """Checks the caller's token and exchanges it for a distinct token for the business API.
 
     The new token is issued for the application, on behalf of the same user (sub, role, organization),
@@ -67,7 +67,7 @@ def exchange(authorization: str | None) -> str:
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=EXCHANGED_TOKEN_MINUTES)).timestamp()),
     }
-    return jwt.encode(exchanged, settings.token_secret, algorithm=ALGORITHM)
+    return jwt.encode(exchanged, settings.token_secret, algorithm=ALGORITHM), exchanged
 
 
 class BusinessAPI:
@@ -76,7 +76,8 @@ class BusinessAPI:
     _local = None
 
     def __init__(self, authorization: str | None):
-        self.authorization = f"Bearer {exchange(authorization)}"
+        token, self.claims = exchange(authorization)
+        self.authorization = f"Bearer {token}"
         url = os.environ.get("BUSINESS_API_URL")
         if url:
             import httpx
@@ -410,6 +411,106 @@ def _local_aggregate(rows: list[dict], aggregate: str | None, group_by: str | No
     return {"value": value(rows), "aggregate": aggregate, "total": len(rows)}
 
 
+# ------------------------------------------------------------------------------------------------ writes
+
+# Who may prepare what. The business API enforces the same rule; the server refuses before calling it.
+WRITE_PERMISSIONS = {
+    "prepare_purchase_request": {"buyer"},
+    "prepare_invoice_approval": {"accountant"},
+}
+DRAFT_TYPES = {"purchase_request": "prepare_purchase_request", "invoice_approval": "prepare_invoice_approval"}
+# Submission is the harness's job after the user's gesture: never offered to the model.
+HARNESS_ONLY_TOOLS = {"submit_draft"}
+
+
+def allowed_tools(role: str | None) -> set[str]:
+    return {tool for tool, roles in WRITE_PERMISSIONS.items() if role in roles}
+
+
+def _permission_refusal(tool: str, api: BusinessAPI) -> dict | None:
+    role = api.claims.get("role")
+    if role in WRITE_PERMISSIONS[tool]:
+        return None
+    return {
+        "status": "error",
+        "refused": True,
+        "error": f"permission refused: the role {role!r} is not allowed to use {tool}",
+        "fix": "no draft was prepared; the user does not have the right to request this action",
+    }
+
+
+def _draft_result(code: int, body: Any, what: str) -> dict:
+    if code == 403:
+        return {"status": "error", "refused": True, "error": "permission refused by the application"}
+    if code != 200:
+        detail = body.get("detail") if isinstance(body, dict) else body
+        return {"status": "error", "error": f"{what} refused ({code}): {detail}"}
+    return {
+        "status": "draft",
+        "draft": body,
+        "submitted": False,
+        "note": (
+            "draft only: NOTHING has been submitted. The user must confirm with the confirmation button of the "
+            "interface; never say it is submitted or sent."
+        ),
+    }
+
+
+def prepare_purchase_request(subject: str, ctx: Context, amount: float | None = None, supplier_id: str | None = None) -> dict:
+    """Prepares a purchase request DRAFT (subject, amount in euros, optional supplier id).
+
+    Nothing is submitted: the draft waits for the user's confirmation gesture in the interface.
+    """
+    api = _api(ctx)
+    refusal = _permission_refusal("prepare_purchase_request", api)
+    if refusal:
+        return refusal
+    if not (subject or "").strip():
+        return {"status": "error", "error": "missing subject"}
+    payload = {"subject": subject.strip(), "amount": amount, "supplier_id": supplier_id}
+    code, body = api.request("POST", "/purchase-requests/drafts", json=payload)
+    return _draft_result(code, body, "purchase request draft")
+
+
+def prepare_invoice_approval(invoice: str, ctx: Context) -> dict:
+    """Prepares the approval DRAFT of a supplier invoice (its id or its reference).
+
+    Nothing is approved: the draft waits for the user's confirmation gesture in the interface.
+    """
+    api = _api(ctx)
+    refusal = _permission_refusal("prepare_invoice_approval", api)
+    if refusal:
+        return refusal
+    invoice = (invoice or "").strip()
+    code, data = api.request("POST", "/sources/invoices/query", json={"filters": {"reference": invoice}})
+    rows = data.get("rows", []) if code == 200 else []
+    invoice_id = rows[0]["id"] if rows else invoice
+    code, body = api.request("POST", f"/invoices/{invoice_id}/approval/drafts")
+    if code == 404:
+        return {"status": "not_found", "error": f"invoice {invoice!r} not found"}
+    return _draft_result(code, body, "invoice approval draft")
+
+
+def submit_draft(draft_id: str, ctx: Context) -> dict:
+    """Submits a draft confirmed by the user. Called by the harness only, after the confirmation gesture."""
+    api = _api(ctx)
+    code, draft = api.request("GET", f"/drafts/{draft_id}")
+    if code != 200:
+        return {"status": "error", "error": f"draft {draft_id!r} not found"}
+    refusal = _permission_refusal(DRAFT_TYPES.get(draft.get("type"), ""), api) if draft.get("type") in DRAFT_TYPES else None
+    if refusal:
+        return refusal
+    if draft.get("submitted"):
+        return {"status": "error", "error": "draft already submitted", "draft_id": draft_id}
+    code, body = api.request("POST", f"/drafts/{draft_id}/submit")
+    if code == 504:
+        return {"status": "unknown_outcome", "error": "the application did not report the outcome", "draft_id": draft_id}
+    if code != 200:
+        detail = body.get("detail") if isinstance(body, dict) else body
+        return {"status": "error", "error": f"submission refused ({code}): {detail}", "draft_id": draft_id}
+    return {"status": "submitted", "draft_id": draft_id, "result": body}
+
+
 def create_server() -> MCPServer:
     server = MCPServer(
         name=NAME,
@@ -419,7 +520,7 @@ def create_server() -> MCPServer:
             "Use find_by_name to resolve names, query for any read on a data source, get_order for one order."
         ),
     )
-    for tool in (get_order, find_by_name, describe_source, query):
+    for tool in (get_order, find_by_name, describe_source, query, prepare_purchase_request, prepare_invoice_approval, submit_draft):
         server.tool()(_guarded(tool))
     return server
 
