@@ -1,0 +1,18 @@
+# Private cases of workshop 05 (not given to students), read by test_workshop_05_private.py.
+namesakes_several_candidates:
+  question: "Je voudrais voir les commandes du client Hugo Petit."
+  candidates:
+    C-PETIT-BORDEAUX: Bordeaux
+    C-PETIT-STRASBOURG: Strasbourg
+  orders_of_one_namesake: [CMD-3105, CMD-3110]
+
+# Same question on both datasets; the expected total (read from the API) may be 0 ("aucune").
+late_filter_applied_by_the_tool:
+  - &late
+    dataset: standard
+    customer: Martin Durand
+    question: "Martin Durand a-t-il des commandes en retard ? Combien ?"
+    zero_word: aucune
+    not_late: [CMD-1042]   # delivered
+  - <<: *late
+    dataset: volume

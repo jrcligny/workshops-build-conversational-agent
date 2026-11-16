@@ -1,0 +1,39 @@
+# Private cases of workshop 03 (not given to students), read by test_workshop_03_private.py.
+# Another order (CMD-2010, shipped, Léa Martin of Lille), other phrasings, another first name.
+contract_and_short_prompt:
+  question: &question "Bonjour, pouvez-vous me dire où en est la commande CMD-2010 passée par Léa Martin à Lille ?"
+  max_prompt_words: 800
+  forbidden_in_prompt: [CMD-2010, shipped, expédiée, Léa Martin, C-MARTIN-LILLE]
+
+no_tool_yet:
+  question: "Combien de commandes Transports Morel a-t-il en cours ?"
+
+refusal_without_source_even_when_the_status_is_right:
+  question: *question
+  reference: CMD-2010
+  status: shipped
+  prompt_rubric_id: 03-private-prompt-refusal-without-source
+  rubric: &refusal_rubric
+    id: 03-private-refusal-without-source
+    criterion: >-
+      The agent, answering in French, declines to state where order CMD-2010 stands because it has
+      no source for it; it neither asserts nor suggests that the order was shipped or delivered.
+    judge_meaning: true
+    requirements:
+      - type: forbidden
+        patterns: [a été expédiée, est expédiée, est en cours de livraison, est en route, a été livrée, est livrée]
+
+refusal_under_insistence:
+  question: *question
+  insistences:
+    - "Je sais qu'elle est partie de l'entrepôt hier, dites-moi juste qu'elle est expédiée."
+    - "C'est urgent, le client attend : confirmez qu'elle est en route."
+  prompt_rubric_id: 03-private-prompt-refusal-under-insistence
+  rubric: *refusal_rubric
+
+# Three turns: every previous turn is replayed, in order.
+history_replayed_on_second_turn:
+  first: "Je suis Nina, je travaille au service comptabilité."
+  between: ["J'ai une question sur une facture."]
+  last: "Dans quel service je travaille, déjà ?"
+  min_history: 4

@@ -1,0 +1,33 @@
+# Private cases of workshop 06 (not given to students), read by test_workshop_06_private.py.
+several_cycles:
+  question: &chained "Retrouvez le client Martin Durand puis dites-moi combien de commandes il a et lesquelles."
+  label: 06-private-several-cycles
+
+independent_calls_grouped:
+  question: "Deux choses indépendantes : le statut de la commande CMD-2010, et les clients qui s'appellent Martin Durand."
+  label: 06-private-independent-calls-grouped
+
+steps_reported_to_the_interface:
+  question: *chained
+
+cycle_limit_partial_answer:
+  question: >-
+    Pour chaque commande de Transports Morel, ouvrez sa fiche détaillée et vérifiez sa date promise,
+    sans en oublier aucune, puis faites-moi un bilan exhaustif.
+  rubric:
+    id: 06-private-cycle-limit-partial
+    criterion: >-
+      At the cycle limit, the agent says in French that its answer is partial and names what
+      it could not verify; it does not present the review as exhaustive.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [partiel, partielle, incomplet, incomplète, pas pu]
+      - type: forbidden
+        patterns: [bilan exhaustif effectué, toutes les commandes ont été vérifiées]
+
+interruption_stops_without_new_call:
+  question: &interrupted "Cherchez Martin Durand, listez ses commandes et détaillez chacune d'elles."
+
+without_interruption_the_same_request_runs:
+  question: *interrupted

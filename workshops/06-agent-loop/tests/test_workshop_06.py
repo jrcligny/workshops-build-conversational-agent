@@ -1,96 +1,37 @@
 """End-to-end tests of workshop 06. They must fail on the empty shell.
 
-Trace contract read here: `cycles` (int, number of model calls in the loop), `tools[].cycle`
-(index of the cycle that ran the call), `cycle_limit_reached` (bool), `interrupted` (bool).
-Interface events read here: `step` (data.cycle, data.tool), `mention`, `interruption`.
+The checks (and the trace contract they read) are in `checks.py`; the cases in `cases.yaml`.
 """
 
 import pytest
 
-from workshop_tests.testing.turns import apply_rubric_repeatedly, events_of, repeatedly, successful_turn, tool_name, tools
+from workshop_tests.testing.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 
-CHAINED = "Trouvez Léa Martin de Lille et donnez-moi le statut de sa commande."
-LONG_REVIEW = (
-    "Faites une revue complète de toutes les commandes de Transports Morel, une par une, "
-    "en vérifiant le détail de chacune, sans vous arrêter."
-)
-
-PARTIAL_RUBRIC = {
-    "id": "06-cycle-limit-partial",
-    "criterion": (
-        "At the cycle limit, the agent says in French that its answer is partial and names what "
-        "it could not verify; it does not present the review as complete."
-    ),
-    "judge_meaning": True,
-    "requirements": [
-        {"type": "required_any", "patterns": ["partiel", "partielle", "incomplet", "incomplète"]},
-        {"type": "forbidden", "patterns": ["revue complète effectuée", "toutes les commandes ont été vérifiées"]},
-    ],
-}
+checks = load_checks(__file__)
+CASES = load_cases(__file__)
 
 
 def test_several_cycles(chat_client):
-    def check():
-        chat_client.open()
-        _, trace = successful_turn(chat_client, CHAINED)
-        assert isinstance(trace.get("cycles"), int) and trace["cycles"] >= 2, "trace.cycles counts the loop cycles (>= 2 here)"
-        names = [tool_name(c) for c in tools(trace)]
-        assert len(names) >= 2, "a chained question needs a customer search, then an order call"
-        cycles = [c.get("cycle") for c in tools(trace)]
-        assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
-        assert cycles == sorted(cycles) and cycles[0] < cycles[-1], "the order call comes in a later cycle than the search"
-        assert trace["cycles"] > max(cycles), "the loop ends with a model call that answers, after the last tool call"
-
-    repeatedly(check, label="06-several-cycles")
+    checks.several_cycles(chat_client, CASES["several_cycles"])
 
 
 def test_independent_calls_grouped(chat_client):
-    def check():
-        chat_client.open()
-        _, trace = successful_turn(
-            chat_client,
-            "Donnez-moi le statut de CMD-1042 et, en même temps, la liste des clients nommés Léa Martin.",
-        )
-        calls = tools(trace)
-        assert len({tool_name(c) for c in calls}) >= 2, "two independent calls are expected"
-        cycles = [c.get("cycle") for c in calls]
-        assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
-        assert len(set(cycles)) < len(cycles), "independent calls requested together run in the same cycle"
-
-    repeatedly(check, label="06-independent-calls-grouped")
+    checks.independent_calls_grouped(chat_client, CASES["independent_calls_grouped"])
 
 
 def test_steps_reported_to_the_interface(chat_client):
-    turn, trace = successful_turn(chat_client, CHAINED)
-    steps = events_of(turn, "step")
-    assert len(steps) == len(tools(trace)) >= 2, "one step event per tool call"
-    assert [s.get("tool") for s in steps] == [tool_name(c) for c in tools(trace)], "step.tool names the tool called"
+    checks.steps_reported_to_the_interface(chat_client, CASES["steps_reported_to_the_interface"])
 
 
 def test_cycle_limit_partial_answer(chat_client):
-    def run():
-        chat_client.open()
-        turn, trace = successful_turn(chat_client, LONG_REVIEW)
-        assert trace.get("cycle_limit_reached") is True, "trace.cycle_limit_reached must be true on this request"
-        assert events_of(turn, "mention"), "reaching the cycle cap is declared through a mention event"
-        return turn, trace
-
-    apply_rubric_repeatedly(PARTIAL_RUBRIC, run)
+    checks.cycle_limit_partial_answer(chat_client, CASES["cycle_limit_partial_answer"])
 
 
 def test_interruption_stops_without_new_call(chat_client):
-    chat_client.open()
-    chat_client.interrupt()
-    turn, trace = successful_turn(chat_client, "Trouvez Léa Martin de Lille, puis toutes ses commandes, puis leur détail.")
-    assert events_of(turn, "interruption"), "the interface receives an interruption event"
-    assert trace.get("interrupted") is True, "trace.interrupted records the clean stop"
-    assert tools(trace) == [], "no tool call is launched after the interruption"
-    assert "step" not in turn.types
+    checks.interruption_stops_without_new_call(chat_client, CASES["interruption_stops_without_new_call"])
 
 
 def test_without_interruption_the_same_request_runs(chat_client):
-    _, trace = successful_turn(chat_client, "Trouvez Léa Martin de Lille, puis toutes ses commandes, puis leur détail.")
-    assert trace.get("interrupted") is False, "trace.interrupted is false when no interruption was asked"
-    assert tools(trace), "the same request, not interrupted, calls tools"
+    checks.without_interruption_the_same_request_runs(chat_client, CASES["without_interruption_the_same_request_runs"])
