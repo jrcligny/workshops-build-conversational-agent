@@ -76,7 +76,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 
 ## Pistes techniques
 
-- Lisez `workshop_kit/services/skills_catalog/catalog.py` : l'outil de chargement ne doit servir que des entrées du manifeste, jamais un chemin fourni par le modèle. `my-agent/agent_helpers/kit.py` expose `skills_manifest()` et `skill_folders()` pour le lire depuis votre *harness*.
+- Lisez `workshop_kit/services/skills_catalog/catalog.py` : l'outil de chargement ne doit servir que des entrées du manifeste, jamais un chemin fourni par le modèle ; votre *harness* peut le lire avec les mêmes fonctions. Tracez chaque *skill* chargée avec `tracer.skill_loaded(id, version)` et les outils proposés avec `tracer.call_model(..., tools=...)` (`offered_tools`).
 - La description d'un *skill* sert à déclencher le chargement : elle dit quand l'utiliser, pas comment faire.
 - La liste des outils proposés se recalcule à chaque cycle, d'après les *skills* chargés **et** les droits du rôle (l'approbation de facture est réservée au rôle `accountant`).
 - La compaction de l'atelier 08 doit traiter les *skills* actifs à part, comme l'historique récent.

@@ -90,7 +90,7 @@ event: end       data: {"ok": true}
 
 ## Pistes techniques
 
-- Lisez `workshop_kit/services/sandbox/interface.py` et `workshop_tests/testing/probes.py` : ils disent exactement ce qui est comparé et ce qui est observé. Côté *harness*, `my-agent/agent_helpers/kit.py` expose `sandbox_policy()` et `is_egress_allowed(url)` : ils lisent la politique sans l'appliquer.
+- Lisez `workshop_kit/services/sandbox/interface.py` et `workshop_tests/testing/probes.py` : ils disent exactement ce qui est comparé et ce qui est observé. Côté *harness*, lisez la politique avec `workshop_kit.services.sandbox.interface` (`load_policy()` ou équivalent) : la lire ne l'applique pas.
 - Inventoriez d'abord les destinations réellement jointes par votre code (API métier, proxy du modèle, application de recherche…) : toutes doivent passer `is_egress_allowed`. Le livre le recommande avant d'activer une liste stricte.
 - La vérification porte sur la destination avant tout envoi : un refus ne doit déclencher ni résolution DNS ni connexion.
 - Les sondes ne voient que le code qui s'exécute dans le processus des tests ; un serveur d'outils lancé dans un autre processus (conteneur, `mcp_server.py` sur le port 8004) n'y est pas observé. Le confinement réel du conteneur reste votre responsabilité.

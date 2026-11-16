@@ -1,18 +1,14 @@
 """Bootstrap of your agent.
 
-This file is the entry point of your agent. It already runs end to end: it receives a
-turn, writes a trace and sends the interface its events (`text`, then `end`). What it
-does not do is the work of the workshops: it calls neither the model nor any tool, and
-answers every turn with the same cautious sentence. Every workshop test fails on it.
+This file is the entry point of your agent. It already converses: at each turn it sends the
+model the system prompt (`system_prompt.md`, next to this file, read without its HTML
+comments), the conversation history and the user's message, relays the model's answer to the
+interface (`text`, then `end`) and writes the trace of the turn with `agent_helpers.trace.Tracer`.
 
-The system prompt lives in `system_prompt.md`, next to this file: `load_system_prompt()`
-reads it at each turn, without its HTML comments.
-
-Workshop 03 starts here: replace the fixed answer with a system prompt and a call to the
-model (`agent_helpers.kit.model_client()`, wired to the proxy), keep the conversation
-history, and enrich the trace as the workshops ask (see each `contrat.md`). The package
-`agent_helpers/` holds the repetitive code (model client, HTTP and MCP clients, event
-builders, tool declarations, base trace) so you can focus on each workshop's goal.
+What it does not do is the work of the workshops: no tool, no business data, no loop, no
+compaction, no memory... Each workshop adds its part (see each `contrat.md`). The package
+`agent_helpers/` holds the repetitive code (HTTP and MCP clients, event builders, tool
+declarations, the tracer) so you can focus on each workshop's goal.
 
 Your agent converses in French: the tests send French user turns and expect French
 answers (code, comments and identifiers stay English).
@@ -20,6 +16,7 @@ answers (code, comments and identifiers stay English).
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from collections.abc import Iterator
@@ -30,19 +27,22 @@ if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.append(str(Path(__file__).resolve().parent))
 
 from agent_helpers import events  # noqa: E402
-from agent_helpers.kit import Event, Message, TestUser, write_trace  # noqa: E402
-from agent_helpers.trace import base_trace  # noqa: E402
+from agent_helpers.trace import Tracer  # noqa: E402
+from workshop_kit.shell.harness_contract import Event, Message, TestUser  # noqa: E402
+from workshop_kit.shell.model_client import ModelClient, ModelUnavailable  # noqa: E402
 
-ANSWER = (
-    "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer "
-    "l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
-)
 SYSTEM_PROMPT_FILE = Path(__file__).with_name("system_prompt.md")
+UNAVAILABLE = "Le modèle est indisponible pour le moment. Réessayez dans un instant."
 
 
 def load_system_prompt() -> str:
     text = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
     return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
+
+
+def model_client(timeout: float = 60.0) -> ModelClient:
+    """The model, through the course proxy (`PROXY_URL`): `generate(messages, tools=None)`."""
+    return ModelClient(os.environ.get("PROXY_URL", "http://127.0.0.1:8003"), timeout=timeout)
 
 
 class Harness:
@@ -57,10 +57,20 @@ class Harness:
         confirmation: bool = False,
         limits: dict | None = None,
     ) -> Iterator[Event]:
-        # One trace line per turn: the tests and your own queries read it.
-        # The bootstrap sends no history to any model, so it traces none (workshop 03).
-        trace = base_trace(conversation_id, user, load_system_prompt(), [], message)
-        trace["output"] = ANSWER
-        write_trace(trace)
-        yield events.text(ANSWER)
-        yield events.end(ANSWER)
+        tracer = Tracer(conversation_id, user, message)
+        system_prompt = load_system_prompt()
+        tracer.input(system_prompt=system_prompt, history=history)
+        messages = (
+            [{"role": "system", "content": system_prompt}]
+            + [{"role": m.role, "content": m.content} for m in history]
+            + [{"role": "user", "content": message}]
+        )
+        try:
+            response = tracer.call_model(model_client(), messages)
+            answer = response["choices"][0]["message"].get("content") or ""
+        except ModelUnavailable:
+            answer = UNAVAILABLE
+        tracer.output(answer)
+        tracer.write()
+        yield events.text(answer)
+        yield events.end(answer)

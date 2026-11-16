@@ -92,8 +92,11 @@ def cmd_check(workshop_id: str, non_regression: bool, private: bool = False) -> 
     return _pytest([workshop_tests_dir(i) for i in ids], extra, {"WORKSHOP_TARGET": workshop_id})
 
 
-def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None) -> int:
-    """Runs every workshop test and succeeds (exit code 0) when each one fails or errors."""
+def _run_expect_all_fail(
+    label: str, env_overrides: dict[str, str] | None = None, allowed: set[str] | None = None
+) -> int:
+    """Runs every workshop test and succeeds (exit code 0) when each one fails or errors,
+    except the tests listed in `allowed` (`<test file>::<test name>`), which may pass."""
     folders = [workshop_tests_dir(i) for i in WORKSHOP_IDS if workshop_tests_dir(i).is_dir()]
     if not folders:
         print("no workshops/*/tests folder found", file=sys.stderr)
@@ -121,12 +124,24 @@ def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None
     print(proc.stdout)
     if proc.stderr:
         print(proc.stderr, file=sys.stderr)
-    return _interpret_shell_run((proc.stdout or "") + (proc.stderr or ""), SHELL_REPORT, label)
+    return _interpret_shell_run((proc.stdout or "") + (proc.stderr or ""), SHELL_REPORT, label, allowed)
+
+
+BOOTSTRAP_PASSES = TEST_PROJECT / "bootstrap_passes.txt"
+
+
+def bootstrap_passes() -> set[str]:
+    """Workshop tests the bootstrap of my-agent/ is expected to pass: it already converses."""
+    if not BOOTSTRAP_PASSES.is_file():
+        return set()
+    lines = BOOTSTRAP_PASSES.read_text(encoding="utf-8").splitlines()
+    return {line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")}
 
 
 def cmd_check_shell() -> int:
-    """Succeeds (exit code 0) when every workshop test fails or errors on the bootstrap of my-agent/."""
-    return _run_expect_all_fail("Bootstrap")
+    """Succeeds (exit code 0) when every workshop test fails or errors on the bootstrap of my-agent/,
+    except those of workshop_tests/bootstrap_passes.txt (the bootstrap converses through the model)."""
+    return _run_expect_all_fail("Bootstrap", allowed=bootstrap_passes())
 
 
 INERT_OVERLAY = TEST_PROJECT / "inert_agent"
@@ -159,9 +174,9 @@ def write_bootstrap_digest(names: list[str]) -> None:
 def cmd_check_inert() -> int:
     """Succeeds when every workshop test fails against the inert agent.
 
-    The inert agent is the bootstrap of my-agent/ (it answers a cautious French sentence and
-    calls neither the model nor a tool) plus the facade deliverables of
-    workshop_tests/inert_agent/, which only contain the expected keywords. It is assembled
+    The inert agent is the bootstrap of my-agent/ with the overlay of workshop_tests/inert_agent/:
+    its harness.py answers a cautious French sentence and calls neither the model nor a tool, and
+    the facade deliverables only contain the expected keywords. It is assembled
     in a temporary folder, so it only makes sense while my-agent/ is still the bootstrap.
     """
     changed = bootstrap_changes()
@@ -195,11 +210,14 @@ def _passed_tests(report: Path) -> list[str]:
     names = []
     for case in root.iter("testcase"):
         if not any(child.tag in ("failure", "error", "skipped") for child in case):
-            names.append(f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}")
+            module = case.attrib.get("classname", "").rsplit(".", 1)[-1]
+            names.append(f"{module}.py::{case.attrib.get('name', '')}")
     return names
 
 
-def _interpret_shell_run(output: str, report: Path | None = None, label: str = "Empty shell") -> int:
+def _interpret_shell_run(
+    output: str, report: Path | None = None, label: str = "Empty shell", allowed: set[str] | None = None
+) -> int:
     """0 when everything failed as intended, 1 otherwise, 2 when nothing was collected."""
     passed = failed = errors = collected = skipped = 0
     passed_names: list[str] = []
@@ -234,19 +252,23 @@ def _interpret_shell_run(output: str, report: Path | None = None, label: str = "
         f"{label}: {passed} passed, {failed} failed, {errors} error(s) "
         f"(collected: {collected or failed + passed + errors})."
     )
-    if passed > 0:
+    allowed = allowed or set()
+    unexpected = [n for n in passed_names if n not in allowed]
+    if passed_names:
+        print(f"Passing as declared ({len(passed_names) - len(unexpected)}): " + ", ".join(sorted(set(passed_names) & allowed)))
+    if unexpected or (passed > 0 and not passed_names):
         print(
             f"ERROR: at least one workshop test passes ({label.lower()}). "
             "All of them must fail until the workshop is done.",
             file=sys.stderr,
         )
-        for name in passed_names:
+        for name in unexpected:
             print(f"  passes: {name}", file=sys.stderr)
         return 1
     if failed + errors == 0:
         print("ERROR: no workshop test failed.", file=sys.stderr)
         return 1
-    print(f"Expected behaviour: every workshop test fails ({label.lower()}).")
+    print(f"Expected behaviour: every workshop test fails ({label.lower()}), except the declared ones.")
     return 0
 
 def cmd_start(workshop_id: str) -> int:

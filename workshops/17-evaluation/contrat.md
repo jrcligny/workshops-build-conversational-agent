@@ -92,7 +92,7 @@ Lancez `uv run --project workshop_kit/bootstrap workshop serve`, ouvrez http://1
 
 - La docstring de `workshop_tests/evaluation/route_runner.py` est la référence du format ; `workshop_tests/evaluation/judge.py` décrit les deux couches du juge.
 - Vérifiez des propriétés de la trajectoire (un appel avec telle référence, un statut, une absence de brouillon) plutôt qu'une séquence imposée d'outils.
-- Le masquage se fait à l'écriture de la trace : en-têtes, jetons et clés n'y entrent jamais. `workshop_kit/shell/tracer.py` (ou `write_trace()` de `my-agent/agent_helpers/kit.py`) écrit la trace ; ce que vous y mettez dépend de vous.
+- Le masquage se fait à l'écriture de la trace : en-têtes, jetons et clés n'y entrent jamais. `workshop_kit/shell/tracer.py` écrit la trace (appelé par `Tracer.write()` de `my-agent/agent_helpers/trace.py`, qui enregistre aussi `usage`, `duration_ms` et `calls` de chaque appel au modèle, et `duration_ms` des outils que vous lui passez) ; ce que vous y mettez dépend de vous.
 - Les parcours officiels passent par tous les ateliers précédents (07, 08, 10b, 13, 14, 15) : une régression ancienne apparaît ici.
 - Le parcours `write-after-attachment` officiel lit sa pièce jointe dans `routes/fixtures/` ; pour un parcours à vous, placez la vôtre sous `my-agent/routes/`.
 

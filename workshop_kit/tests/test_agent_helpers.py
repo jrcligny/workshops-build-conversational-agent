@@ -19,11 +19,12 @@ def helpers():
         sys.path.remove(folder)
 
 
-def test_kit_model_client_reads_the_proxy_url_at_call_time(helpers, monkeypatch):
-    kit = helpers("kit")
+def test_harness_model_client_reads_the_proxy_url_at_call_time(monkeypatch):
+    from workshop_kit.shell.loader import load_my_agent_module
+
+    harness = load_my_agent_module("harness.py", "my_agent_harness_test")
     monkeypatch.setenv("PROXY_URL", "http://127.0.0.1:9/")
-    assert kit.model_client().base_url == "http://127.0.0.1:9"
-    assert kit.is_egress_allowed("http://example.com/") is None, "the shipped policy is inactive"
+    assert harness.model_client().base_url == "http://127.0.0.1:9"
 
 def test_http_client_carries_the_token_and_raises_readable_errors(helpers, services, reset_state):
     from workshop_kit.apps.business_api.auth import issue_token
@@ -118,14 +119,51 @@ def test_tool_schema_declares_an_annotated_function(helpers):
     assert function["parameters"]["required"] == ["customer_id"]
 
 
-def test_base_trace_has_only_the_base_fields(helpers):
+def test_tracer_records_model_calls_in_the_format_the_tests_read(helpers):
     from workshop_kit.shell.harness_contract import Message, TestUser
 
-    trace = helpers("trace").base_trace(
-        "c1", TestUser("paul-buyer", "buyer", "organization-a"), "prompt", [Message("user", "bonjour")], "suite"
-    )
-    assert set(trace) == {"turn_id", "conversation_id", "user", "input", "tools", "output"}
-    assert trace["input"] == {
-        "system_prompt": "prompt", "history": [{"role": "user", "content": "bonjour"}], "message": "suite"
-    }
+    class FakeModel:
+        def generate(self, messages, tools=None, model="default"):
+            return {"model": "m1", "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12}}
+
+    tracer = helpers("trace").Tracer("c1", TestUser("paul-buyer", "buyer", "organization-a"), "suite")
+    tracer.input(system_prompt="prompt", history=[Message("user", "bonjour")])
+    assert tracer.cycle() == 1
+    tracer.call_model(FakeModel(), [], tools=[{"type": "function", "function": {"name": "get_order"}}], context_size=40)
+    tracer.cycle()
+    tracer.call_model(FakeModel(), [], tools=[], context_size=55)
+    tracer.tool_call("get_order", {"reference": "CMD-1"}, {"status": "found"}, duration_ms=3)
+    tracer.output("réponse")
+    trace = tracer.to_dict()
+    assert trace["input"] == {"system_prompt": "prompt", "history": [{"role": "user", "content": "bonjour"}], "message": "suite"}
     assert trace["user"] == {"id": "paul-buyer", "role": "buyer", "organization": "organization-a"}
+    model = trace["model"]
+    assert [c["context_size"] for c in model["calls"]] == [40, 55] and [c["cycle"] for c in model["calls"]] == [1, 2]
+    assert model["usage"]["total_tokens"] == 24 and model["calls"][0]["model"] == "m1" and "duration_ms" in model
+    assert trace["offered_tools"] == [["get_order"], []] and trace["cycles"] == 2
+    assert trace["tools"] == [{"name": "get_order", "arguments": {"reference": "CMD-1"}, "result": {"status": "found"},
+                               "cycle": 2, "duration_ms": 3}]
+    assert trace["output"] == "réponse" and "compaction" not in trace and "memory" not in trace
+
+
+def test_tracer_returns_the_interface_events_it_traces(helpers, session_dir):
+    from workshop_kit.shell import tracer as writer
+    from workshop_kit.shell.harness_contract import TestUser
+
+    trace_mod = helpers("trace")
+    user = TestUser("nina-accountant", "accountant", "organization-a")
+    tracer = trace_mod.Tracer("c2", user, "bonjour")
+    event = tracer.compaction(summarized_answers=3, kept_user_messages=4, threshold=8, summary="résumé")
+    assert (event.type, event.data["summary"]) == ("compaction", "résumé") and tracer.to_dict()["compaction"]["threshold"] == 8
+    entry = trace_mod.memory_entry("langue", "français", user)
+    assert {"topic", "value", "origin", "recorded_at", "user", "organization"} <= set(entry)
+    (memory_event,) = tracer.memory(loaded=[], written=[entry])
+    assert (memory_event.type, memory_event.data["action"]) == ("memory", "written")
+    assert tracer.to_dict()["memory"] == {"loaded": [], "written": [entry], "deleted": []}
+    assert tracer.mention("Résultat partiel.").type == "mention"
+    tracer.state({"current_customer": {"id": "C1"}})
+    writer.clear()
+    tracer.write()
+    (written,) = writer.read_all()
+    assert written["state"] == {"current_customer": {"id": "C1"}} and "timestamp" in written
