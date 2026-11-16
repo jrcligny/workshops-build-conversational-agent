@@ -28,5 +28,5 @@ uv run --project workshop_kit/bootstrap workshop check-shell
 ```
 
 Acceptance tests stay red until the workshop is implemented; `check-shell`
-succeeds when every workshop test fails on the empty shell. See
+succeeds when every workshop test fails on the bootstrap of `my-agent/`. See
 [installation](../../docs/installation.md) for service options and ports.

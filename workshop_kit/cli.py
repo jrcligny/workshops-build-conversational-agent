@@ -127,12 +127,12 @@ def _interpret_shell_run(output: str, report: Path | None = None) -> int:
         print("no workshop test collected", file=sys.stderr)
         return 2
     print(
-        f"Empty shell: {passed} passed, {failed} failed, {errors} error(s) "
+        f"Bootstrap: {passed} passed, {failed} failed, {errors} error(s) "
         f"(collected: {collected or failed + passed + errors})."
     )
     if passed > 0:
         print(
-            "ERROR: at least one workshop test passes on the empty shell. "
+            "ERROR: at least one workshop test passes on the bootstrap of my-agent/. "
             "All of them must fail until the workshop is done.",
             file=sys.stderr,
         )
@@ -140,7 +140,7 @@ def _interpret_shell_run(output: str, report: Path | None = None) -> int:
     if failed + errors == 0:
         print("ERROR: no workshop test failed.", file=sys.stderr)
         return 1
-    print("Expected behaviour: every workshop test fails on the empty shell.")
+    print("Expected behaviour: every workshop test fails on the bootstrap of my-agent/.")
     return 0
 
 
@@ -166,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("workshop_id")
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
 
-    sub.add_parser("check-shell", help="Check that every workshop test fails on the empty shell")
+    sub.add_parser("check-shell", help="Check that every workshop test fails on the bootstrap of my-agent/")
 
     start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")
     start.add_argument("workshop_id")

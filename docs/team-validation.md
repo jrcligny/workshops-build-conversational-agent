@@ -1,6 +1,6 @@
 # Team validation procedure
 
-No reference agent is shipped. The workshop tests stay red on the empty shell. This procedure has two phases.
+No reference agent is shipped. The workshop tests stay red on the bootstrap of `my-agent/`. This procedure has two phases.
 
 ## Phase A — Design, without a real model (now)
 
@@ -12,7 +12,7 @@ From the repository root, prepare both environments with
 delegates checks to the test project's environment and pytest configuration;
 `python start.py` starts services only and never installs test dependencies.
 
-1. Empty shell and inert agent: `uv run --project workshop_kit/bootstrap workshop check-shell` and `workshop check-inert` must succeed (every workshop test fails, none passes).
+1. Bootstrap and inert agent: `uv run --project workshop_kit/bootstrap workshop check-shell` and `workshop check-inert` must succeed (every workshop test fails, none passes).
 2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project workshop_kit/bootstrap workshop check N --non-regression`).
 3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
 4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests`.

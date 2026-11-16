@@ -61,7 +61,7 @@ If you go through the client `workshop_kit.shell.model_client.ModelClient`, the 
 
 ## Harness to implement
 
-In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `workshop_kit/shell/harness_contract.py`). The shipped shell raises `NotImplementedError`: this is intended.
+In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `workshop_kit/shell/harness_contract.py`). The shipped bootstrap answers a fixed cautious sentence, writes the trace and calls neither the model nor any tool: every workshop test fails on it.
 
 ## Other locations of the shell
 

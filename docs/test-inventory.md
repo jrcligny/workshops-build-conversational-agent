@@ -2,7 +2,7 @@
 
 Aligned with the "success criterion" subsections of the book
 (`jrcligny/ai-generated-books`, branch `relecture/alignement-ateliers`, not yet merged
-into `main`). All these tests **fail on the empty shell** and **against the inert agent**
+into `main`). All these tests **fail on the bootstrap of `my-agent/`** and **against the inert agent**
 (`workshop check-shell`, `workshop check-inert`). The infrastructure tests in
 `workshop_kit/tests/` must pass. Shared fixtures, clients, runtime probes and evaluation
 helpers live in `workshop_tests/testing/` and `workshop_tests/evaluation/`, not in the

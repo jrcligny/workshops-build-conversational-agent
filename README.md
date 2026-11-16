@@ -14,7 +14,7 @@ Main target: **Windows**, with Python **3.13** from [python.org](https://www.pyt
 README.md            this file
 GETTING_STARTED.md   what is provided, what you write
 my-agent/            the ONLY folder students edit
-  harness.py         empty shell of your agent
+  harness.py         runnable bootstrap of your agent
   mcp_server.py      empty MCP server (wired in workshop 09)
   sandbox/           sandbox policy (policy.yaml, workshop 10d)
   skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
@@ -57,7 +57,7 @@ uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 Copy-Item .env.example .env
 uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
-uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the empty shell
+uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the bootstrap
 uv run --project workshop_kit/bootstrap workshop check 03      # stays red until workshop 03 is done
 ```
 

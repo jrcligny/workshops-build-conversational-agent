@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -121,26 +123,69 @@ def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None
 
 
 def cmd_check_shell() -> int:
-    """Succeeds (exit code 0) when every workshop test fails or errors on the empty shell."""
-    return _run_expect_all_fail("Empty shell")
+    """Succeeds (exit code 0) when every workshop test fails or errors on the bootstrap of my-agent/."""
+    return _run_expect_all_fail("Bootstrap")
+
+
+INERT_OVERLAY = TEST_PROJECT / "inert_agent"
+BOOTSTRAP_DIGEST = INERT_OVERLAY / "bootstrap.sha256"
+MY_AGENT = REPO_ROOT / "my-agent"
+
+
+def _file_digest(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def bootstrap_changes() -> list[str]:
+    """Files of my-agent/ that no longer match the bootstrap recorded in bootstrap.sha256."""
+    changed = []
+    for line in BOOTSTRAP_DIGEST.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        digest, name = line.split(maxsplit=1)
+        path = MY_AGENT / name
+        if not path.is_file() or _file_digest(path) != digest:
+            changed.append(name)
+    return changed
+
+
+def write_bootstrap_digest(names: list[str]) -> None:
+    lines = [f"{_file_digest(MY_AGENT / n)}  {n}" for n in names]
+    BOOTSTRAP_DIGEST.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def cmd_check_inert() -> int:
-    """Succeeds when every workshop test fails against the inert agent of workshop_tests/inert_agent.
+    """Succeeds when every workshop test fails against the inert agent.
 
-    The inert agent answers a cautious French sentence, calls neither the model nor a tool,
-    and ships facade deliverables; a test it passes is too lenient.
+    The inert agent is the bootstrap of my-agent/ (it answers a cautious French sentence and
+    calls neither the model nor a tool) plus the facade deliverables of
+    workshop_tests/inert_agent/, which only contain the expected keywords. It is assembled
+    in a temporary folder, so it only makes sense while my-agent/ is still the bootstrap.
     """
-    inert = TEST_PROJECT / "inert_agent"
-    return _run_expect_all_fail(
-        "Inert agent",
-        {
-            "MY_AGENT_DIR": str(inert),
-            "SANDBOX_POLICY_FILE": str(inert / "sandbox" / "policy.yaml"),
-            "SKILLS_DIR": str(inert / "skills"),
-            "ATTACHMENTS_DIR": str(inert / "attachments"),
-        },
-    )
+    changed = bootstrap_changes()
+    if changed:
+        print(
+            "check-inert runs on the bootstrap of my-agent/, which has changed: "
+            + ", ".join(changed),
+            file=sys.stderr,
+        )
+        return 2
+    with tempfile.TemporaryDirectory(prefix="inert-agent-") as tmp:
+        inert = Path(tmp) / "my-agent"
+        shutil.copytree(
+            MY_AGENT, inert,
+            ignore=shutil.ignore_patterns(".venv", "__pycache__", "routes", "route-report.*", "memory"),
+        )
+        shutil.copytree(INERT_OVERLAY, inert, dirs_exist_ok=True, ignore=shutil.ignore_patterns("bootstrap.sha256"))
+        return _run_expect_all_fail(
+            "Inert agent",
+            {
+                "MY_AGENT_DIR": str(inert),
+                "SANDBOX_POLICY_FILE": str(inert / "sandbox" / "policy.yaml"),
+                "SKILLS_DIR": str(inert / "skills"),
+                "ATTACHMENTS_DIR": str(inert / "attachments"),
+            },
+        )
 
 
 def _passed_tests(report: Path) -> list[str]:
@@ -224,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("workshop_id")
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
 
-    sub.add_parser("check-shell", help="Check that every workshop test fails on the empty shell")
+    sub.add_parser("check-shell", help="Check that every workshop test fails on the bootstrap of my-agent/")
     sub.add_parser("check-inert", help="Check that every workshop test fails against the inert agent")
 
     start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")

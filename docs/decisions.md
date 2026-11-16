@@ -102,6 +102,9 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 - **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
   answers a cautious French sentence without calling the model nor any tool, and fakes the
   file deliverables; every test must fail. It guards against tests passed by doing nothing.
+  This agent is the bootstrap of `my-agent/` completed by the facade deliverables of
+  `workshop_tests/inert_agent/`, assembled in a temporary folder; the command refuses to run
+  once `my-agent/` differs from the bootstrap recorded in `workshop_tests/inert_agent/bootstrap.sha256`.
 
 ## Superseded tests
 
