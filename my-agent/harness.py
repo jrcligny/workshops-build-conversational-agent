@@ -16,6 +16,7 @@ import agent_context  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
 import agent_sandbox  # noqa: E402
+import agent_skills  # noqa: E402
 import mcp_server  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
@@ -67,6 +68,11 @@ SYSTEM_PROMPT = (
     "aucun passage, ou si les passages renvoyés ne traitent pas la question, dis que tu n'as rien trouvé dans "
     "la documentation accessible ; n'invente rien. "
     "Ne cite pas toi-même d'adresse de source : l'interface affiche les sources.\n"
+    "Procédures métier (skills) : avant de préparer une demande d'achat, de contrôler ou d'approuver une "
+    "facture, ou de faire le point sur les retards d'un client, charge la skill correspondante avec load_skill "
+    "puis suis ses instructions ; les outils de préparation n'apparaissent qu'une fois la skill chargée, et "
+    "seulement si l'utilisateur en a la permission. Seules les skills du catalogue existent : toute autre "
+    "demande de skill est refusée, dis-le.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
@@ -120,6 +126,7 @@ class Harness:
         self.compactor = agent_context.Compactor(self._summarize)
         self.memory = agent_memory.WorkingMemory()
         self.drafts: dict[str, dict] = {}
+        self.skills: dict[str, dict[str, dict]] = {}
 
     def _summarize(self, request: list[dict[str, Any]]) -> str:
         response = self.model.generate(request, None)
@@ -163,13 +170,31 @@ class Harness:
         # exchanges it for an application token on behalf of the user.
         token = agent_mcp.user_token(user)
         allowed_writes = mcp_server.allowed_tools(user.role)
-        tool_specs = [
-            spec
-            for spec in agent_mcp.tool_specs(token)
-            if spec["function"]["name"] not in mcp_server.HARNESS_ONLY_TOOLS
-            and (spec["function"]["name"] not in mcp_server.WRITE_PERMISSIONS or spec["function"]["name"] in allowed_writes)
-        ]
+        loaded_skills = self.skills.setdefault(conversation_id, {})
+        skills_before = [f"{s['id']}@{s['version']}" for s in loaded_skills.values()]
+        gated = agent_skills.gated_tools()
+        mcp_specs = agent_mcp.tool_specs(token)
+
+        def offered() -> list[dict]:
+            # A write tool needs the user's permission AND, when a skill gates it, that skill loaded.
+            unlocked = agent_skills.unlocked(loaded_skills)
+            specs = [
+                spec
+                for spec in mcp_specs
+                if spec["function"]["name"] not in mcp_server.HARNESS_ONLY_TOOLS
+                and (
+                    spec["function"]["name"] not in mcp_server.WRITE_PERMISSIONS
+                    or (
+                        spec["function"]["name"] in allowed_writes
+                        and (spec["function"]["name"] not in gated or spec["function"]["name"] in unlocked)
+                    )
+                )
+            ]
+            return [agent_skills.tool_spec(), *specs]
+
+        tool_specs = offered()
         tools = {spec["function"]["name"] for spec in tool_specs}
+        skill_events: list[dict] = []
 
         # A draft is submitted only after the user's gesture in the interface, by the harness, never by the model.
         submission: dict | None = None
@@ -186,6 +211,7 @@ class Harness:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "system", "content": _permissions_note(user.role, allowed_writes)},
             *([{"role": "system", "content": state_text}] if state_text else []),
+            *([{"role": "system", "content": agent_skills.render(loaded_skills)}] if loaded_skills else []),
             *([{"role": "system", "content": _draft_note(pending, submission)}] if pending else []),
             *replayed,
             {"role": "user", "content": message},
@@ -251,6 +277,29 @@ class Harness:
                     result = {"status": "error", "error": "identical call already made in this turn: use its result"}
                 elif used >= PER_TOOL_LIMITS.get(name, MAX_TOOL_CALLS):
                     result = {"status": "error", "error": f"{name} already used for this message: answer now"}
+                elif name == agent_skills.LOAD_SKILL:
+                    # Skills are loaded by the harness from the versioned catalog, never by the tool server.
+                    yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
+                    loaded = agent_skills.load(str(arguments.get("skill_id", "")))
+                    result = {k: v for k, v in loaded.items()}
+                    if loaded["status"] == "loaded":
+                        loaded_skills[loaded["id"]] = loaded
+                        denied = [t for t in loaded["unlocks"] if t not in allowed_writes]
+                        if denied:
+                            result["permissions"] = (
+                                f"permission refusée : le rôle {user.role} ne peut pas utiliser {', '.join(denied)} ; "
+                                "ne prépare rien et dis-le à l'utilisateur"
+                            )
+                        tool_specs = offered()
+                        tools = {spec["function"]["name"] for spec in tool_specs}
+                    skill_events.append(
+                        {"skill": arguments.get("skill_id"), "status": loaded["status"], "version": loaded.get("version"),
+                         "cycle": cycle}
+                    )
+                    tool_calls_done.append(
+                        {"name": name, "arguments": arguments, "result": {k: v for k, v in result.items() if k != "instructions"},
+                         "cycle": cycle, "via": "harness"}
+                    )
                 else:
                     yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
                     try:
@@ -340,8 +389,14 @@ class Harness:
                 "conversation_id": conversation_id,
                 "turn_id": tracer.new_id(),
                 "user": {"id": user.id, "role": user.role, "organization": user.organization},
+                "skills": {
+                    "active_before": skills_before,
+                    "loaded_this_turn": skill_events,
+                    "active": [f"{s['id']}@{s['version']}" for s in loaded_skills.values()],
+                },
                 "input": {
                     "system_prompt": SYSTEM_PROMPT,
+                    "skills": agent_skills.render(loaded_skills) if loaded_skills else None,
                     "state": state_before,
                     "history": replayed,
                     "message": message,
@@ -475,6 +530,7 @@ def _step_label(name: str, arguments: dict) -> str:
         "query": "Lecture de la source {source}",
         "fetch_url": "Récupération de {url}",
         "search_documents": "Recherche dans la documentation : {query}",
+        "load_skill": "Chargement de la skill {skill_id}",
         "prepare_purchase_request": "Préparation du brouillon de demande d'achat",
         "prepare_invoice_approval": "Préparation du brouillon d'approbation de la facture {invoice}",
     }
