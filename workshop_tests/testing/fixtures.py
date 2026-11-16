@@ -21,10 +21,10 @@ from business_api.db import reassign  # noqa: E402
 from business_api.seed_data import load_dataset  # noqa: E402
 from docs_search.app import app as docs_app, clear_log as clear_docs_log  # noqa: E402
 from docs_search.indexing import rebuild  # noqa: E402
-from workshop_kit.llm_proxy.app import app as proxy_app, clear_log as clear_proxy_log  # noqa: E402
-from workshop_kit.llm_proxy.tokens import reset_usage  # noqa: E402
+from model_gateway.app import app as proxy_app, clear_log as clear_proxy_log  # noqa: E402
+from model_gateway.tokens import reset_usage  # noqa: E402
 from agent_sdk import trace_store as tracer  # noqa: E402
-from workshop_kit.shell.chat_app import app as interface_app, reset_conversations  # noqa: E402
+from agent_gateway.chat_app import app as interface_app, reset_conversations  # noqa: E402
 from workshop_config import settings  # noqa: E402
 from workshop_tests.testing.chat_client import ChatClient  # noqa: E402
 from workshop_tests.testing.servers import start_uvicorn, free_port, wait_for  # noqa: E402

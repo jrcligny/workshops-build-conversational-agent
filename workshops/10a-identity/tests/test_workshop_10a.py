@@ -20,7 +20,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
 from business_api.auth import issue_token
-from workshop_kit.shell.loader import load_mcp_server
+from agent_gateway.loader import load_mcp_server
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
 from workshop_tests.testing.turns import business_log, successful_turn, tool_status, tools

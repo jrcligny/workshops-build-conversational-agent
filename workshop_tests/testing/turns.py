@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import httpx
 
-from workshop_kit.llm_proxy.tokens import reset_usage
+from model_gateway.tokens import reset_usage
 from workshop_config import settings
 from workshop_tests.evaluation.judge import judge
 from agent_sdk.trace_store import read_all

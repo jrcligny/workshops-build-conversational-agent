@@ -11,7 +11,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
-from workshop_kit.shell.loader import load_harness
+from agent_gateway.loader import load_harness
 
 app = FastAPI(title="Workshop chat interface", version="0.1.0")
 

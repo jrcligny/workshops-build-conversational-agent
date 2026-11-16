@@ -11,7 +11,7 @@ import httpx
 import pytest
 from mcp import Client
 
-from workshop_kit.shell.loader import load_mcp_server
+from agent_gateway.loader import load_mcp_server
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
 from workshop_tests.testing.turns import business_log, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools

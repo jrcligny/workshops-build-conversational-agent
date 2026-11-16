@@ -38,7 +38,7 @@ from typing import Any
 
 import yaml
 
-from workshop_kit.llm_proxy.tokens import reset_usage
+from model_gateway.tokens import reset_usage
 from workshop_config import repo_path, settings
 from workshop_tests.evaluation.judge import judge
 from workshop_tests.evaluation.routes import ROUTES_DIR

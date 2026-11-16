@@ -21,9 +21,9 @@ UI_ROOT = REPO_ROOT / "workshop_kit" / "chat-ui"
 PROJECTS = {
     "business_api": REPO_ROOT / "business" / "business_api",
     "docs_search": REPO_ROOT / "business" / "docs_search",
-    "proxy": REPO_ROOT / "workshop_kit" / "llm_proxy",
+    "proxy": REPO_ROOT / "gateway" / "model_gateway",
     "mcp": REPO_ROOT / "my-agent",
-    "interface": REPO_ROOT / "workshop_kit" / "shell",
+    "interface": REPO_ROOT / "gateway" / "agent_gateway",
     "chat_ui": UI_ROOT,
 }
 HOST = "127.0.0.1"
@@ -78,8 +78,8 @@ def services(port_offset: int = 0) -> list[Service]:
     modules = {
         "business_api": "business_api.app:app",
         "docs_search": "docs_search.app:app",
-        "proxy": "workshop_kit.llm_proxy.app:app",
-        "interface": "workshop_kit.shell.chat_app:app",
+        "proxy": "model_gateway.app:app",
+        "interface": "agent_gateway.chat_app:app",
     }
     result = []
     for name in ("business_api", "docs_search", "proxy", "mcp", "interface", "chat_ui"):

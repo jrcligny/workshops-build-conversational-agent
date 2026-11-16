@@ -75,7 +75,7 @@ def test_azure_key_absent_from_responses(services, reset_state):
 
 
 def test_live_url_from_portal_operation_url(monkeypatch):
-    from workshop_kit.llm_proxy import live
+    from model_gateway import live
 
     monkeypatch.setattr(settings, "azure_openai_endpoint", "https://res.openai.azure.com/openai/responses?api-version=2025-04-01-preview")
     url, v1 = live._url("chat-dep")
@@ -86,7 +86,7 @@ def test_live_url_from_portal_operation_url(monkeypatch):
 
 
 def test_live_mode_without_settings_is_explicit(monkeypatch):
-    from workshop_kit.llm_proxy import live
+    from model_gateway import live
 
     monkeypatch.setattr(settings, "azure_openai_api_key", "")
     with pytest.raises(live.LiveError) as exc:

@@ -7,7 +7,7 @@ import asyncio
 import pytest
 from mcp import Client
 
-from workshop_kit.shell.loader import load_mcp_server
+from agent_gateway.loader import load_mcp_server
 from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
 
 pytestmark = pytest.mark.shell
@@ -35,7 +35,7 @@ def test_mcp_server_starts_and_lists_zero_tools(mcp_server_url):
 
 
 def test_harness_model_client_reads_the_proxy_url_at_call_time(monkeypatch):
-    from workshop_kit.shell.loader import load_my_agent_module
+    from agent_gateway.loader import load_my_agent_module
 
     harness = load_my_agent_module("harness.py", "my_agent_harness_test")
     monkeypatch.setenv("PROXY_URL", "http://127.0.0.1:9/")
@@ -58,7 +58,7 @@ def test_http_client_carries_the_token_and_raises_readable_errors(services, rese
 
 
 def test_mcp_client_lists_and_calls_the_server_tools(monkeypatch):
-    from workshop_kit.shell.loader import load_mcp_server
+    from agent_gateway.loader import load_mcp_server
     from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
 
     from agent_sdk import mcp_client as mcp
@@ -85,3 +85,19 @@ def test_mcp_client_lists_and_calls_the_server_tools(monkeypatch):
         assert result["is_error"] is False and result["text"] == "bonjour"
     finally:
         running.should_exit = True
+
+
+def test_bootstrap_converses_through_the_model_without_tool(chat_client, traces):
+    first = chat_client.turn("Bonjour, je m'appelle Camille.")
+    turn = chat_client.turn("Quel est le statut de la commande CMD-1042 de Martin Durand ?")
+    assert turn.ok is True and first.ok is True
+    assert turn.types[-1] == "end" and "text" in turn.types
+    _, trace = traces.all()
+    assert trace["tools"] == [] and trace["input"]["message"].startswith("Quel est le statut")
+    prompt = trace["input"]["system_prompt"]
+    assert prompt and "<!--" not in prompt, "system_prompt.md is loaded without its HTML comments"
+    assert trace["input"]["history"] == [
+        {"role": "user", "content": "Bonjour, je m'appelle Camille."},
+        {"role": "assistant", "content": first.text},
+    ], "the history is sent to the model"
+    assert len(trace["model"]["calls"]) == 1 and trace["output"] == turn.text, "one model call, its answer relayed"

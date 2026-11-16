@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from workshop_kit.shell.chat_app import reset_conversations
+from agent_gateway.chat_app import reset_conversations
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import business_log, events_of, model_input, successful_turn, tools
 
