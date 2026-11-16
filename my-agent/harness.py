@@ -12,6 +12,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import agent_context  # noqa: E402
 import agent_tools  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
@@ -82,15 +83,22 @@ def model_client() -> ModelClient:
 class Harness:
     def __init__(self) -> None:
         self.model = model_client()
+        self.compactor = agent_context.Compactor(self._summarize)
+
+    def _summarize(self, request: list[dict[str, Any]]) -> str:
+        response = self.model.generate(request, None)
+        return ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
 
     def _call(self, messages: list[dict[str, Any]], tools: list[dict] | None, calls: list[dict]) -> dict:
         started = time.perf_counter()
+        context_size = agent_context.size(messages)
         response = self.model.generate(messages, tools)
         choice = (response.get("choices") or [{}])[0]
         calls.append(
             {
                 "id": response.get("model"),
                 "usage": response.get("usage") or {},
+                "context_size": context_size,
                 "duration_ms": int((time.perf_counter() - started) * 1000),
                 "stop_reason": choice.get("finish_reason"),
             }
@@ -108,7 +116,11 @@ class Harness:
         confirmation: bool = False,
         limits: dict | None = None,
     ) -> Iterator[Event]:
-        replayed = [{"role": m.role, "content": m.content} for m in history]
+        replayed, compacted = self.compactor.apply(
+            conversation_id, [{"role": m.role, "content": m.content} for m in history]
+        )
+        if compacted:
+            yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "summary"})
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
             *replayed,
@@ -215,8 +227,11 @@ class Harness:
                 "stop": stop,
                 "cycle_limit_reached": stop == "cycle_limit",
                 "interrupted": stop == "interrupted",
+                **({"compaction": compacted} if compacted else {}),
             }
         )
+        if compacted:
+            mentions.insert(0, "Le début de la conversation a été résumé pour garder le contexte sous contrôle.")
         for mention in mentions:
             yield Event(type="mention", data={"content": mention})
         for chunk in _split(text):

@@ -127,17 +127,22 @@ def search_customers(client: BusinessClient, name: str) -> dict:
 
 
 ORDER_FILTERS = {"all": None, "late": "late"}
+ORDER_MODES = ("rows", "count")
 MAX_ORDERS = 20
 
 
-def list_customer_orders(client: BusinessClient, customer_id: str, filter: str = "all", limit: int | None = None) -> dict:
+def list_customer_orders(
+    client: BusinessClient, customer_id: str, filter: str = "all", limit: int | None = None, mode: str = "rows"
+) -> dict:
     customer_id = (customer_id or "").strip()
     if not customer_id:
         return {"status": "error", "error": "missing customer_id (use search_customers first)"}
     if filter not in ORDER_FILTERS:
         return {"status": "error", "error": f"unknown filter {filter!r}; allowed: {sorted(ORDER_FILTERS)}"}
-    limit = min(int(limit or MAX_ORDERS), MAX_ORDERS)
-    params: dict[str, Any] = {"limit": limit}
+    if mode not in ORDER_MODES:
+        return {"status": "error", "error": f"unknown mode {mode!r}; allowed: {list(ORDER_MODES)}"}
+    cap = 0 if mode == "count" else min(int(limit or MAX_ORDERS), MAX_ORDERS)
+    params: dict[str, Any] = {"limit": cap}
     if ORDER_FILTERS[filter]:
         params["filter"] = ORDER_FILTERS[filter]
     code, body = client.request("GET", f"/customers/{customer_id}/orders", params=params)
@@ -145,17 +150,31 @@ def list_customer_orders(client: BusinessClient, customer_id: str, filter: str =
         return {"status": "not_found", "customer_id": customer_id}
     if code != 200:
         return {"status": "error", "error": f"business API answered {code}"}
-    result = {
+    orders = body.get("orders", [])
+    total = body.get("total")
+    if mode == "count":
+        return {"status": "ok", "customer_id": customer_id, "filter": filter, "mode": "count", "count": total}
+    cap_reached = bool(body.get("truncated")) or len(orders) >= cap
+    total_is_minimum = total is None and cap_reached
+    result: dict[str, Any] = {
         "status": "ok",
         "customer_id": customer_id,
         "filter": filter,
-        "total": body.get("total"),
-        "returned": len(body.get("orders", [])),
-        "orders": [_order_view(o) for o in body.get("orders", [])],
+        "mode": "rows",
+        "total": total if total is not None else len(orders),
+        "total_is_minimum": total_is_minimum,
+        "returned": len(orders),
+        "cap": cap,
+        "cap_reached": cap_reached,
+        "orders": [_order_view(o) for o in orders],
     }
-    if body.get("truncated"):
+    if cap_reached and (total is None or total > len(orders)):
         result["truncated"] = True
-        result["note"] = f"only the first {limit} of {body.get('total')} orders are listed: say so to the user"
+        result["note"] = (
+            f"partial list: only {len(orders)} lines shown (cap {cap}); "
+            + (f"at least {len(orders)} orders exist (minimum)" if total_is_minimum else f"exact total {total}")
+            + ". Say the answer is partial and give the total; use mode='count' for the number only."
+        )
     return result
 
 
@@ -183,14 +202,20 @@ TOOL_SPECS: dict[str, dict] = {
             "description": (
                 "Lists the orders of one customer (by customer id from search_customers). "
                 "Use filter='late' to keep only orders whose delivery is late: the filtering is done here, "
-                "do not filter the list yourself."
+                "do not filter the list yourself. Lines are capped: the result gives the total; "
+                "use mode='count' when only the number is wanted."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "customer_id": {"type": "string", "description": "Customer id, e.g. C-DURAND-1"},
                     "filter": {"type": "string", "enum": list(ORDER_FILTERS), "description": "'late' or 'all'"},
-                    "limit": {"type": "integer", "description": f"Maximum number of orders (≤ {MAX_ORDERS})"},
+                    "limit": {"type": "integer", "description": f"Maximum number of lines (≤ {MAX_ORDERS})"},
+                    "mode": {
+                        "type": "string",
+                        "enum": list(ORDER_MODES),
+                        "description": "'rows' (default, at most 20 lines plus the total) or 'count' (the number only)",
+                    },
                 },
                 "required": ["customer_id", "filter"],
                 "additionalProperties": False,
@@ -220,6 +245,6 @@ TOOL_FUNCTIONS = {
     "get_order": lambda client, args: get_order(client, args.get("reference", "")),
     "search_customers": lambda client, args: search_customers(client, args.get("name", "")),
     "list_customer_orders": lambda client, args: list_customer_orders(
-        client, args.get("customer_id", ""), args.get("filter") or "all", args.get("limit")
+        client, args.get("customer_id", ""), args.get("filter") or "all", args.get("limit"), args.get("mode") or "rows"
     ),
 }
