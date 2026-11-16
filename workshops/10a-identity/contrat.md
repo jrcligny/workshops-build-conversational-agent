@@ -60,7 +60,7 @@ Les tests sont dans [tests/](tests/).
 ## Essayer soi-même
 
 1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080.
-2. L'interface de chat ouvre ses conversations comme une interface connectée (`"sign_in": true`) : elle remet au harnais un jeton d'entrée valide pour l'utilisateur. Pour voir un refus, ouvrez une conversation sans `sign_in` ni `app_token` avec un client HTTP.
+2. L'interface de chat ouvre ses conversations comme une interface connectée (`"sign_in": true`) : elle remet au harnais un jeton d'entrée valide pour l'utilisateur choisi dans son sélecteur d'identité (par exemple paul-buyer, ou ines-service-b de l'organisation B). Pour voir un refus, ouvrez une conversation sans `sign_in` ni `app_token` avec un client HTTP.
 3. Lisez `identity` et `tools[].result.status` sur la dernière ligne de `traces/turns.jsonl`.
 4. Lancez `workshop check 10a`.
 

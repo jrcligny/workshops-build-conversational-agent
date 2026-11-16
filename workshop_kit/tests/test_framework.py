@@ -13,6 +13,13 @@ def test_interface_health(services):
     assert r.status_code == 200
 
 
+def test_users_lists_the_seeded_identities(services):
+    from workshop_kit.apps.business_api.seed_data import USERS
+
+    users = httpx.get(f"{services['interface']}/users", timeout=5).json()["users"]
+    assert [(u["user_id"], u["role"], u["organization"]) for u in users] == [(u, r, o) for u, _, r, o in USERS]
+
+
 def test_bootstrap_answers_without_model_nor_tool(chat_client, traces):
     turn = chat_client.turn("Quel est le statut de la commande CMD-1042 de Martin Durand ?")
     assert turn.ok is True

@@ -8,7 +8,7 @@ from importlib.resources import files
 
 import chainlit as cl
 
-from workshop_chat_ui.backend import BackendClient, BackendError, Event, agent_error
+from workshop_chat_ui.backend import BackendClient, BackendError, Event, Identity, agent_error
 
 
 def _display(value) -> str:
@@ -28,17 +28,50 @@ async def show_step(event: Event) -> None:
         step.language = "json"
 
 
+async def _users() -> list[Identity]:
+    try:
+        return await BackendClient().list_users()
+    except BackendError:
+        return []
+
+
+def profiles(users: list[Identity]) -> list[cl.ChatProfile]:
+    """One chat profile per test identity; Chainlit starts a new chat when the profile changes."""
+    return [
+        cl.ChatProfile(
+            name=user.user_id,
+            display_name=user.label,
+            markdown_description=f"Converser en tant que **{user.name}** ({user.role}, {user.organization}).",
+            default=index == 0,
+        )
+        for index, user in enumerate(users)
+    ]
+
+
+def selected_identity(users: list[Identity], profile: str | None) -> Identity | None:
+    return next((user for user in users if user.user_id == profile), None)
+
+
+@cl.set_chat_profiles
+async def chat_profiles(current_user=None, language=None) -> list[cl.ChatProfile]:
+    return profiles(await _users())
+
+
 @cl.on_chat_start
 async def start_chat() -> None:
     # Every Chainlit session/new chat gets a new backend id. No shared global history.
     cl.user_session.set("conversation_id", None)
+    identity = selected_identity(await _users(), cl.user_session.get("chat_profile"))
+    cl.user_session.set("identity", identity)
     cl.user_session.set("turn_lock", asyncio.Lock())
     await cl.Message(
         author="Atelier",
         content=files("workshop_chat_ui").joinpath("welcome.md").read_text(encoding="utf-8"),
     ).send()
+    if identity is not None:
+        await cl.Message(author="Atelier", content=f"Identité : **{identity.label}**").send()
     try:
-        conversation_id = await BackendClient().create_conversation()
+        conversation_id = await BackendClient().create_conversation(identity)
         cl.user_session.set("conversation_id", conversation_id)
     except BackendError as exc:
         await cl.Message(author="Connexion", content=str(exc)).send()
@@ -62,7 +95,7 @@ async def on_message(message: cl.Message) -> None:
             backend = BackendClient()
             conversation_id = cl.user_session.get("conversation_id")
             if not conversation_id:
-                conversation_id = await backend.create_conversation()
+                conversation_id = await backend.create_conversation(cl.user_session.get("identity"))
                 cl.user_session.set("conversation_id", conversation_id)
             async for event in backend.turn(conversation_id, text):
                 if event.type == "text":

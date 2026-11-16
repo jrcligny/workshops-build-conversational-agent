@@ -46,6 +46,25 @@ async def test_new_conversations_and_request_contract():
 
 
 @pytest.mark.asyncio
+async def test_identity_is_listed_and_sent_with_sign_in():
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        if request.url.path == "/prefix/users":
+            users = [{"user_id": "paul-buyer", "name": "Paul Morel", "role": "buyer", "organization": "organization-a"}]
+            return httpx.Response(200, json={"users": users})
+        return httpx.Response(200, json={"id": "abc"})
+
+    backend = client(handler)
+    (paul,) = await backend.list_users()
+    assert await backend.create_conversation(paul) == "abc"
+    assert json.loads(requests[-1].content) == {
+        "sign_in": True, "user_id": "paul-buyer", "role": "buyer", "organization": "organization-a",
+    }
+
+
+@pytest.mark.asyncio
 async def test_text_steps_tools_and_end():
     def handler(request):
         assert request.url.path == "/prefix/conversations/abc/messages"

@@ -69,6 +69,19 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/users")
+def list_users():
+    """Test identities of the seeded datasets, offered by the identity selector of chat-ui."""
+    from workshop_kit.apps.business_api.seed_data import USERS
+
+    return {
+        "users": [
+            {"user_id": user_id, "name": name, "role": role, "organization": organization}
+            for user_id, name, role, organization in USERS
+        ]
+    }
+
+
 @app.get("/attachments")
 def list_attachments():
     """Contract entry point for workshop 15. The area is empty in the shell."""

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from workshop_chat_ui import app
-from workshop_chat_ui.backend import BackendError, Event
+from workshop_chat_ui.backend import BackendError, Event, Identity
 
 
 @pytest.fixture
@@ -47,6 +47,7 @@ def ui(monkeypatch):
 
     class Backend:
         create_conversation = AsyncMock(side_effect=["first", "second", "third"])
+        list_users = AsyncMock(return_value=[])
         events: ClassVar = [Event("text", {"content": "Bonjour !"}), Event("end", {"ok": True})]
         turns: ClassVar = []
 
@@ -78,6 +79,35 @@ async def test_new_chat_replaces_id_and_multiturn_reuses_it(ui):
     assert session["conversation_id"] == "second"
     await app.on_message(message("Nouveau"))
     assert backend.turns[-1] == ("second", "Nouveau")
+
+
+CAMILLE = Identity("camille-renard", "Camille Renard", "customer_service", "organization-a")
+PAUL = Identity("paul-buyer", "Paul Morel", "buyer", "organization-a")
+
+
+@pytest.mark.asyncio
+async def test_selected_identity_opens_the_conversation(ui):
+    session, messages, _, backend, _ = ui
+    backend.list_users = AsyncMock(return_value=[CAMILLE, PAUL])
+    profiles = await app.chat_profiles()
+    assert [(p.name, p.default) for p in profiles] == [("camille-renard", True), ("paul-buyer", False)]
+    session["chat_profile"] = "paul-buyer"
+    await app.start_chat()
+    backend.create_conversation.assert_awaited_once_with(PAUL)
+    assert any("Paul Morel" in m.content for m in messages)
+    session["chat_profile"] = "camille-renard"
+    await app.start_chat()
+    assert backend.create_conversation.await_args.args == (CAMILLE,)
+    assert session["conversation_id"] == "second"
+
+
+@pytest.mark.asyncio
+async def test_no_selector_when_users_are_unavailable(ui):
+    session, _, _, backend, _ = ui
+    backend.list_users = AsyncMock(side_effect=BackendError("down"))
+    assert await app.chat_profiles() == []
+    await app.start_chat()
+    backend.create_conversation.assert_awaited_once_with(None)
 
 
 @pytest.mark.asyncio

@@ -85,6 +85,12 @@ overrides a standalone URL from the environment.
 ## Supported behavior
 
 - Text chat, in French, with a processing message while waiting for the backend.
+- An **identity selector** (Chainlit chat profiles) lists the test users of the
+  seeded datasets, read from `GET /users` (camille-renard, paul-buyer,
+  nina-accountant, ines-service-b…). The chosen `user_id`, `role` and
+  `organization` are sent to `POST /conversations` with `"sign_in": true`;
+  changing identity starts a new conversation. Without that list, the backend
+  default identity (camille-renard) is used.
 - Chainlit's **new conversation** control starts a fresh backend conversation;
   subsequent turns reuse its id. Sessions do not share history. There is no
   persistent conversation history or authentication.

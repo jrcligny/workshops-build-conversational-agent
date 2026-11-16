@@ -24,6 +24,20 @@ class Event:
     data: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class Identity:
+    """A test user of the seeded datasets, as listed by GET /users."""
+
+    user_id: str
+    name: str
+    role: str
+    organization: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.name} · {self.role} · {self.organization}"
+
+
 def configured_url() -> str:
     return os.environ.get("WORKSHOP_CHAT_BACKEND_URL", DEFAULT_BACKEND_URL).rstrip("/")
 
@@ -93,10 +107,27 @@ class BackendClient:
             "et que WORKSHOP_CHAT_BACKEND_URL est correcte. Aucun renvoi automatique n’a été effectué."
         )
 
-    async def create_conversation(self) -> str:
+    async def list_users(self) -> list[Identity]:
         try:
             async with self._client() as client:
-                response = await client.post("conversations", json={"sign_in": True})
+                response = await client.get("users")
+                response.raise_for_status()
+                return [
+                    Identity(u["user_id"], u.get("name") or u["user_id"], u["role"], u["organization"])
+                    for u in response.json()["users"]
+                ]
+        except httpx.HTTPError as exc:
+            raise self._http_error(exc) from exc
+        except (ValueError, KeyError, TypeError) as exc:
+            raise BackendError("Réponse du backend invalide : liste d’utilisateurs attendue.") from exc
+
+    async def create_conversation(self, identity: Identity | None = None) -> str:
+        body: dict[str, Any] = {"sign_in": True}
+        if identity is not None:
+            body |= {"user_id": identity.user_id, "role": identity.role, "organization": identity.organization}
+        try:
+            async with self._client() as client:
+                response = await client.post("conversations", json=body)
                 response.raise_for_status()
                 payload = response.json()
                 conversation_id = payload.get("id") if isinstance(payload, dict) else None

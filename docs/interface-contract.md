@@ -9,6 +9,7 @@ The chat interface is `workshop_kit/shell/chat_app.py`.
 | Element | Contract |
 |---|---|
 | Creation | `POST /conversations` with `user_id`, `role`, `organization`, optionally `app_token`, `sign_in` and `limits`. With `"sign_in": true` and no `app_token`, the interface issues an entry token (`typ=entry`) for the user, as a signed-in interface would; the tests and the Chainlit UI open their conversations that way, except the refusal cases of workshop 10a. Response: `{ "id": ... }`. |
+| Test identities | `GET /users` lists the users of the seeded datasets (`user_id`, `name`, `role`, `organization`). The identity selector of the Chainlit UI reads it and opens its conversations with the chosen identity. |
 | Turn | `POST /conversations/{id}/messages` with `{ "text": "..." }`. Server-sent events (SSE) response. |
 | Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the shell. |
 | Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
