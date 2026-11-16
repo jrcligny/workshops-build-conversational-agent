@@ -9,8 +9,10 @@ The system prompt lives in `system_prompt.md`, next to this file: `load_system_p
 reads it at each turn, without its HTML comments.
 
 Workshop 03 starts here: replace the fixed answer with a system prompt and a call to the
-kit's model client (`workshop_kit.shell.model_client`, wired to the proxy), keep the
-conversation history, and enrich the trace as the workshops ask (see each `contrat.md`).
+model (`agent_helpers.kit.model_client()`, wired to the proxy), keep the conversation
+history, and enrich the trace as the workshops ask (see each `contrat.md`). The package
+`agent_helpers/` holds the repetitive code (model client, HTTP and MCP clients, event
+builders, tool declarations, base trace) so you can focus on each workshop's goal.
 
 Your agent converses in French: the tests send French user turns and expect French
 answers (code, comments and identifiers stay English).
@@ -19,8 +21,13 @@ answers (code, comments and identifiers stay English).
 from __future__ import annotations
 
 import re
+import sys
 from collections.abc import Iterator
 from pathlib import Path
+
+# The kit loads this file by path: make `agent_helpers` (next to it) importable.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.append(str(Path(__file__).resolve().parent))
 
 from workshop_kit.shell import tracer
 from workshop_kit.shell.harness_contract import Event, Message, TestUser

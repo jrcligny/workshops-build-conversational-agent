@@ -61,7 +61,7 @@ Lisez la dernière ligne de `traces/turns.jsonl` (`offered_tools`, `tools`), pui
 
 ## Pistes techniques
 
-- `workshop_kit/services/attachments/registry.py` liste la zone ; [`docs/interface-contract.md`](../../docs/interface-contract.md) (section *Attachments*) décrit le champ `attachments` et `GET /attachments`.
+- `workshop_kit/services/attachments/registry.py` liste la zone (`list_attachments()`, aussi exposé par `my-agent/agent_helpers/kit.py`) ; [`docs/interface-contract.md`](../../docs/interface-contract.md) (section *Attachments*) décrit le champ `attachments` et `GET /attachments`.
 - `offered_tools` vient de l'atelier 14 : la règle de l'atelier 14 (outil d'écriture révélé avec son *skill*) reste vraie, mais le retrait l'emporte pour tout le tour. Le chargement d'un *skill* ne déclenche pas le retrait.
 - Le contrôle d'accès porte sur les pièces jointes du tour : un identifiant absent de la liste reçue par le *harness* doit donner `denied` ou `not_found`.
 

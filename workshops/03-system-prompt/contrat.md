@@ -66,8 +66,9 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
   `docs/interface-contract.md`. Partez de `my-agent/harness.py`.
 - Écrivez le prompt dans `my-agent/system_prompt.md` : `harness.py` le charge à chaque tour
   (`load_system_prompt()`, sans les commentaires HTML) et le reporte dans `input.system_prompt`.
-- `workshop_kit/shell/model_client.py` fournit `generate` et `generate_stream` vers le proxy ;
-  `workshop_kit/shell/tracer.py` écrit la trace du tour.
+- `my-agent/agent_helpers/kit.py` fournit `model_client()`, déjà branché sur le proxy :
+  `generate(messages, tools=None)` fait **un** appel et rend la réponse brute ; il ne gère ni
+  l'historique ni la boucle. `write_trace()` écrit la trace du tour, sans la composer.
 - L'interface n'ajoute un échange à l'historique que si le tour a produit du texte :
   émettez toujours au moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans

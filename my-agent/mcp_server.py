@@ -8,8 +8,15 @@ Planned transport: streamable HTTP, stateless mode.
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 
 from mcp.server import MCPServer
+
+# Make `agent_helpers` (next to this file) importable, also when the tests load it by path.
+# From this environment, use `agent_helpers.http_client` and `agent_helpers.tool_schema`.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.append(str(Path(__file__).resolve().parent))
 
 NAME = "workshop-tools"
 VERSION = "0.1.0"
