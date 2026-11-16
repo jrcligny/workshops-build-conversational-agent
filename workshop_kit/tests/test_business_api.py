@@ -50,6 +50,18 @@ def test_late_filter_with_frozen_clock(observation, business_client):
     assert second["total"] == data["total"]
 
 
+def test_retrieval_cap_and_offset(observation, business_client):
+    observation.reset("volume")
+    late = business_client.get("/customers/C-VOLUMEX/orders", params={"filter": "late", "limit": 20}).json()
+    assert (late["total"], late["total_status"], late["truncated"], late["next_offset"]) == (60, "exact", True, 20)
+    rest = business_client.get(
+        "/customers/C-VOLUMEX/orders", params={"filter": "late", "limit": 20, "offset": 20}
+    ).json()
+    assert {o["reference"] for o in rest["orders"]}.isdisjoint(o["reference"] for o in late["orders"])
+    every = business_client.get("/customers/C-VOLUMEX/orders").json()
+    assert (every["total"], every["total_status"], every["next_offset"]) == (200, "minimum", None)
+
+
 def test_organization_isolation(observation, services):
     token_b = observation.token("ines-service-b")["app_token"]
     r = httpx.get(

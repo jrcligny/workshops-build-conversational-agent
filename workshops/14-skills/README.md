@@ -38,7 +38,7 @@ Les outils d'écriture suivent la même logique (**révélation progressive des 
 - Le chargement ne doit servir que des procédures du catalogue, jamais un chemin fourni par le modèle.
 - La description d'un *skill* dit **quand** l'utiliser, pas comment faire.
 - Les outils proposés se recalculent à chaque cycle, d'après les *skills* chargés **et** les droits de l'utilisateur.
-- La compaction de l'atelier 07 doit traiter les *skills* actifs à part, comme l'historique récent.
+- La compaction de l'atelier 08 doit traiter les *skills* actifs à part, comme l'historique récent.
 - Un refus de chargement ne doit pas être retenu comme un résultat valable pour la suite.
 - Restent libres : les identifiants, titres et textes des trois *skills*, et la manière de les rendre au modèle après compaction.
 

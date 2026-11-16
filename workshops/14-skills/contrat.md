@@ -79,7 +79,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 - Lisez `workshop_kit/services/skills_catalog/catalog.py` : l'outil de chargement ne doit servir que des entrées du manifeste, jamais un chemin fourni par le modèle.
 - La description d'un *skill* sert à déclencher le chargement : elle dit quand l'utiliser, pas comment faire.
 - La liste des outils proposés se recalcule à chaque cycle, d'après les *skills* chargés **et** les droits du rôle (l'approbation de facture est réservée au rôle `accountant`).
-- La compaction de l'atelier 07 doit traiter les *skills* actifs à part, comme l'historique récent.
+- La compaction de l'atelier 08 doit traiter les *skills* actifs à part, comme l'historique récent.
 - Un refus de chargement ne doit pas être mémorisé comme un résultat valable pour la suite de la conversation.
 
 ## Vérifier

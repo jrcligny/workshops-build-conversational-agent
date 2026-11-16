@@ -125,11 +125,12 @@ def api_customer_orders(
     customer_id: str,
     filter: str | None = None,
     limit: int | None = None,
+    offset: int = 0,
     identity: dict = Depends(user_from_header),
 ):
     if not get_customer(customer_id, identity):
         raise HTTPException(status_code=404, detail="customer not found")
-    return list_orders(customer_id, identity, filter=filter, limit=limit)
+    return list_orders(customer_id, identity, filter=filter, limit=limit, offset=offset)
 
 
 @app.get("/orders/{reference}")

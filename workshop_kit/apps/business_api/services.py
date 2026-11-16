@@ -99,7 +99,13 @@ def get_customer(customer_id: str, identity: dict) -> dict | None:
     return _row(row)
 
 
-def list_orders(customer_id: str, identity: dict, filter: str | None = None, limit: int | None = None) -> dict:
+# The application never retrieves more matching orders than this; beyond it, the total is only a minimum.
+ORDER_RETRIEVAL_CAP = 200
+
+
+def list_orders(
+    customer_id: str, identity: dict, filter: str | None = None, limit: int | None = None, offset: int = 0
+) -> dict:
     rows = connection().execute(
         "SELECT * FROM orders WHERE customer_id = ? AND organization_id = ? ORDER BY order_date",
         (customer_id, _org(identity)),
@@ -110,12 +116,22 @@ def list_orders(customer_id: str, identity: dict, filter: str | None = None, lim
         o["late"] = is_late(o)
     if filter == "late":
         orders = [o for o in orders if o["late"]]
+    total_status = "minimum" if len(orders) > ORDER_RETRIEVAL_CAP else "exact"
+    orders = orders[:ORDER_RETRIEVAL_CAP]
     total = len(orders)
-    truncated = False
-    if limit is not None and len(orders) > limit:
-        orders = orders[:limit]
-        truncated = True
-    return {"orders": orders, "total": total, "truncated": truncated, "limit": limit}
+    offset = max(offset, 0)
+    end = total if limit is None else min(total, offset + limit)
+    page = orders[offset:end]
+    truncated = offset > 0 or end < total
+    return {
+        "orders": page,
+        "total": total,
+        "total_status": total_status,
+        "truncated": truncated,
+        "limit": limit,
+        "offset": offset,
+        "next_offset": end if end < total else None,
+    }
 
 
 def resolve_name(entity_type: str, name: str, identity: dict) -> list[dict]:

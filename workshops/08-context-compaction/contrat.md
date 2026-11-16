@@ -4,6 +4,20 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'objectif de l
 
 ## Ce que lisent les tests
 
+### Compaction
+
+- `compaction` : un objet présent seulement sur le tour qui compacte, avec `summarized_answers` (au moins 1), `kept_user_messages` (au moins 1 : les messages utilisateur anciens gardés mot pour mot), `threshold` (le seuil réglé, `COMPACTION_MESSAGE_THRESHOLD`, 8 par défaut) et `summary` (le texte du résumé, non vide, qui doit se retrouver tel quel dans `input` : historique, prompt système ou autre champ) ; la clé est absente sous le seuil.
+- Dans le flux SSE, le tour qui compacte émet un événement `compaction` ou `mention`.
+- Sous le seuil : la demande initiale est rejouée telle quelle dans `input.history`, et la trace ne contient pas de clé `compaction`.
+- Au-delà du seuil : chaque message précédent de l'utilisateur figure mot pour mot dans `input.history` (rôle `user`), `input.message` est le message courant, et l'historique contient moins de réponses `assistant` que de tours précédents.
+- Restent libres : le contenu et la place du résumé dans l'entrée, le moment exact de la compaction.
+
+Exemple : « Je traite le dossier de Martin Durand, commande CMD-1042, commandes livrées uniquement. » suivi de dix messages « Détail numéro 1 : je veux seulement les commandes livrées de CMD-1042. »… → sur le tour qui compacte, la trace contient `{"compaction": {"summarized_answers": 4, "kept_user_messages": 10, "threshold": 8, "summary": "Le conseiller suit CMD-1042…"}}` et le flux émet `{"type": "compaction", ...}`. L'interface Chainlit n'affiche ni `compaction` ni `mention` : suivez le flux avec `curl.exe -N` sur `http://127.0.0.1:8000/conversations/{id}/messages` (corps `{"text": "..."}`).
+
+La compaction porte sur ce que vous envoyez au modèle ; le *harness* reçoit l'historique complet de l'interface à chaque tour.
+
+### Mémoire de travail
+
 Les tests sont dans [tests/](tests/). Ils lisent la trace du tour (`traces/turns.jsonl`, dernière ligne).
 
 - `state` : l'état de conversation **après** le tour. C'est un objet non vide, imposé à chaque tour où le test le lit.

@@ -45,8 +45,8 @@ jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 | 04 | [04-first-tool](04-first-tool/) | Premier outil |
 | 05 | [05-read-tools](05-read-tools/) | Deux outils de lecture |
 | 06 | [06-agent-loop](06-agent-loop/) | Boucle d'agent |
-| 07 | [07-context-compaction](07-context-compaction/) | Contexte et compaction |
-| 08 | [08-working-memory](08-working-memory/) | Mémoire de travail |
+| 07 | [07-progressive-disclosure](07-progressive-disclosure/) | Découvrir le contexte progressivement |
+| 08 | [08-context-compaction](08-context-compaction/) | Compacter le contexte |
 | 09 | [09-mcp](09-mcp/) | Contrat d'outil et MCP |
 | 10a | [10a-identity](10a-identity/) | Identité et échange de jeton |
 | 10b | [10b-writes](10b-writes/) | Écritures |

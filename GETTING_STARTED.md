@@ -38,7 +38,7 @@ and `uv sync --project workshop_tests --locked --python 3.13` from the repositor
 root. There is no root Python project or shared environment.
 
 - `uv run --project workshop_kit/bootstrap workshop start 07` shows the guide, without copying any solution.
-- `uv run --project workshop_kit/bootstrap workshop check 07` runs `workshops/07-context-compaction/tests/` in the test project's environment.
+- `uv run --project workshop_kit/bootstrap workshop check 07` runs `workshops/07-progressive-disclosure/tests/` in the test project's environment.
 - `uv run --project workshop_kit/bootstrap workshop check 07 --non-regression` runs the tests of workshops 03 to 07.
 - `uv run --project workshop_kit/bootstrap workshop check-shell` checks that every workshop test fails on the empty shell.
 - `uv run --project workshop_kit/bootstrap workshop check-inert` checks that every workshop test fails against an inert agent (one that answers without calling the model nor any tool).

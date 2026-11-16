@@ -94,8 +94,8 @@ synonym), `approximate`, `not_found`, `error` and `denied`.
 | 04 | `tools[]` (`name`, `arguments`, `result.status`, `result.order`, `result.suggestions`) | | an invalid reference (`1042;DROP`) is rejected before any `/orders` call (status `error`) |
 | 05 | `tools[].arguments.filter == "late"`, `result.total` or `result.count` | | customer search returns both namesakes |
 | 06 | `cycles`, `tools[].cycle`, `cycle_limit_reached`, `interrupted` | `step` (`tool`), `mention`, `interruption` | |
-| 07 | `model.calls[].context_size`, `tools[].result.orders`, `truncated`, `total`, `count`; `compaction` (`summarized_answers`, ...) | `compaction` or `mention` | `arguments.mode == "count"`; `COMPACTION_MESSAGE_THRESHOLD` |
-| 08 | `state.current_customer` (`id`, `name`, `city`), `state.current_order.reference`, `state.candidates`; `input.state` | | |
+| 07 | `model.calls[].context_size`, `tools[].result.orders` (summarized rows with `reference`), `returned`, `total`, `total_status`, `truncated`, `count`; business API log: `GET /orders/<reference>` | | `arguments.mode == "count"`; the position parameter name is free |
+| 08 | `compaction` (`summarized_answers`, `kept_user_messages`, `threshold`, `summary`), `input.history`; `state.current_customer` (`id`, `name`, `city`), `state.current_order.reference`, `state.candidates`; `input.state` | `compaction` or `mention` | `COMPACTION_MESSAGE_THRESHOLD` |
 | 09 | `tools[].transport == "mcp"` | | `my-agent/mcp_server.py`: `application()`, `MCP_PATH`; generic tool with `source`, `filters`, `aggregate`; `result.error`, `result.value` |
 | 10a | `identity` (`user`, `token_type: "application"`) | | entry token in `Authorization: Bearer` to the MCP server; `denied` / `error` without a valid one |
 | 10b | | `confirmation_requested` (`draft_id`) | `POST /conversations/{id}/confirmation`; purchase requests by `paul-buyer` (buyer) |
