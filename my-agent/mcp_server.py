@@ -13,6 +13,7 @@ from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 
 # The SDK is installed in this environment: `agent_sdk.http_client` and `agent_sdk.tool_schema` help here.
+import agent_sandbox
 
 NAME = "workshop-tools"
 VERSION = "0.2.0"
@@ -82,7 +83,10 @@ class BusinessAPI:
         if url:
             import httpx
 
-            self._http = httpx.Client(base_url=url.rstrip("/"), timeout=15)
+            allowed, reason = agent_sandbox.egress_decision(url)
+            if not allowed:
+                raise IdentityRefused(f"business API unreachable from the sandbox: {reason}")
+            self._http = httpx.Client(base_url=url.rstrip("/"), timeout=15, follow_redirects=False)
         else:
             # Test runs host the business API in the same process and export no URL.
             if BusinessAPI._local is None:
@@ -528,6 +532,24 @@ def submit_draft(draft_id: str, ctx: Context) -> dict:
     return {"status": "submitted", "draft_id": draft_id, "result": body}
 
 
+def fetch_url(url: str) -> dict:
+    """Fetches a web page by URL, within the sandbox: only destinations on the allowlist are reached.
+
+    Any other destination (or any scheme other than http/https, such as file://) is refused.
+    """
+    allowed, reason = agent_sandbox.egress_decision(url)
+    if not allowed:
+        return {"status": "refused", "url": url, "error": reason, "policy": "sandbox allowlist"}
+    import httpx
+
+    try:
+        response = httpx.get(url, timeout=10, follow_redirects=False)
+    except httpx.HTTPError as exc:
+        return {"status": "error", "url": url, "error": f"{type(exc).__name__}"}
+    text = response.text
+    return {"status": "fetched", "url": url, "code": response.status_code, "content": text[:4000], "truncated": len(text) > 4000}
+
+
 def create_server() -> MCPServer:
     server = MCPServer(
         name=NAME,
@@ -537,7 +559,10 @@ def create_server() -> MCPServer:
             "Use find_by_name to resolve names, query for any read on a data source, get_order for one order."
         ),
     )
-    for tool in (get_order, find_by_name, describe_source, query, prepare_purchase_request, prepare_invoice_approval, submit_draft):
+    for tool in (
+        get_order, find_by_name, describe_source, query, fetch_url,
+        prepare_purchase_request, prepare_invoice_approval, submit_draft,
+    ):
         server.tool()(_guarded(tool))
     return server
 

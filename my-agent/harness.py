@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent_context  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
+import agent_sandbox  # noqa: E402
 import mcp_server  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
@@ -53,6 +54,9 @@ SYSTEM_PROMPT = (
     "indépendants les uns des autres (par exemple une commande et un client).\n"
     "Si un outil répond que la requête est refusée faute d'identité vérifiée, dis que tu n'as pas pu vérifier "
     "l'identité de l'utilisateur et que tu ne peux donc rien consulter en son nom.\n"
+    "Pour une adresse web, utilise fetch_url : si la destination est refusée par le bac à sable, dis que "
+    "l'accès est refusé car elle n'est pas autorisée. Tu n'as accès à aucun fichier, ni à aucun jeton ou "
+    "secret : tu n'en connais aucun et ne peux en répéter aucun.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
@@ -184,9 +188,18 @@ class Harness:
         stop: str | None = None
         text = ""
         cycle = 0
+        turn_limits = agent_sandbox.turn_limits(limits)
+        turn_started = time.perf_counter()
 
         def interrupted() -> bool:
             return interrupt_requested
+
+        def limit_reached() -> str | None:
+            if time.perf_counter() - turn_started >= turn_limits["duration_s"]:
+                return "duration_limit"
+            if _tokens_used(model_calls) >= turn_limits["token_budget"]:
+                return "budget_limit"
+            return None
 
         while True:
             if interrupted():
@@ -194,6 +207,9 @@ class Harness:
                 break
             if cycle >= MAX_CYCLES:
                 stop = "cycle_limit"
+                break
+            stop = limit_reached()
+            if stop:
                 break
             cycle += 1
             reply = self._call(messages, tool_specs, model_calls)
@@ -251,6 +267,26 @@ class Harness:
             if "partiel" not in text.lower():
                 text = "Réponse partielle (limite de cycles atteinte). " + text
             mentions.append(f"Réponse partielle : limite de {MAX_CYCLES} cycles atteinte.")
+        elif stop in ("duration_limit", "budget_limit"):
+            # The limit is hard: no further model call, the turn shows what it obtained and what is missing.
+            what = (
+                f"limite de durée ({turn_limits['duration_s']} s)"
+                if stop == "duration_limit"
+                else f"limite de budget ({turn_limits['token_budget']} jetons)"
+            )
+            obtained = [_step_label(t["name"], t["arguments"]) for t in tool_calls_done]
+            text = (
+                f"Réponse partielle : tour interrompu, {what} atteinte. "
+                + (
+                    "Obtenu : " + " ; ".join(obtained) + ". "
+                    if obtained
+                    else "Obtenu : aucune donnée, aucune recherche n'a pu être lancée. "
+                )
+                + "Manquant : la réponse complète à votre demande n'a pas pu être établie dans cette limite ; "
+                "reformulez une demande plus ciblée ou relancez avec une limite plus large."
+            )
+            mentions.append(f"Tour interrompu : {what} atteinte.")
+            yield Event(type="interruption", data={"reason": stop, "cycle": cycle, "calls_done": len(tool_calls_done)})
         truncated = [t for t in tool_calls_done if t["result"].get("truncated")]
         if stop == "answered" and truncated:
             # The data the answer relies on was incomplete: the answer must say so, whatever the model wrote.
@@ -311,6 +347,9 @@ class Harness:
                 "stop": stop,
                 "cycle_limit_reached": stop == "cycle_limit",
                 "interrupted": stop == "interrupted",
+                "limits": {**turn_limits, "reached": stop if stop in ("duration_limit", "budget_limit") else None,
+                           "tokens_used": _tokens_used(model_calls)},
+                "sandbox": {"policy_active": True, "file_access": False, "egress": "allowlist"},
                 "state": self.memory.get(conversation_id),
                 "permissions": {"role": user.role, "write_tools": sorted(allowed_writes)},
                 "confirmation": bool(confirmation),
@@ -335,6 +374,14 @@ _WRITE_LABELS = {
     "prepare_purchase_request": "préparer une demande d'achat",
     "prepare_invoice_approval": "préparer l'approbation d'une facture",
 }
+
+
+def _tokens_used(model_calls: list[dict]) -> int:
+    total = 0
+    for call in model_calls:
+        usage = call.get("usage") or {}
+        total += usage.get("total_tokens") or (usage.get("prompt_tokens", 0) + usage.get("completion_tokens", 0))
+    return total
 
 
 def _permissions_note(role: str, allowed: set[str]) -> str:
@@ -382,6 +429,7 @@ def _step_label(name: str, arguments: dict) -> str:
         "find_by_name": "Recherche de {name}",
         "describe_source": "Description de la source {source}",
         "query": "Lecture de la source {source}",
+        "fetch_url": "Récupération de {url}",
         "prepare_purchase_request": "Préparation du brouillon de demande d'achat",
         "prepare_invoice_approval": "Préparation du brouillon d'approbation de la facture {invoice}",
     }
