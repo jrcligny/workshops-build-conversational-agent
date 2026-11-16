@@ -1,0 +1,27 @@
+[project]
+allow_origins = ["http://127.0.0.1:8080", "http://localhost:8080"]
+
+[features]
+unsafe_allow_html = false
+edit_message = false
+
+[features.spontaneous_file_upload]
+enabled = false
+
+[features.audio]
+enabled = false
+
+[features.mcp]
+enabled = false
+
+[UI]
+name = "Atelier · Agent conversationnel"
+description = "Un espace pour tester votre agent, ses étapes et ses outils."
+language = "fr-FR"
+default_theme = "dark"
+layout = "wide"
+cot = "full"
+confirm_new_chat = true
+
+[meta]
+generated_by = "2.12.0"

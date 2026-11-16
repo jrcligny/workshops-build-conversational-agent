@@ -6,9 +6,9 @@ import pytest
 from mcp import Client
 
 from workshop_kit.shell.loader import load_mcp_server
-from workshop_kit.testing.chat_client import ChatClient
-from workshop_kit.testing.servers import free_port, start_uvicorn, wait_for_port
-from workshop_kit.testing.turns import business_log, flat, successful_turn, tools
+from workshop_tests.testing.chat_client import ChatClient
+from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
+from workshop_tests.testing.turns import business_log, flat, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 

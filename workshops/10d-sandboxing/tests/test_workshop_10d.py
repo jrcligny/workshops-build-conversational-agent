@@ -3,8 +3,8 @@
 import pytest
 
 from workshop_kit.services.sandbox.interface import is_policy_enforced, policy
-from workshop_kit.testing.chat_client import ChatClient
-from workshop_kit.testing.turns import flat, model_input, successful_turn
+from workshop_tests.testing.chat_client import ChatClient
+from workshop_tests.testing.turns import flat, model_input, successful_turn
 
 pytestmark = pytest.mark.workshop
 

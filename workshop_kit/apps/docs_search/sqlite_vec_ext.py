@@ -22,14 +22,14 @@ def _message(cause: str) -> str:
         Requirements:
         - Use an interpreter that allows loading SQLite extensions
           (`Connection.enable_load_extension`). The simplest is to install
-          Python 3.15 from python.org, then create the environment with uv:
-          `uv python install 3.15` then `uv sync --extra dev`.
-        - Windows: install the latest stable release from python.org
+                    Python 3.13 from python.org, then create the environment with uv:
+                    `uv python install 3.13` then `uv sync --extra dev`.
+                - Windows: install Python 3.13 from python.org
           (official 64-bit installer), not the Microsoft Store package if
           extension loading fails. Tick "Add python.exe to PATH".
         - macOS: Apple's Python (/usr/bin/python3) is often built without
-          this option. Install Python with Homebrew (`brew install python@3.15`)
-          or from python.org, then run `uv sync --python 3.15` again.
+          this option. Install Python with Homebrew (`brew install python@3.13`)
+          or from python.org, then run `uv sync --python 3.13` again.
         - Linux: interpreters installed by uv usually work. Otherwise, install
           a Python built with `--enable-loadable-sqlite-extensions`.
 

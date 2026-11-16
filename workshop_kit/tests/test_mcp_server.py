@@ -8,7 +8,7 @@ import pytest
 from mcp import Client
 
 from workshop_kit.shell.loader import load_mcp_server
-from workshop_kit.testing.servers import free_port, start_uvicorn, wait_for_port
+from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
 
 pytestmark = pytest.mark.shell
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from workshop_kit.testing.turns import flat
+from workshop_tests.testing.turns import flat
 
 pytestmark = pytest.mark.workshop
 

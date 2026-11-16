@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from workshop_kit.testing.turns import apply_rubric, business_log, flat, successful_turn
+from workshop_tests.testing.turns import apply_rubric, business_log, flat, successful_turn
 
 pytestmark = pytest.mark.workshop
 

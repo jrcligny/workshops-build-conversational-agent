@@ -3,7 +3,7 @@
 import pytest
 
 from workshop_kit.shell.config import settings
-from workshop_kit.testing.turns import apply_rubric, flat, model_input, successful_turn, tools
+from workshop_tests.testing.turns import apply_rubric, flat, model_input, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 

@@ -3,8 +3,8 @@
 import pytest
 
 from workshop_kit.apps.business_api.auth import issue_token
-from workshop_kit.testing.chat_client import ChatClient
-from workshop_kit.testing.turns import business_log, flat, successful_turn
+from workshop_tests.testing.chat_client import ChatClient
+from workshop_tests.testing.turns import business_log, flat, successful_turn
 
 pytestmark = pytest.mark.workshop
 

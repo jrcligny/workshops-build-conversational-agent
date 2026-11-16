@@ -1,4 +1,4 @@
-"""CLI: `workshop check NN`, `workshop check NN --non-regression`, `workshop check-shell`, `workshop start NN`."""
+"""Workshop CLI: serve the stack, show guides, and run workshop checks."""
 
 from __future__ import annotations
 
@@ -173,6 +173,11 @@ def main(argv: list[str] | None = None) -> int:
     start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")
     start.add_argument("workshop_id")
 
+    serve = sub.add_parser("serve", help="Start all services, including the Chainlit chat UI")
+    serve.add_argument("--port-offset", type=int, default=0, help="Shift all six default ports")
+    serve.add_argument("--reset-data", action="store_true", help="Reset the business dataset and document index")
+    serve.add_argument("--check", action="store_true", help="Validate startup of all isolated services, then stop")
+
     args = parser.parse_args(argv)
     if args.command == "check":
         return cmd_check(args.workshop_id, args.non_regression)
@@ -180,6 +185,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_check_shell()
     if args.command == "start":
         return cmd_start(args.workshop_id)
+    if args.command == "serve":
+        from workshop_kit.devstack import serve as serve_stack
+
+        return serve_stack(args.port_offset, args.reset_data, check_only=args.check)
     return 2
 
 

@@ -6,6 +6,22 @@ One folder per workshop (chapter 10 is split into 10a to 10d). Each folder conta
 - `state.yaml`: the workshop id and title;
 - `tests/`: the end-to-end tests of the workshop, with their fixtures when needed.
 
+Run all commands in the workshop guides from the repository root. First prepare
+the separate tooling and test environments:
+
+```powershell
+uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project workshop_tests --locked --python 3.13
+uv run --project workshop_kit/bootstrap workshop start 03
+uv run --project workshop_kit/bootstrap workshop check 03
+```
+
+The CLI lives in `workshop_kit/bootstrap/src/workshop_tools/`; its check commands run
+pytest in `workshop_tests/` with that project's explicit configuration. There
+is no root Python project or shared environment. Starting services with
+`python start.py` never installs test dependencies. See
+[installation](../docs/installation.md) for the full setup.
+
 | Id | Folder | Topic |
 |---|---|---|
 | 03 | [03-system-prompt](03-system-prompt/) | System prompt and conversational loop |

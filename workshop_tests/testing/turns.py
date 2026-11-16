@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from workshop_kit.evaluation.judge import judge
+from workshop_tests.evaluation.judge import judge
 from workshop_kit.shell.tracer import read_all
 
 

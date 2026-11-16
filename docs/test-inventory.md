@@ -3,7 +3,9 @@
 Aligned with the "success criterion" subsections of the book
 (`jrcligny/ai-generated-books`, branch `relecture/alignement-ateliers`).
 All these tests **fail on the empty shell** (68 tests in total). The
-infrastructure tests in `tests/kit/` (40 tests) must pass.
+infrastructure tests in `workshop_kit/tests/` must pass. Shared fixtures, clients
+and evaluation helpers live in `workshop_tests/testing/` and
+`workshop_tests/evaluation/`, not in the runtime kit.
 
 The user turns and expected phrases are French: the agent converses in
 French (see `docs/decisions.md`, Language). Judge rubrics fail an answer that
@@ -40,8 +42,21 @@ calibrated in phase B.
 
 ## Commands
 
+Run from the repository root. Prepare tooling and test dependencies separately;
+the CLI delegates workshop checks to the test project's environment. There is
+no root Python project or pytest configuration.
+
 ```powershell
-uv run workshop check 07
-uv run workshop check 07 --non-regression
-uv run workshop check-shell
+uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project workshop_tests --locked --python 3.13
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_kit/bootstrap workshop check 07
+uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
+uv run --project workshop_kit/bootstrap workshop check-shell
+```
+
+UI tests stay in their own environment (MCP 1, isolated from the test project's MCP 2):
+
+```powershell
+uv run --project workshop_kit/chat-ui --extra dev pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
 ```

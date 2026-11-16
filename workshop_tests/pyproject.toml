@@ -1,0 +1,42 @@
+[project]
+name = "workshop-tests"
+version = "0.1.0"
+description = "Shared fixtures, evaluation helpers and dependencies for workshop and kit tests"
+requires-python = ">=3.13"
+dependencies = [
+    "workshop-tools",
+    "httpx>=0.27",
+    "fastapi>=0.115",
+    "mcp>=2.3.0",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyjwt>=2.9",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "sqlite-vec>=0.1.9",
+    "sse-starlette>=2.1",
+    "uvicorn>=0.32",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+workshop-tools = { path = "../workshop_kit/bootstrap", editable = true }
+
+[tool.pytest.ini_options]
+testpaths = ["../workshop_kit/tests", "../workshops"]
+pythonpath = [".."]
+# Fixture loading and source paths remain explicit when running from another cwd.
+addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "business_api: tests of the business API test app (must pass)",
+    "docs_search: tests of the document search test app (must pass)",
+    "llm_proxy: tests of the LLM proxy (must pass)",
+    "shell: tests of the framework and of the empty shell (must pass)",
+    "workshop: success-criterion tests of a workshop (must fail on the empty shell)",
+]

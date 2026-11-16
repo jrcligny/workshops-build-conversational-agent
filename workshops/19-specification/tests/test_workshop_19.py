@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from workshop_kit.evaluation.routes import expected_digest, routes_digest
+from workshop_tests.evaluation.routes import expected_digest, routes_digest
 
 pytestmark = pytest.mark.workshop
 
