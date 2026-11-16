@@ -24,13 +24,59 @@ MAX_ROWS = 20
 LATE = "late"
 
 
+class IdentityRefused(Exception):
+    """The request carries no valid user identity: the tool server refuses it."""
+
+
+ACCEPTED_TYPES = {"entry", "application"}
+EXCHANGED_TOKEN_MINUTES = 5
+
+
+def exchange(authorization: str | None) -> str:
+    """Checks the caller's token and exchanges it for a distinct token for the business API.
+
+    The new token is issued for the application, on behalf of the same user (sub, role, organization),
+    with this server as actor. The received token is never relayed, and no service account exists.
+    """
+    import uuid
+    from datetime import datetime, timedelta, timezone
+
+    import jwt
+
+    from workshop_kit.apps.business_api.auth import ALGORITHM, ROLES
+    from workshop_kit.shell.config import settings
+
+    if not authorization or not authorization.lower().startswith("bearer "):
+        raise IdentityRefused("missing identity: the request carries no user token")
+    try:
+        claims = jwt.decode(authorization.split(" ", 1)[1].strip(), settings.token_secret, algorithms=[ALGORITHM])
+    except jwt.PyJWTError as exc:
+        raise IdentityRefused(f"invalid user token ({type(exc).__name__})") from exc
+    if claims.get("typ") not in ACCEPTED_TYPES:
+        raise IdentityRefused(f"token type {claims.get('typ')!r} is not accepted")
+    if not claims.get("sub") or not claims.get("organization") or claims.get("role") not in ROLES:
+        raise IdentityRefused("incomplete identity: user, role or organization missing")
+    now = datetime.now(timezone.utc)
+    exchanged = {
+        "sub": claims["sub"],
+        "role": claims["role"],
+        "organization": claims["organization"],
+        "typ": "application",
+        "act": {"sub": NAME},
+        "jti": uuid.uuid4().hex,
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(minutes=EXCHANGED_TOKEN_MINUTES)).timestamp()),
+    }
+    return jwt.encode(exchanged, settings.token_secret, algorithm=ALGORITHM)
+
+
 class BusinessAPI:
-    """HTTP client to the business API, with the caller's token."""
+    """HTTP client to the business API, with a token exchanged for the caller."""
 
     _local = None
 
     def __init__(self, authorization: str | None):
-        self.authorization = authorization or ""
+        self.authorization = f"Bearer {exchange(authorization)}"
         url = os.environ.get("BUSINESS_API_URL")
         if url:
             import httpx
@@ -53,6 +99,25 @@ class BusinessAPI:
         except ValueError:
             body = response.text
         return response.status_code, body
+
+
+def _guarded(tool):
+    """Turns an identity refusal into an explicit tool result instead of a protocol failure."""
+    import functools
+
+    @functools.wraps(tool)
+    def wrapper(*args, **kwargs):
+        try:
+            return tool(*args, **kwargs)
+        except IdentityRefused as exc:
+            return {
+                "status": "error",
+                "error": f"request refused by the tool server: {exc}",
+                "refused": True,
+                "fix": "the user's identity could not be verified; no data can be read on their behalf",
+            }
+
+    return wrapper
 
 
 def _api(ctx: Context) -> BusinessAPI:
@@ -354,10 +419,8 @@ def create_server() -> MCPServer:
             "Use find_by_name to resolve names, query for any read on a data source, get_order for one order."
         ),
     )
-    server.tool()(get_order)
-    server.tool()(find_by_name)
-    server.tool()(describe_source)
-    server.tool()(query)
+    for tool in (get_order, find_by_name, describe_source, query):
+        server.tool()(_guarded(tool))
     return server
 
 

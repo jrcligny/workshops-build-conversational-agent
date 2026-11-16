@@ -67,6 +67,38 @@ def _client(token: str):
     return Client(streamable_http_client(server_url(), http_client=http))
 
 
+def user_token(user) -> str:
+    """The user's own token, as received from the interface.
+
+    Without one (local test runs), an entry token for the conversation's user stands in for the interface's
+    session token: the agent never mints an application token itself.
+    """
+    if user.app_token:
+        return user.app_token
+    from workshop_kit.apps.business_api.auth import issue_token
+
+    return issue_token(user.id, user.role, user.organization, typ="entry")
+
+
+def identity_record(user, token: str) -> dict:
+    """What the trace keeps about the identity: who, which token type was received, how it was used."""
+    import jwt
+
+    try:
+        received = jwt.decode(token, options={"verify_signature": False}).get("typ")
+    except jwt.PyJWTError:
+        received = "unreadable"
+    return {
+        "user": user.id,
+        "role": user.role,
+        "organization": user.organization,
+        "received_token_type": received,
+        "relayed_to_tool_server": "bearer token of the user",
+        "business_api_token": "exchanged by the tool server for an application token on behalf of the user",
+        "service_account": False,
+    }
+
+
 def tool_specs(token: str) -> list[dict]:
     """Tool catalog published by the server, in the model's function format (cached per process)."""
     global _catalog
