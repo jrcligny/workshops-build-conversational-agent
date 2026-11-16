@@ -57,7 +57,7 @@ uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 Copy-Item .env.example .env
 uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
-uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the bootstrap
+uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the bootstrap, except workshop_tests/bootstrap_passes.txt
 uv run --project workshop_kit/bootstrap workshop check 03      # stays red until workshop 03 is done
 ```
 

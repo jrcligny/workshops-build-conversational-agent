@@ -58,11 +58,11 @@ One trace per turn, in a JSONL file (`turns.jsonl`) in the configured folder (`t
 
 Later workshops add fields; the table [Names read by the tests](#names-read-by-the-tests) lists them, and each workshop's `contrat.md` (section « Ce que lisent les tests ») and the docstring of its test file name the fields they read.
 
-If you go through the client `workshop_kit.shell.model_client.ModelClient`, the model calls can be complemented by your own trace writes (`workshop_kit.shell.tracer.write`).
+The bootstrap provides `my-agent/agent_helpers/trace.py`: a `Tracer` with one method per event to record (`call_model`, `tool_call`, `compaction`, `state`, `memory`, `mention`, `fallback`…) and `write()`, so the student never assembles the trace JSON by hand.
 
 ## Harness to implement
 
-In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `workshop_kit/shell/harness_contract.py`). The shipped bootstrap answers a fixed cautious sentence, writes the trace and calls neither the model nor any tool: every workshop test fails on it.
+In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `workshop_kit/shell/harness_contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the history and the message, relays the answer and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `workshop_tests/bootstrap_passes.txt`.
 
 ## Other locations of the shell
 
@@ -80,7 +80,7 @@ In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, messa
 |---|---|
 | Step | SSE event `step` during a turn with several cycles (workshop 06). |
 | Interruption | `POST /conversations/{id}/interruption`, or the `interrupt` field of the message. The next turn only receives `interrupt_requested=True` and stops without a new call (event `interruption`). |
-| Compaction | SSE event `compaction` (or a `mention` announcing it) when the history has been compacted (workshop 07). The trace describes the moment, the replaced exchanges, the summary and the items kept verbatim. |
+| Compaction | SSE event `compaction` (or a `mention` announcing it) when the history has been compacted (workshop 08). The trace describes the moment, the replaced exchanges, the summary and the items kept verbatim. |
 | Confirmation | `POST /conversations/{id}/confirmation` with `{ "confirmed": true }`. The next turn only receives `confirmation=True` (workshop 10b); a later draft needs a new gesture. The `confirmation_requested` event precedes the gesture. |
 | Limits | Optional `limits` field of `POST /conversations` (`duration_s`, `token_budget`), passed to the *harness* (workshop 10d). |
 

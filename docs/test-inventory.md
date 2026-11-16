@@ -2,8 +2,9 @@
 
 Aligned with the "success criterion" subsections of the book
 (`jrcligny/ai-generated-books`, branch `relecture/alignement-ateliers`, not yet merged
-into `main`). All these tests **fail on the bootstrap of `my-agent/`** and **against the inert agent**
-(`workshop check-shell`, `workshop check-inert`). The infrastructure tests in
+into `main`). All these tests **fail against the inert agent** (`workshop check-inert`) and **on the
+bootstrap of `my-agent/`** (`workshop check-shell`), except, for the bootstrap, those listed in
+`workshop_tests/bootstrap_passes.txt`: the bootstrap already converses through the model. The infrastructure tests in
 `workshop_kit/tests/` must pass. Shared fixtures, clients, runtime probes and evaluation
 helpers live in `workshop_tests/testing/` and `workshop_tests/evaluation/`, not in the
 runtime kit. The names each test reads are listed in

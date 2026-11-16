@@ -81,7 +81,8 @@ with an official interpreter (or select `workshop_tests` if the failure is in te
 ## Check the framework
 
 `uv run --project workshop_kit/bootstrap workshop check-shell` succeeds if, and only if, every workshop test
-**fails** on the bootstrap of `my-agent/`. This is the expected behaviour.
+**fails** on the bootstrap of `my-agent/`, except those listed in `workshop_tests/bootstrap_passes.txt`
+(the bootstrap already converses through the model). This is the expected behaviour.
 
 The `.env` file must never be committed. The `AZURE_OPENAI_API_KEY` key stays
 empty during design: the `simulated` mode is enough.

@@ -104,9 +104,15 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 - **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
   answers a cautious French sentence without calling the model nor any tool, and fakes the
   file deliverables; every test must fail. It guards against tests passed by doing nothing.
-  This agent is the bootstrap of `my-agent/` completed by the facade deliverables of
-  `workshop_tests/inert_agent/`, assembled in a temporary folder; the command refuses to run
-  once `my-agent/` differs from the bootstrap recorded in `workshop_tests/inert_agent/bootstrap.sha256`.
+  This agent is the bootstrap of `my-agent/` overlaid by `workshop_tests/inert_agent/` (an
+  inert `harness.py` and the facade deliverables), assembled in a temporary folder; the command
+  refuses to run once `my-agent/` differs from the bootstrap recorded in
+  `workshop_tests/inert_agent/bootstrap.sha256`.
+- **Connected bootstrap:** the bootstrap `my-agent/harness.py` already converses through the
+  model (system prompt, history, answer, trace written with `agent_helpers.trace.Tracer`), so
+  students start from a working agent. `workshop check-shell` therefore tolerates the tests
+  listed in `workshop_tests/bootstrap_passes.txt` and fails on any other passing test;
+  `check-inert` tolerates none.
 
 ## Superseded tests
 
