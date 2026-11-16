@@ -121,7 +121,8 @@ def tool_specs() -> list[dict]:
             "type": "function",
             "function": {
                 "name": FORGET,
-                "description": "Forgets the user's kept preferences: one topic, or all of them when topic is omitted.",
+                "description": "Forgets the user's kept preferences: one topic, or all of them when topic is omitted. "
+            "Only when the user explicitly asks to forget or erase them; never to answer what is kept.",
                 "parameters": {
                     "type": "object",
                     "properties": {"topic": {"type": "string", "enum": sorted(TOPICS)}},
