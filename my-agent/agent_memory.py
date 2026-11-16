@@ -15,6 +15,11 @@ class WorkingMemory:
 
     def __init__(self) -> None:
         self._states: dict[str, dict[str, Any]] = {}
+        # Conversations whose namesake candidates appeared in the current turn: the user has not chosen yet.
+        self._choice_pending: set[str] = set()
+
+    def begin_turn(self, conversation_id: str) -> None:
+        self._choice_pending.discard(conversation_id)
 
     def get(self, conversation_id: str) -> dict[str, Any]:
         return copy.deepcopy(self._states.get(conversation_id, {}))
@@ -46,10 +51,14 @@ class WorkingMemory:
                 self._set_customer(state, customers[0])
             elif customers:
                 state["candidates"] = customers
+                self._choice_pending.add(conversation_id)
         elif name == "query" and status == "ok" and result.get("source") == "orders":
             customer_id = (result.get("filters") or {}).get("customer_id")
+            known = {c["id"]: c for c in state.get("candidates") or []}
+            if customer_id and customer_id in known and conversation_id in self._choice_pending:
+                # Control: a namesake is recorded as current customer only after the user's choice.
+                return
             if customer_id:
-                known = {c["id"]: c for c in state.get("candidates") or []}
                 current = state.get("current_customer") or {}
                 customer = (
                     result.get("customer")
