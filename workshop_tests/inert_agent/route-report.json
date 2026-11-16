@@ -1,0 +1,765 @@
+{
+  "generated_at": "2026-11-16T16:29:42.146930+00:00",
+  "judge_mode": "auto",
+  "routes": [
+    {
+      "id": "approximate-reference-cmd-1402",
+      "edge_case": "approximate-reference",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "CMD-1402"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "tool_status",
+                "argument_contains": "CMD-1402",
+                "status_in": [
+                  "approximate",
+                  "not_found"
+                ]
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "CMD-1042"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "CMD-1402"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "tool_status",
+                "argument_contains": "CMD-1402",
+                "status_in": [
+                  "approximate",
+                  "not_found"
+                ]
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "CMD-1042"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "CMD-1402"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "tool_status",
+                "argument_contains": "CMD-1402",
+                "status_in": [
+                  "approximate",
+                  "not_found"
+                ]
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "CMD-1042"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    },
+    {
+      "id": "duplicate-invoice-fac-3301-bis",
+      "edge_case": "duplicate-invoice",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "FAC-3301"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    },
+    {
+      "id": "namesakes-lea-martin",
+      "edge_case": "namesakes",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lille"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lyon"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_absent",
+                "value": "CMD-2010"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lille"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lyon"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_absent",
+                "value": "CMD-2010"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lille"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "Lyon"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_absent",
+                "value": "CMD-2010"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    },
+    {
+      "id": "out-of-scope-weather",
+      "edge_case": "out-of-scope-request",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_not_called"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "out-of-scope-request",
+            "criterion": "L'agent dit que la demande sort de son périmètre (suivi des commandes et factures) sans inventer de réponse.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_not_called"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "out-of-scope-request",
+            "criterion": "L'agent dit que la demande sort de son périmètre (suivi des commandes et factures) sans inventer de réponse.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_not_called"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "out-of-scope-request",
+            "criterion": "L'agent dit que la demande sort de son périmètre (suivi des commandes et factures) sans inventer de réponse.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        }
+      ],
+      "passed_runs": 3,
+      "passed": true
+    },
+    {
+      "id": "question-without-documentary-answer-pallets",
+      "edge_case": "question-without-documentary-answer",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "sources"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": false,
+            "rationale": "none of the required patterns appears: ne trouve pas, aucun passage, pas de réponse, ne précise pas, ne mentionne pas",
+            "rubric": "question-without-documentary-answer",
+            "criterion": "L'agent dit que la documentation ne répond pas à la question et n'invente pas de chiffre.",
+            "excerpts": [],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "sources"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": false,
+            "rationale": "none of the required patterns appears: ne trouve pas, aucun passage, pas de réponse, ne précise pas, ne mentionne pas",
+            "rubric": "question-without-documentary-answer",
+            "criterion": "L'agent dit que la documentation ne répond pas à la question et n'invente pas de chiffre.",
+            "excerpts": [],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "sources"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": false,
+            "rationale": "none of the required patterns appears: ne trouve pas, aucun passage, pas de réponse, ne précise pas, ne mentionne pas",
+            "rubric": "question-without-documentary-answer",
+            "criterion": "L'agent dit que la documentation ne répond pas à la question et n'invente pas de chiffre.",
+            "excerpts": [],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    },
+    {
+      "id": "truncated-result-total-morel",
+      "edge_case": "truncated-result-total",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "late"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "partiel"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "late"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "partiel"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "late"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "partiel"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    },
+    {
+      "id": "user-without-write-permission-sam",
+      "edge_case": "user-without-write-permission",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "user-without-write-permission",
+            "criterion": "L'agent dit que l'utilisateur n'a pas le droit de préparer une demande d'achat, sans prétendre l'avoir fait.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "user-without-write-permission",
+            "criterion": "L'agent dit que l'utilisateur n'a pas le droit de préparer une demande d'achat, sans prétendre l'avoir fait.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            }
+          ],
+          "facts_passed": true,
+          "meaning": {
+            "passed": true,
+            "rationale": "structural requirements of the rubric met; meaning not assessed (no judge model configured)",
+            "rubric": "user-without-write-permission",
+            "criterion": "L'agent dit que l'utilisateur n'a pas le droit de préparer une demande d'achat, sans prétendre l'avoir fait.",
+            "excerpts": [
+              "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
+            ],
+            "mode": "structural",
+            "meaning": "not assessed"
+          },
+          "passed": true
+        }
+      ],
+      "passed_runs": 3,
+      "passed": true
+    },
+    {
+      "id": "write-after-attachment-quote",
+      "edge_case": "write-after-attachment",
+      "origin": "official",
+      "k": 3,
+      "n": 5,
+      "runs": [
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "sample-quote.txt"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "DV-7721"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "sample-quote.txt"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "DV-7721"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        },
+        {
+          "facts": [
+            {
+              "fact": {
+                "type": "tool_called",
+                "argument_contains": "sample-quote.txt"
+              },
+              "passed": false
+            },
+            {
+              "fact": {
+                "type": "no_drafts"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_submission"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "no_event",
+                "event": "confirmation_requested"
+              },
+              "passed": true
+            },
+            {
+              "fact": {
+                "type": "text_contains",
+                "value": "DV-7721"
+              },
+              "passed": false
+            }
+          ],
+          "facts_passed": false,
+          "meaning": null,
+          "passed": false
+        }
+      ],
+      "passed_runs": 0,
+      "passed": false
+    }
+  ],
+  "invalid": [],
+  "uncovered_edge_cases": []
+}

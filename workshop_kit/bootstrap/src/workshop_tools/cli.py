@@ -74,9 +74,9 @@ def _test_env() -> dict[str, str]:
     return {key: value for key, value in os.environ.items() if key != "VIRTUAL_ENV"}
 
 
-def _pytest(folders: list[Path], extra: list[str] | None = None) -> int:
+def _pytest(folders: list[Path], extra: list[str] | None = None, env_overrides: dict[str, str] | None = None) -> int:
     args = [*_pytest_command(), *[str(d) for d in folders], *(extra or [])]
-    return subprocess.call(args, cwd=REPO_ROOT, env=_test_env())
+    return subprocess.call(args, cwd=REPO_ROOT, env={**_test_env(), **(env_overrides or {})})
 
 
 def cmd_check(workshop_id: str, non_regression: bool) -> int:
@@ -87,15 +87,18 @@ def cmd_check(workshop_id: str, non_regression: bool) -> int:
         print(f"missing test folders: {', '.join(missing)}", file=sys.stderr)
         return 2
     print(f"Checking workshops: {', '.join(ids)}")
-    return _pytest([workshop_tests_dir(i) for i in ids], ["-m", "workshop"])
+    # Tests marked superseded_by(<id>) are skipped once the target workshop reaches <id>.
+    return _pytest([workshop_tests_dir(i) for i in ids], ["-m", "workshop"], {"WORKSHOP_TARGET": workshop_id})
 
 
-def cmd_check_shell() -> int:
-    """Succeeds (exit code 0) when every workshop test fails or errors, and none passes."""
+def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None) -> int:
+    """Runs every workshop test and succeeds (exit code 0) when each one fails or errors."""
     folders = [workshop_tests_dir(i) for i in WORKSHOP_IDS if workshop_tests_dir(i).is_dir()]
     if not folders:
         print("no workshops/*/tests folder found", file=sys.stderr)
         return 2
+    env = _test_env()
+    env.update(env_overrides or {})
     proc = subprocess.run(
         [
             *_pytest_command(),
@@ -104,10 +107,11 @@ def cmd_check_shell() -> int:
             "-q",
             "--tb=no",
             "--color=no",
+            "-rA",
             f"--junitxml={SHELL_REPORT}",
         ],
         cwd=REPO_ROOT,
-        env=_test_env(),
+        env=env,
         capture_output=True,
         text=True,
         check=False,
@@ -115,12 +119,45 @@ def cmd_check_shell() -> int:
     print(proc.stdout)
     if proc.stderr:
         print(proc.stderr, file=sys.stderr)
-    return _interpret_shell_run((proc.stdout or "") + (proc.stderr or ""), SHELL_REPORT)
+    return _interpret_shell_run((proc.stdout or "") + (proc.stderr or ""), SHELL_REPORT, label)
 
 
-def _interpret_shell_run(output: str, report: Path | None = None) -> int:
+def cmd_check_shell() -> int:
+    """Succeeds (exit code 0) when every workshop test fails or errors on the empty shell."""
+    return _run_expect_all_fail("Empty shell")
+
+
+def cmd_check_inert() -> int:
+    """Succeeds when every workshop test fails against the inert agent of workshop_tests/inert_agent.
+
+    The inert agent answers a cautious French sentence, calls neither the model nor a tool,
+    and ships facade deliverables; a test it passes is too lenient.
+    """
+    inert = TEST_PROJECT / "inert_agent"
+    return _run_expect_all_fail(
+        "Inert agent",
+        {
+            "MY_AGENT_DIR": str(inert),
+            "SANDBOX_POLICY_FILE": str(inert / "sandbox" / "policy.yaml"),
+            "SKILLS_DIR": str(inert / "skills"),
+            "ATTACHMENTS_DIR": str(inert / "attachments"),
+        },
+    )
+
+
+def _passed_tests(report: Path) -> list[str]:
+    root = ET.parse(report).getroot()
+    names = []
+    for case in root.iter("testcase"):
+        if not any(child.tag in ("failure", "error", "skipped") for child in case):
+            names.append(f"{case.attrib.get('classname', '')}::{case.attrib.get('name', '')}")
+    return names
+
+
+def _interpret_shell_run(output: str, report: Path | None = None, label: str = "Empty shell") -> int:
     """0 when everything failed as intended, 1 otherwise, 2 when nothing was collected."""
     passed = failed = errors = collected = skipped = 0
+    passed_names: list[str] = []
     if report and report.exists():
         root = ET.parse(report).getroot()
         # pytest may emit a <testsuites> wrapper or a bare <testsuite>.
@@ -131,6 +168,7 @@ def _interpret_shell_run(output: str, report: Path | None = None) -> int:
             errors += int(suite.attrib.get("errors") or 0)
             skipped += int(suite.attrib.get("skipped") or 0)
         passed = max(collected - failed - errors - skipped, 0)
+        passed_names = _passed_tests(report)
     if collected == 0:
         for pattern, name in ((r"(\d+) passed", "passed"), (r"(\d+) failed", "failed"), (r"(\d+) error", "errors"), (r"collected (\d+) item", "collected")):
             m = re.search(pattern, output)
@@ -148,22 +186,23 @@ def _interpret_shell_run(output: str, report: Path | None = None) -> int:
         print("no workshop test collected", file=sys.stderr)
         return 2
     print(
-        f"Empty shell: {passed} passed, {failed} failed, {errors} error(s) "
+        f"{label}: {passed} passed, {failed} failed, {errors} error(s) "
         f"(collected: {collected or failed + passed + errors})."
     )
     if passed > 0:
         print(
-            "ERROR: at least one workshop test passes on the empty shell. "
+            f"ERROR: at least one workshop test passes ({label.lower()}). "
             "All of them must fail until the workshop is done.",
             file=sys.stderr,
         )
+        for name in passed_names:
+            print(f"  passes: {name}", file=sys.stderr)
         return 1
     if failed + errors == 0:
         print("ERROR: no workshop test failed.", file=sys.stderr)
         return 1
-    print("Expected behaviour: every workshop test fails on the empty shell.")
+    print(f"Expected behaviour: every workshop test fails ({label.lower()}).")
     return 0
-
 
 def cmd_start(workshop_id: str) -> int:
     _check_id(workshop_id)
@@ -188,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
 
     sub.add_parser("check-shell", help="Check that every workshop test fails on the empty shell")
+    sub.add_parser("check-inert", help="Check that every workshop test fails against the inert agent")
 
     start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")
     start.add_argument("workshop_id")
@@ -202,6 +242,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_check(args.workshop_id, args.non_regression)
     if args.command == "check-shell":
         return cmd_check_shell()
+    if args.command == "check-inert":
+        return cmd_check_inert()
     if args.command == "start":
         return cmd_start(args.workshop_id)
     if args.command == "serve":
