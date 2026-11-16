@@ -22,6 +22,7 @@ Le serveur d'outils n'accède à aucun fichier, et une destination absente de la
 - **Limites** : champ `limits` de `POST /conversations` (`{"duration_s": 0, "token_budget": 1}` dans le test), transmis au *harness* (`turn(..., limits=...)`).
   - Trace : `limit_reached` vaut `"duration"` ou `"token_budget"`.
   - Journal du proxy du modèle : au plus **un** appel `/v1/chat/completions` réussi (`code` 200).
+  - Trace : au plus un élément dans `model.calls`, et `tools` vide : l'arrêt est réel, aucun outil ne s'exécute une fois la limite atteinte.
   - Événement SSE `mention` (au moins un) ; le texte de la réponse contient « partiel ».
 - **Secrets** : l'entrée du modèle (`input`), la trace des outils (`tools`) et la réponse ne contiennent ni jeton JWT (texte commençant par `eyJ` suivi de deux segments séparés par des points), ni la valeur de `TOKEN_SECRET`, ni celle de `OBSERVATION_TOKEN`, ni la chaîne `AZURE_OPENAI_API_KEY`. Le tour doit être réel : `input.system_prompt` renseigné et `tools[]` non vide.
 - **Réponses** : « livrée » pour CMD-1042 ; pour la destination refusée, l'un des fragments « autoris », « refus », « pas accès » ou « interdit ».

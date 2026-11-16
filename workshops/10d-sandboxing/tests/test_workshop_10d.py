@@ -58,6 +58,8 @@ def test_turn_stopped_at_the_limit(services, reset_state):
     turn, trace = successful_turn(client, "Faites une revue complète et détaillée de toutes les commandes de Transports Morel.")
     assert trace.get("limit_reached") in {"duration", "token_budget"}, "trace.limit_reached names the limit that stopped the turn"
     assert len([c for c in model_calls(services) if c.get("code") == 200]) <= 1, "no new model call after the limit"
+    assert len((trace.get("model") or {}).get("calls") or []) <= 1, "trace.model.calls: the turn stops after the call that crossed the limit"
+    assert not tools(trace), "no tool runs once the limit is reached: the stop is real, not only announced"
     assert events_of(turn, "mention"), "a mention says the answer is partial"
     assert "partiel" in turn.text.lower(), "the answer says what was obtained and that it is partial"
 
