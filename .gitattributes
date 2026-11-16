@@ -7,3 +7,4 @@ uv.lock text eol=lf
 # Private generalization tests are not part of the student material (git archive).
 workshops/**/tests/*_private.py export-ignore
 workshops/**/tests/fixtures_private/** export-ignore
+workshops/**/tests/fixtures_private export-ignore
