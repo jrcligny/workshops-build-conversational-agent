@@ -154,6 +154,7 @@ def list_customer_orders(client: BusinessClient, customer_id: str, filter: str =
         "orders": [_order_view(o) for o in body.get("orders", [])],
     }
     if body.get("truncated"):
+        result["truncated"] = True
         result["note"] = f"only the first {limit} of {body.get('total')} orders are listed: say so to the user"
     return result
 

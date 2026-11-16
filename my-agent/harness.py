@@ -29,16 +29,24 @@ SYSTEM_PROMPT = (
     "- status 'error' : dis que tu n'as pas pu consulter l'application.\n"
     "Pour un client désigné par son nom : search_customers, puis list_customer_orders avec son id. "
     "Si plusieurs clients correspondent (homonymes), ne choisis jamais à la place de l'utilisateur : "
-    "liste-les tous avec leur ville et demande lequel il veut. "
+    "liste-les tous avec leur ville et demande lequel il veut, sauf si l'utilisateur a déjà donné un critère "
+    "qui en désigne un seul (sa ville, par exemple). "
     "Pour les commandes en retard, utilise filter='late' : ne filtre jamais toi-même une liste. "
     "Si une liste est tronquée, dis-le.\n"
+    "Enchaîne les outils nécessaires dans le même tour ; demande en une seule fois les appels "
+    "indépendants les uns des autres (par exemple une commande et un client).\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
 )
 
 STUDENT_TOKEN = os.environ.get("COURSE_TOKEN", "test-student")
-MAX_TOOL_CALLS = 6
+MAX_TOOL_CALLS = 12
+MAX_CYCLES = 5
+CYCLE_LIMIT_INSTRUCTION = (
+    "Limite de cycles atteinte : tu ne peux plus appeler d'outil. Réponds maintenant avec ce que tu as vérifié, "
+    "en commençant par « Réponse partielle » et en disant précisément ce qui n'a pas pu être vérifié."
+)
 PER_TOOL_LIMITS = {"get_order": 1}
 TOOLS = ["get_order", "search_customers", "list_customer_orders"]
 
@@ -75,6 +83,20 @@ class Harness:
     def __init__(self) -> None:
         self.model = model_client()
 
+    def _call(self, messages: list[dict[str, Any]], tools: list[dict] | None, calls: list[dict]) -> dict:
+        started = time.perf_counter()
+        response = self.model.generate(messages, tools)
+        choice = (response.get("choices") or [{}])[0]
+        calls.append(
+            {
+                "id": response.get("model"),
+                "usage": response.get("usage") or {},
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+                "stop_reason": choice.get("finish_reason"),
+            }
+        )
+        return choice.get("message") or {}
+
     def turn(
         self,
         conversation_id: str,
@@ -96,31 +118,30 @@ class Harness:
         client: agent_tools.BusinessClient | None = None
         tool_calls_done: list[dict] = []
         model_calls: list[dict] = []
+        mentions: list[str] = []
+        stop: str | None = None
         text = ""
         cycle = 0
+
+        def interrupted() -> bool:
+            return interrupt_requested
+
         while True:
+            if interrupted():
+                stop = "interrupted"
+                break
+            if cycle >= MAX_CYCLES:
+                stop = "cycle_limit"
+                break
             cycle += 1
-            started = time.perf_counter()
-            response = self.model.generate(messages, tool_specs)
-            choice = (response.get("choices") or [{}])[0]
-            reply = choice.get("message") or {}
-            model_calls.append(
-                {
-                    "id": response.get("model"),
-                    "usage": response.get("usage") or {},
-                    "duration_ms": int((time.perf_counter() - started) * 1000),
-                    "stop_reason": choice.get("finish_reason"),
-                }
-            )
+            reply = self._call(messages, tool_specs, model_calls)
             requested = reply.get("tool_calls") or []
             if not requested:
                 text = reply.get("content") or ""
-                break
-            if cycle > MAX_TOOL_CALLS + 1:
-                # The model keeps asking for tools despite the exhausted budget.
-                text = "Je n'ai pas pu terminer la recherche : merci de préciser votre demande."
+                stop = "answered"
                 break
             messages.append({"role": "assistant", "content": reply.get("content"), "tool_calls": requested})
+            # Independent calls requested together run in the same cycle.
             for call in requested:
                 function = call.get("function") or {}
                 name = function.get("name", "")
@@ -129,13 +150,17 @@ class Harness:
                 except json.JSONDecodeError:
                     arguments = {}
                 used = sum(1 for t in tool_calls_done if t["name"] == name)
+                repeated = any(t["name"] == name and t["arguments"] == arguments for t in tool_calls_done)
                 if len(tool_calls_done) >= MAX_TOOL_CALLS:
                     result = {"status": "error", "error": "tool budget exhausted for this message: answer now"}
                 elif name not in TOOLS:
                     result = {"status": "error", "error": f"unknown tool {name}"}
+                elif repeated:
+                    result = {"status": "error", "error": "identical call already made in this turn: use its result"}
                 elif used >= PER_TOOL_LIMITS.get(name, MAX_TOOL_CALLS):
                     result = {"status": "error", "error": f"{name} already used for this message: answer now"}
                 else:
+                    yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
                     client = client or agent_tools.BusinessClient(user)
                     try:
                         result = agent_tools.TOOL_FUNCTIONS[name](client, arguments)
@@ -146,7 +171,30 @@ class Harness:
                     {"role": "tool", "tool_call_id": call.get("id"), "content": json.dumps(result, ensure_ascii=False)}
                 )
 
-        last = model_calls[-1]
+        if stop == "interrupted":
+            mentions.append("Tour interrompu à votre demande.")
+            yield Event(type="interruption", data={"cycle": cycle, "calls_done": len(tool_calls_done)})
+            text = (
+                "Tour interrompu à votre demande : je n'ai lancé aucune nouvelle recherche."
+                if not tool_calls_done
+                else "Tour interrompu à votre demande : les recherches restantes n'ont pas été lancées."
+            )
+        elif stop == "cycle_limit":
+            # One last call without tools: answer with what was verified, declared partial.
+            messages.append({"role": "system", "content": CYCLE_LIMIT_INSTRUCTION})
+            reply = self._call(messages, None, model_calls)
+            text = reply.get("content") or ""
+            if "partiel" not in text.lower():
+                text = "Réponse partielle (limite de cycles atteinte). " + text
+            mentions.append(f"Réponse partielle : limite de {MAX_CYCLES} cycles atteinte.")
+        truncated = [t for t in tool_calls_done if t["result"].get("truncated")]
+        if stop == "answered" and truncated:
+            # The data the answer relies on was incomplete: the answer must say so, whatever the model wrote.
+            mentions.append("Réponse partielle : certaines listes ont été tronquées par l'application.")
+            if not any(word in text.lower() for word in ("partiel", "incomplet")):
+                text = "Réponse partielle (liste tronquée par l'application). " + text
+
+        last = model_calls[-1] if model_calls else {"id": None, "usage": {}, "stop_reason": None}
         tracer.write(
             {
                 "conversation_id": conversation_id,
@@ -163,8 +211,26 @@ class Harness:
                 "output": text,
                 "tools": tool_calls_done,
                 "cycles": cycle,
+                "max_cycles": MAX_CYCLES,
+                "stop": stop,
+                "cycle_limit_reached": stop == "cycle_limit",
+                "interrupted": stop == "interrupted",
             }
         )
+        for mention in mentions:
+            yield Event(type="mention", data={"content": mention})
         for chunk in _split(text):
             yield Event(type="text", data={"content": chunk})
         yield Event(type="end", data={"ok": True})
+
+
+def _step_label(name: str, arguments: dict) -> str:
+    labels = {
+        "get_order": "Consultation de la commande {reference}",
+        "search_customers": "Recherche du client {name}",
+        "list_customer_orders": "Liste des commandes du client {customer_id}",
+    }
+    try:
+        return labels.get(name, name).format(**arguments)
+    except (KeyError, IndexError):
+        return name
