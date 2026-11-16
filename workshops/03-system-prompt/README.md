@@ -4,22 +4,27 @@ Chapitre 3 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fo
 
 ## Ce que vous allez construire
 
-Vous donnez à l'agent sa première forme : un *system prompt* court et une boucle
-conversationnelle. Le prompt fixe le rôle, le périmètre, le registre et une règle :
-ne jamais affirmer l'état d'une commande sans source. À chaque tour, le *harness* transmet
-au modèle le prompt, l'historique de la conversation et le nouveau message, puis renvoie
-la réponse au fil de l'eau. Chaque tour laisse une trace, et le prompt se versionne comme
-du code. Le chapitre insiste sur un point : une règle écrite dans le prompt n'est pas une
-garantie.
+Vous écrivez le *system prompt* de l'agent, dans `my-agent/system_prompt.md`. Il est court et
+fixe le rôle, le périmètre, le registre et une règle : ne jamais affirmer l'état d'une commande
+sans source, même quand l'utilisateur insiste. Le chapitre insiste sur un point : une règle
+écrite dans le prompt n'est pas une garantie.
+
+La boucle conversationnelle est fournie par l'amorce. À chaque tour, `my-agent/harness.py`
+transmet au modèle le prompt, l'historique et le nouveau message, relaie la réponse et écrit
+la trace. Lisez-la pour comprendre ce que le modèle voit à chaque tour, sans avoir à la
+recoder. Le prompt livré, une phrase de rôle, ne suffit pas : les tests de refus échouent
+tant que le prompt n'énonce pas la règle.
 
 ## C'est réussi quand…
 
 - l'agent répond en français, à partir d'un prompt court qui ne contient aucune donnée métier ;
 - la réponse vient bien du modèle, et l'agent n'a encore aucun outil ;
-- interrogé sur l'état d'une commande, il refuse de l'affirmer faute de source, même si
+- le prompt énonce lui-même la règle : ne rien affirmer sans source, le dire simplement, et
+  tenir ce refus quand l'utilisateur insiste ;
+- interrogé sur l'état d'une commande, l'agent refuse de l'affirmer faute de source, même si
   l'utilisateur insiste ;
 - d'un tour à l'autre, il se souvient de la conversation : les échanges précédents sont
-  renvoyés au modèle tels quels.
+  renvoyés au modèle tels quels (fourni par l'amorce, à préserver).
 
 ## Exemples
 
@@ -39,8 +44,10 @@ garantie.
 ## Pistes
 
 - Gardez le prompt court, sans exemple métier, dans un fichier versionné.
-- Demandez-vous ce que le modèle voit réellement à chaque tour : sans historique, il n'a
-  aucune mémoire.
+- Un modèle refuse souvent spontanément de parler d'une commande qu'il ne connaît pas. Ne
+  comptez pas sur ce hasard : écrivez la règle, et prévoyez l'insistance.
+- Lisez `harness.py` et demandez-vous ce que le modèle voit réellement à chaque tour : sans
+  historique, il n'a aucune mémoire.
 - Une règle de prompt réduit le risque mais ne le supprime pas : elle se vérifie par des
   essais répétés, pas par un seul.
 - Un tour doit toujours produire du texte, sinon l'échange ne compte pas dans la

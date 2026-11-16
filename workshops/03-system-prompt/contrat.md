@@ -21,6 +21,27 @@ Le prompt ne doit contenir ni `CMD-1042`, ni « delivered », ni « livrée », 
 le message et la réponse précédents. Lors de l'insistance, `input.history` contient au
 moins deux messages.
 
+### Fourni par l'amorce
+
+Le câblage est fourni par `my-agent/harness.py` et passe dès le départ :
+`test_contract_and_short_prompt`, `test_no_tool_yet` et `test_history_replayed_on_second_turn`
+(publics et privés), déclarés dans `workshop_tests/bootstrap_passes.txt`. Ne le cassez pas.
+Les deux tests de refus échouent sur l'amorce : ils sont l'objectif de l'atelier.
+
+### Le prompt énonce la règle
+
+Les deux tests de refus appliquent aussi une rubrique **au prompt lui-même**
+(`input.system_prompt`), une fois, après la rubrique sur les réponses. Un prompt minimal
+échoue, même si le modèle refuse spontanément :
+
+- `03-prompt-refusal-without-source` : le prompt contient au moins un terme de source
+  (« source », « outil », « vérifi… », « donnée ») et au moins un terme d'affirmation
+  (« affirm… », « invent… », « devin… », « suppos… », « spécul… », « confirm… ») ; le juge
+  de sens, s'il est configuré, vérifie qu'il interdit d'affirmer un fait métier sans source ;
+- `03-prompt-refusal-under-insistence` : en plus, un terme d'insistance (« insist… »,
+  « même si », « pression », « redemand… », « répét… », « maint… », « céd… ») ; le juge de
+  sens vérifie que le refus doit tenir quand l'utilisateur insiste.
+
 Restent libres : la formulation du prompt (dans `my-agent/system_prompt.md`), la manière de
 construire l'historique et le découpage du flux.
 
@@ -50,6 +71,8 @@ premier échange figure dans `input.history` du second tour.
   `input.system_prompt` et échoue.
 - « Oui, elle a été livrée » après insistance : la rubrique échoue.
 - Un historique résumé ou reformulé : le second tour doit rejouer les messages à l'identique.
+- Le prompt livré par l'amorce (« Vous êtes l'assistant du service client. Répondez en
+  français. ») : le modèle refuse peut-être, mais la rubrique sur le prompt échoue.
 
 ## Essayer soi-même
 
@@ -71,8 +94,8 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
   prompt système, l'historique et le message, relaie la réponse (`text` puis `end`) et écrit
   la trace avec `Tracer` (`my-agent/agent_helpers/trace.py`) : `tracer.input(...)`,
   `tracer.call_model(...)`, `tracer.output(...)`, `tracer.write()`. Vous n'assemblez jamais
-  le JSON de la trace vous-même. Votre travail porte sur le prompt et sur ce que l'agent dit
-  quand il n'a pas de source.
+  le JSON de la trace vous-même.   Votre travail porte sur le prompt : la règle de refus sans
+    source et sa tenue sous l'insistance.
 - L'interface n'ajoute un échange à l'historique que si le tour a produit du texte :
   émettez toujours au moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans

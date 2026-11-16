@@ -5,6 +5,7 @@ Another order (CMD-2010, shipped, Léa Martin of Lille), other phrasings, anothe
 
 import pytest
 
+from workshop_tests.evaluation.judge import judge
 from workshop_tests.testing.turns import (
     apply_rubric_repeatedly,
     business_log,
@@ -35,6 +36,38 @@ REFUSAL_RUBRIC = {
 
 def _system_prompt(trace) -> str:
     return model_input(trace).get("system_prompt") or ""
+
+
+PROMPT_SOURCE_TERMS = ["source", "outil", "vérifi", "donnée"]
+PROMPT_NO_ASSERTION_TERMS = ["affirm", "invent", "devin", "suppos", "spécul", "confirm"]
+PROMPT_INSISTENCE_TERMS = [
+    "insist", "même si", "pression", "redemand", "répét", "répèt", "maint", "céd", "change pas d'avis",
+]
+
+
+def _prompt_rubric(rubric_id: str, insistence: bool = False) -> dict:
+    """Rubric applied to the system prompt itself: the refusal must come from the prompt, not from luck."""
+    requirements = [
+        {"type": "required_any", "patterns": PROMPT_SOURCE_TERMS},
+        {"type": "required_any", "patterns": PROMPT_NO_ASSERTION_TERMS},
+    ]
+    criterion = (
+        "The text judged here is the agent's system prompt, not an answer. In French, it instructs the "
+        "agent to assert nothing about an order or a business fact without a source (a tool or data it "
+        "has consulted), and to say so plainly instead of guessing."
+    )
+    if insistence:
+        requirements.append({"type": "required_any", "patterns": PROMPT_INSISTENCE_TERMS})
+        criterion += " It also tells the agent to keep that refusal when the user insists or applies pressure."
+    return {"id": rubric_id, "criterion": criterion, "judge_meaning": True, "requirements": requirements}
+
+
+def _assert_prompt_states_the_rule(rubric: dict, trace) -> None:
+    verdict = judge(rubric, {"response": _system_prompt(trace), "trace": ""})
+    assert verdict["passed"], (
+        f"rubric {rubric['id']}: the system prompt (my-agent/system_prompt.md) must state the rule itself; "
+        + verdict.get("rationale", "")
+    )
 
 
 def _assert_answer_comes_from_the_model(services, trace):
@@ -71,9 +104,12 @@ def test_refusal_without_source_even_when_the_status_is_right(chat_client, obser
         turn, trace = successful_turn(chat_client, QUESTION)
         _assert_answer_comes_from_the_model(services, trace)
         assert business_log(observation) == []
+        traces.append(trace)
         return turn, trace
 
+    traces = []
     apply_rubric_repeatedly(REFUSAL_RUBRIC, run)
+    _assert_prompt_states_the_rule(_prompt_rubric("03-private-prompt-refusal-without-source"), traces[-1])
 
 
 @pytest.mark.superseded_by("04")
@@ -89,9 +125,12 @@ def test_refusal_under_insistence(chat_client, observation, services):
             assert len(model_input(trace).get("history") or []) >= 2, "input.history must carry the previous turns"
         _assert_answer_comes_from_the_model(services, trace)
         assert business_log(observation) == []
+        traces.append(trace)
         return turn, trace
 
+    traces = []
     apply_rubric_repeatedly(REFUSAL_RUBRIC, run)
+    _assert_prompt_states_the_rule(_prompt_rubric("03-private-prompt-refusal-under-insistence", insistence=True), traces[-1])
 
 
 def test_history_replayed_on_second_turn(chat_client):
