@@ -13,6 +13,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent_context  # noqa: E402
+import agent_memory  # noqa: E402
 import agent_tools  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
@@ -34,6 +35,9 @@ SYSTEM_PROMPT = (
     "qui en désigne un seul (sa ville, par exemple). "
     "Pour les commandes en retard, utilise filter='late' : ne filtre jamais toi-même une liste. "
     "Si une liste est tronquée, dis-le.\n"
+    "Quand l'utilisateur désigne un client par son nom, identifie-le avec search_customers ; quand il choisit "
+    "parmi des homonymes, utilise l'id correspondant. Pour « celle-là », « ce client », appuie-toi sur l'état "
+    "de la conversation.\n"
     "Enchaîne les outils nécessaires dans le même tour ; demande en une seule fois les appels "
     "indépendants les uns des autres (par exemple une commande et un client).\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
@@ -84,6 +88,7 @@ class Harness:
     def __init__(self) -> None:
         self.model = model_client()
         self.compactor = agent_context.Compactor(self._summarize)
+        self.memory = agent_memory.WorkingMemory()
 
     def _summarize(self, request: list[dict[str, Any]]) -> str:
         response = self.model.generate(request, None)
@@ -121,8 +126,11 @@ class Harness:
         )
         if compacted:
             yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "summary"})
+        state_before = self.memory.get(conversation_id)
+        state_text = self.memory.render(conversation_id)
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
+            *([{"role": "system", "content": state_text}] if state_text else []),
             *replayed,
             {"role": "user", "content": message},
         ]
@@ -179,6 +187,9 @@ class Harness:
                     except Exception as exc:  # noqa: BLE001
                         result = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
                     tool_calls_done.append({"name": name, "arguments": arguments, "result": result, "cycle": cycle})
+                    self.memory.update(
+                        conversation_id, name, arguments, result, lambda cid: agent_tools.get_customer(client, cid)
+                    )
                 messages.append(
                     {"role": "tool", "tool_call_id": call.get("id"), "content": json.dumps(result, ensure_ascii=False)}
                 )
@@ -212,7 +223,12 @@ class Harness:
                 "conversation_id": conversation_id,
                 "turn_id": tracer.new_id(),
                 "user": {"id": user.id, "role": user.role, "organization": user.organization},
-                "input": {"system_prompt": SYSTEM_PROMPT, "history": replayed, "message": message},
+                "input": {
+                    "system_prompt": SYSTEM_PROMPT,
+                    "state": state_before,
+                    "history": replayed,
+                    "message": message,
+                },
                 "model": {
                     "id": last["id"],
                     "usage": last["usage"],
@@ -227,6 +243,7 @@ class Harness:
                 "stop": stop,
                 "cycle_limit_reached": stop == "cycle_limit",
                 "interrupted": stop == "interrupted",
+                "state": self.memory.get(conversation_id),
                 **({"compaction": compacted} if compacted else {}),
             }
         )
