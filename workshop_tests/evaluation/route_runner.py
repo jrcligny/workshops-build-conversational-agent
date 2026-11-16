@@ -2,7 +2,8 @@
 
 A route is a YAML file: the official routes live in `workshops/17-evaluation/routes/cases/`
 (protected by `routes.sha256`), the student's own routes in `my-agent/routes/`. Each route
-is run k out of n times on a fresh conversation; a run passes when every fact checked by
+is run k out of n times (`ROUTE_K` out of `ROUTE_N`, once by default) on a fresh conversation,
+with the dataset reloaded and the proxy quota reset; a run passes when every fact checked by
 code holds, then when the rubric (meaning) passes. Format of a route:
 
     id: approximate-reference-cmd-1402
@@ -37,6 +38,7 @@ from typing import Any
 
 import yaml
 
+from workshop_kit.llm_proxy.tokens import reset_usage
 from workshop_kit.shell.config import repo_path, settings
 from workshop_tests.evaluation.judge import judge
 from workshop_tests.evaluation.routes import ROUTES_DIR
@@ -148,6 +150,8 @@ def check_fact(fact: dict, turn, trace: dict, observation) -> dict:
 
 def run_once(route: dict, open_client, observation) -> dict:
     observation.reset(route.get("dataset") or "standard")
+    # Each run is a test of its own: it gets the full proxy quota, as reset_state gives each test.
+    reset_usage()
     if route.get("attachments_dir"):
         # Attachments of an official route live next to it (routes/fixtures/), not in my-agent/.
         base = official_dir().parent if route["origin"] == "official" else student_dir()
@@ -207,8 +211,8 @@ def run_route(route: dict, open_client, observation, k: int, n: int) -> dict:
 
 def run_routes(open_client, observation, k: int | None = None, n: int | None = None, report_path: Path | None = None) -> dict:
     """Runs every official and student route; writes and returns the report."""
-    k = int(k or settings.judge_k)
-    n = int(n or settings.judge_n)
+    k = int(k or settings.route_k)
+    n = int(n or settings.route_n)
     routes = load_routes(official_dir(), "official") + load_routes(student_dir(), "student")
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

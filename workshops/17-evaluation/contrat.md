@@ -8,7 +8,7 @@ Ce document détaille ce que vérifient les tests de l'atelier. Pour l'objectif 
 - **Trace observable** : `model.usage` (non vide), `model.duration_ms` (tour entier), `model.calls[]` (une entrée par appel au modèle, non vide) ; `tools[]` non vide et chaque entrée porte `duration_ms`.
 - **Parcours officiels** : `workshops/17-evaluation/routes/cases/*.yaml` (un fichier par cas limite), protégés par `routes/routes.sha256`. Le test vérifie qu'ils existent et qu'ils n'ont pas été modifiés. Voir [`routes/`](routes/).
 - **Vos parcours** : `my-agent/routes/*.yaml` (ou `.yml`), au même format. Ils doivent être valides, couvrir les **huit** valeurs de `edge_case` à eux seuls, et l'un d'eux doit porter `counterfactual_of: <id d'un autre de vos parcours>`.
-- **Rapport** : `my-agent/route-report.json`, écrit par `workshop_tests/evaluation/route_runner.py` (`run_routes`). Aucun parcours invalide, aucun cas limite découvert, chaque exécution rapporte ses `facts`, et chaque parcours atteint `JUDGE_K` réussites sur au plus `JUDGE_N` essais (3 sur 5 par défaut).
+- **Rapport** : `my-agent/route-report.json`, écrit par `workshop_tests/evaluation/route_runner.py` (`run_routes`). Aucun parcours invalide, aucun cas limite découvert, chaque exécution rapporte ses `facts`, et chaque parcours atteint `ROUTE_K` réussites sur au plus `ROUTE_N` essais (une seule exécution par défaut, quota du proxy remis à zéro avant chaque parcours).
 
 Les huit cas limites (`edge_case`) : `approximate-reference`, `namesakes`, `truncated-result-total`, `out-of-scope-request`, `write-after-attachment`, `question-without-documentary-answer`, `user-without-write-permission`, `duplicate-invoice`.
 
@@ -98,7 +98,7 @@ Lancez `uv run --project workshop_kit/bootstrap workshop serve`, ouvrez http://1
 
 ## Vérifier
 
-Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Chaque parcours est vérifié d'abord par le code (les `facts`), puis par sa rubrique : couche structurelle (motifs requis ou interdits, réponse en français), puis couche sémantique si un juge est configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `AZURE_OPENAI_JUDGE_DEPLOYMENT`). Chaque parcours est répété sur des conversations neuves selon la règle k sur n (`JUDGE_K` réussites sur `JUDGE_N` essais). L'exécution consomme des appels au modèle : comptez plusieurs minutes. Lancez la non-régression.
+Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Chaque parcours est vérifié d'abord par le code (les `facts`), puis par sa rubrique : couche structurelle (motifs requis ou interdits, réponse en français), puis couche sémantique si un juge est configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `AZURE_OPENAI_JUDGE_DEPLOYMENT`). Chaque parcours est exécuté sur des conversations neuves selon la règle k sur n (`ROUTE_K` réussites sur `ROUTE_N` essais, une seule exécution par défaut). L'exécution consomme des appels au modèle : comptez plusieurs minutes. Lancez la non-régression.
 
 ```powershell
 uv run --project workshop_kit/bootstrap workshop start 17

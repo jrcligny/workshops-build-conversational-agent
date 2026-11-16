@@ -36,7 +36,7 @@ rubric:                                    # le sens, jugé après les faits
 
 Types de faits : `tool_called`, `tool_not_called`, `tool_status`, `text_contains`, `text_absent`, `event`, `no_event`, `no_drafts`, `no_submission`, `state_equals` (chemin pointé dans `trace.state`).
 
-Chaque parcours est exécuté sur une conversation neuve, après rechargement du jeu de données, jusqu'à `JUDGE_K` réussites sur `JUDGE_N` essais. Le rapport est écrit dans `my-agent/route-report.json`.
+Chaque parcours est exécuté sur une conversation neuve, après rechargement du jeu de données et remise à zéro du quota du proxy, jusqu'à `ROUTE_K` réussites sur `ROUTE_N` essais (une seule exécution par défaut ; augmentez-les dans `.env` pour mesurer la stabilité d'un parcours). Le rapport est écrit dans `my-agent/route-report.json`.
 
 ## Empreinte (réservé à l'équipe)
 
