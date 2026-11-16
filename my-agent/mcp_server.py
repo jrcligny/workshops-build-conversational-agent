@@ -364,10 +364,27 @@ def query(
     if source == "orders" and customer_id:
         result["customer"] = _customer(api, customer_id)
     if "value" in data:
-        result.update({"aggregate": data.get("aggregate"), "value": data.get("value"), "count": data.get("total")})
+        result.update(
+            {
+                "aggregate": data.get("aggregate"),
+                "value": data.get("value"),
+                "count": data.get("total"),
+                "computed_by": "business application (query tool), not by the model",
+            }
+        )
         return result
     if group_by:
-        result.update({"group_by": group_by, "aggregate": aggregate, "groups": data.get("rows", [])})
+        groups = data.get("rows", [])
+        result.update(
+            {
+                "group_by": group_by,
+                "aggregate": aggregate,
+                "groups_total": len(groups),
+                "groups": groups[:MAX_ROWS],
+                "groups_truncated": len(groups) > MAX_ROWS,
+                "computed_by": "business application (query tool), not by the model",
+            }
+        )
         return result
     rows = data.get("rows", [])
     total = data.get("total")
