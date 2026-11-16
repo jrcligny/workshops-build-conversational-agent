@@ -75,27 +75,34 @@ class BusinessAPI:
     """HTTP client to the business API, with a token exchanged for the caller."""
 
     _local = None
+    URL_VARIABLE = "BUSINESS_API_URL"
+    LABEL = "business API"
+
+    @staticmethod
+    def _local_app():
+        from workshop_kit.apps.business_api.app import app
+
+        return app
 
     def __init__(self, authorization: str | None):
         token, self.claims = exchange(authorization)
         self.authorization = f"Bearer {token}"
-        url = os.environ.get("BUSINESS_API_URL")
+        url = os.environ.get(self.URL_VARIABLE)
         if url:
             import httpx
 
             allowed, reason = agent_sandbox.egress_decision(url)
             if not allowed:
-                raise IdentityRefused(f"business API unreachable from the sandbox: {reason}")
+                raise IdentityRefused(f"{self.LABEL} unreachable from the sandbox: {reason}")
             self._http = httpx.Client(base_url=url.rstrip("/"), timeout=15, follow_redirects=False)
         else:
-            # Test runs host the business API in the same process and export no URL.
-            if BusinessAPI._local is None:
+            # Test runs host the application in the same process and export no URL.
+            cls = type(self)
+            if cls._local is None:
                 from fastapi.testclient import TestClient
 
-                from workshop_kit.apps.business_api.app import app
-
-                BusinessAPI._local = TestClient(app)
-            self._http = BusinessAPI._local
+                cls._local = TestClient(self._local_app())
+            self._http = cls._local
 
     def request(self, method: str, path: str, **kwargs) -> tuple[int, Any]:
         response = self._http.request(method, path, headers={"Authorization": self.authorization}, **kwargs)
@@ -104,6 +111,20 @@ class BusinessAPI:
         except ValueError:
             body = response.text
         return response.status_code, body
+
+
+class DocsSearch(BusinessAPI):
+    """HTTP client to the repository's document search application, with the same exchanged identity."""
+
+    _local = None
+    URL_VARIABLE = "DOCS_SEARCH_URL"
+    LABEL = "document search"
+
+    @staticmethod
+    def _local_app():
+        from workshop_kit.apps.docs_search.app import app
+
+        return app
 
 
 def _guarded(tool):
@@ -532,6 +553,45 @@ def submit_draft(draft_id: str, ctx: Context) -> dict:
     return {"status": "submitted", "draft_id": draft_id, "result": body}
 
 
+def search_documents(ctx: Context, query: str) -> dict:
+    """Searches the internal documentation (procedures, definitions) for passages answering a question.
+
+    Returns only the passages the user may read (their organization and role). Use it for "what does the
+    procedure / documentation say"; use the data tools for the state of an order, invoice, etc.
+    An empty result is declared explicitly (status no_passage): then say that nothing was found.
+    """
+    code, body = DocsSearch((ctx.headers or {}).get("authorization")).request(
+        "POST", "/search", json={"query": query, "k": 4, "threshold": 0.1}
+    )
+    if code != 200:
+        return {"status": "error", "error": f"document search answered {code}", "query": query}
+    passages = [
+        {
+            "id": p["id"],
+            "document_id": p["document_id"],
+            "title": p["title"],
+            "section": p["section"],
+            "version": p["version"],
+            "address": p["address"],
+            "text": p["text"][:1500],
+        }
+        for p in body.get("passages") or []
+    ]
+    if not passages:
+        return {
+            "status": "no_passage",
+            "query": query,
+            "passages": [],
+            "note": "no passage of the documentation available to this user answers the question",
+        }
+    return {
+        "status": "found",
+        "query": query,
+        "passages": passages,
+        "note": "documentation passages, filtered by the user's organization and role; cite them as documentation",
+    }
+
+
 def fetch_url(url: str) -> dict:
     """Fetches a web page by URL, within the sandbox: only destinations on the allowlist are reached.
 
@@ -560,7 +620,7 @@ def create_server() -> MCPServer:
         ),
     )
     for tool in (
-        get_order, find_by_name, describe_source, query, fetch_url,
+        get_order, find_by_name, describe_source, query, search_documents, fetch_url,
         prepare_purchase_request, prepare_invoice_approval, submit_draft,
     ):
         server.tool()(_guarded(tool))
