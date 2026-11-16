@@ -4,7 +4,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
 
 ## Ce que lisent les tests
 
-- **Catalogue** : `my-agent/skills/` (réglage `skills_dir`), lu par `workshop_kit/services/skills_catalog/catalog.py` :
+- **Catalogue** : `my-agent/skills/` (réglage `skills_dir`), lu par `agent_sdk/src/agent_sdk/skills.py` :
   - `catalog_dir()` : le dossier du catalogue ; `manifest_path()` : son fichier `manifest.yaml` ;
   - `load_manifest()` : le manifeste YAML ; sa liste `skills` doit compter **exactement trois** entrées aux `id` distincts, chacune avec `id`, `title`, `version` et `path` ;
   - `path` est un dossier relatif à `my-agent/skills/` qui contient au moins un fichier non vide (la procédure ; `my-agent/skills/README.md` propose `<id>/SKILL.md`) ;
@@ -68,7 +68,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 
 1. Vérifiez le catalogue :
    ```powershell
-   uv run --project workshop_tests python -c "from workshop_kit.services.skills_catalog.catalog import load_manifest, skill_folders; print(load_manifest()); print(skill_folders())"
+   uv run --project workshop_tests python -c "from agent_sdk.skills import load_manifest, skill_folders; print(load_manifest()); print(skill_folders())"
    ```
 2. `uv run --project workshop_kit/bootstrap workshop serve`, puis http://127.0.0.1:8080 : posez les questions sous les trois identités.
 3. Lisez la dernière ligne de `traces/turns.jsonl` : `skills_loaded`, `offered_tools`, `tools[].cycle`.
@@ -76,7 +76,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 
 ## Pistes techniques
 
-- Lisez `workshop_kit/services/skills_catalog/catalog.py` : l'outil de chargement ne doit servir que des entrées du manifeste, jamais un chemin fourni par le modèle ; votre *harness* peut le lire avec les mêmes fonctions. Tracez chaque *skill* chargée avec `tracer.skill_loaded(id, version)` et les outils proposés avec `tracer.call_model(..., tools=...)` (`offered_tools`).
+- Lisez `agent_sdk/src/agent_sdk/skills.py` : l'outil de chargement ne doit servir que des entrées du manifeste, jamais un chemin fourni par le modèle ; votre *harness* peut le lire avec les mêmes fonctions. Tracez chaque *skill* chargée avec `tracer.skill_loaded(id, version)` et les outils proposés avec `tracer.call_model(..., tools=...)` (`offered_tools`).
 - La description d'un *skill* sert à déclencher le chargement : elle dit quand l'utiliser, pas comment faire.
 - La liste des outils proposés se recalcule à chaque cycle, d'après les *skills* chargés **et** les droits du rôle (l'approbation de facture est réservée au rôle `accountant`).
 - La compaction de l'atelier 08 doit traiter les *skills* actifs à part, comme l'historique récent.

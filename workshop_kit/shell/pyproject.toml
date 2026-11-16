@@ -12,6 +12,8 @@ dependencies = [
     "pyyaml>=6.0",
     "uvicorn>=0.32",
     "workshop-config",
+    "workshop-agent-sdk",
+    "workshop-business-api",
 ]
 
 [tool.uv]
@@ -19,3 +21,5 @@ package = false
 
 [tool.uv.sources]
 workshop-config = { path = "../../shared/workshop_config", editable = true }
+workshop-agent-sdk = { path = "../../agent_sdk", editable = true }
+workshop-business-api = { path = "../../business/business_api", editable = true }

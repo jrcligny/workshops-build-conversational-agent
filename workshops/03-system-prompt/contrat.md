@@ -85,14 +85,14 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 
 ## Pistes techniques
 
-- Le contrat est décrit dans `workshop_kit/shell/harness_contract.py` et
+- Le contrat est décrit dans `agent_sdk/src/agent_sdk/contract.py` et
   `docs/interface-contract.md`. Partez de `my-agent/harness.py`.
 - Écrivez le prompt dans `my-agent/system_prompt.md` : `harness.py` le charge à chaque tour
   (`load_system_prompt()`, sans les commentaires HTML) et le reporte dans `input.system_prompt`.
 - L'amorce converse déjà : `harness.py` envoie au modèle (`model_client()`, branché sur le
   proxy ; `generate(messages, tools=None)` fait **un** appel et rend la réponse brute) le
   prompt système, l'historique et le message, relaie la réponse (`text` puis `end`) et écrit
-  la trace avec `Tracer` (`my-agent/agent_helpers/trace.py`) : `tracer.input(...)`,
+  la trace avec `Tracer` (`agent_sdk/src/agent_sdk/trace.py`) : `tracer.input(...)`,
   `tracer.call_model(...)`, `tracer.output(...)`, `tracer.write()`. Vous n'assemblez jamais
   le JSON de la trace vous-même.   Votre travail porte sur le prompt : la règle de refus sans
     source et sa tenue sous l'insistance.

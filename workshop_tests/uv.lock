@@ -840,6 +840,25 @@ wheels = [
 ]
 
 [[package]]
+name = "workshop-agent-sdk"
+version = "0.1.0"
+source = { editable = "../agent_sdk" }
+dependencies = [
+    { name = "httpx" },
+    { name = "mcp" },
+    { name = "pyyaml" },
+    { name = "workshop-config" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "mcp", specifier = ">=2.3.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "workshop-config", editable = "../shared/workshop_config" },
+]
+
+[[package]]
 name = "workshop-business-api"
 version = "0.1.0"
 source = { editable = "../business/business_api" }
@@ -930,6 +949,7 @@ dependencies = [
     { name = "sqlite-vec" },
     { name = "sse-starlette" },
     { name = "uvicorn" },
+    { name = "workshop-agent-sdk" },
     { name = "workshop-business-api" },
     { name = "workshop-config" },
     { name = "workshop-docs-search" },
@@ -952,6 +972,7 @@ requires-dist = [
     { name = "sqlite-vec", specifier = ">=0.1.9" },
     { name = "sse-starlette", specifier = ">=2.1" },
     { name = "uvicorn", specifier = ">=0.32" },
+    { name = "workshop-agent-sdk", editable = "../agent_sdk" },
     { name = "workshop-business-api", editable = "../business/business_api" },
     { name = "workshop-config", editable = "../shared/workshop_config" },
     { name = "workshop-docs-search", editable = "../business/docs_search" },

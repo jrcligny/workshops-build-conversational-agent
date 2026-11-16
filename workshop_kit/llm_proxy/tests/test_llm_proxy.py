@@ -93,26 +93,3 @@ def test_live_mode_without_settings_is_explicit(monkeypatch):
         live.chat([{"role": "user", "content": "bonjour"}])
     assert exc.value.status_code == 503
     assert "AZURE_OPENAI_API_KEY" in exc.value.detail
-
-def test_model_client_normalizes_outages():
-    """Outages surface as ModelUnavailable, whatever the HTTP library; request errors do not."""
-    from workshop_kit.shell.model_client import ModelClient, ModelUnavailable, model_unavailable
-
-    class _Response:
-        def __init__(self, code):
-            self.status_code = code
-
-    class _StatusError(Exception):
-        def __init__(self, code):
-            self.response = _Response(code)
-
-    class TransportError(Exception):  # same name as httpx/httpx2's base transport error
-        pass
-
-    assert model_unavailable(_StatusError(503)).reason == "HTTP 503"
-    assert model_unavailable(_StatusError(429)).reason == "HTTP 429"
-    assert model_unavailable(_StatusError(400)) is None
-    assert model_unavailable(TransportError("down")).reason == "TransportError"
-    assert model_unavailable(ValueError("bug")) is None
-    with pytest.raises(ModelUnavailable):
-        ModelClient("http://127.0.0.1:9", timeout=0.5).generate([{"role": "user", "content": "x"}])

@@ -27,8 +27,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from workshop_kit.shell import tracer as _writer
-from workshop_kit.shell.harness_contract import Event, Message, TestUser
+from agent_sdk import trace_store as _writer
+from agent_sdk.contract import Event, Message, TestUser
 
 
 def _message(m: Message | dict) -> dict[str, Any]:

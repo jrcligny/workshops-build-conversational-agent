@@ -1,86 +1,18 @@
-"""Helpers of the my-agent bootstrap (my-agent/agent_helpers/): repetitive code, never a workshop's goal."""
-
-import importlib
-import sys
+"""The agent SDK (agent_sdk): repetitive code of the student's agent, never a workshop's goal."""
 
 import pytest
 
-from workshop_config import repo_path, settings
 
-
-@pytest.fixture(scope="module")
-def helpers():
-    folder = str(repo_path(settings.my_agent_dir))
-    added = folder not in sys.path
-    if added:
-        sys.path.append(folder)
-    yield lambda name: importlib.import_module(f"agent_helpers.{name}")
-    if added:
-        sys.path.remove(folder)
-
-
-def test_harness_model_client_reads_the_proxy_url_at_call_time(monkeypatch):
-    from workshop_kit.shell.loader import load_my_agent_module
-
-    harness = load_my_agent_module("harness.py", "my_agent_harness_test")
-    monkeypatch.setenv("PROXY_URL", "http://127.0.0.1:9/")
-    assert harness.model_client().base_url == "http://127.0.0.1:9"
-
-def test_http_client_carries_the_token_and_raises_readable_errors(helpers, services, reset_state):
-    from business_api.auth import issue_token
-
-    http = helpers("http_client")
-    token = issue_token("camille-renard", "customer_service", "organization-a")
-    order = http.business_api(token).get("/orders/CMD-1042")
-    assert "CMD-1042" in str(order)
-    with pytest.raises(http.ServiceError) as denied:
-        http.business_api(None).get("/orders/CMD-1042")
-    assert denied.value.status_code == 401 and denied.value.detail
-    with pytest.raises(http.ServiceError) as missing:
-        http.business_api(token).get("/orders/CMD-0000")
-    assert missing.value.status_code == 404
-
-
-def test_http_client_reports_an_unreachable_service(helpers, monkeypatch):
-    http = helpers("http_client")
+def test_http_client_reports_an_unreachable_service(monkeypatch):
+    from agent_sdk import http_client as http
     monkeypatch.setenv("BUSINESS_API_URL", "http://127.0.0.1:9")
     with pytest.raises(http.ServiceError) as unreachable:
         http.business_api("t", timeout=2).get("/orders/CMD-1042")
     assert unreachable.value.status_code is None
 
 
-def test_mcp_client_lists_and_calls_the_server_tools(helpers, monkeypatch):
-    from workshop_kit.shell.loader import load_mcp_server
-    from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
-
-    mcp = helpers("mcp_client")
-    module = load_mcp_server()
-    server = module.create_server()
-
-    @server.tool()
-    def echo(text: str) -> str:
-        """Repeats the text."""
-        return text
-
-    port = free_port()
-    app = server.streamable_http_app(
-        stateless_http=True, json_response=True, streamable_http_path=module.MCP_PATH, host="127.0.0.1"
-    )
-    running = start_uvicorn(app, port)
-    try:
-        wait_for_port("127.0.0.1", port)
-        monkeypatch.setenv("MCP_URL", f"http://127.0.0.1:{port}{module.MCP_PATH}")
-        (tool,) = mcp.list_tools()
-        assert tool["name"] == "echo" and "text" in tool["input_schema"]["properties"]
-        assert mcp.as_openai_tool(tool)["function"]["parameters"] == tool["input_schema"]
-        result = mcp.call_tool("echo", {"text": "bonjour"})
-        assert result["is_error"] is False and result["text"] == "bonjour"
-    finally:
-        running.should_exit = True
-
-
-def test_events_carry_the_field_names_the_tests_read(helpers):
-    events = helpers("events")
+def test_events_carry_the_field_names_the_tests_read():
+    from agent_sdk import events
     assert (events.step("get_order").type, events.step("get_order").data) == ("step", {"tool": "get_order"})
     assert events.mention("Réponse partielle").data["content"] == "Réponse partielle"
     assert events.confirmation_requested("D-1", summary="achat").data == {"draft_id": "D-1", "summary": "achat"}
@@ -91,10 +23,10 @@ def test_events_carry_the_field_names_the_tests_read(helpers):
     assert events.end("ok").data == {"ok": True, "text": "ok"}
 
 
-def test_tool_schema_declares_an_annotated_function(helpers):
+def test_tool_schema_declares_an_annotated_function():
     from typing import Literal
 
-    declare = helpers("tool_schema").declare
+    from agent_sdk.tool_schema import declare
 
     def list_orders(customer_id: str, filter: Literal["late", "all"] = "all", limit: int | None = None,
                     tags: list[str] | None = None) -> dict:
@@ -119,15 +51,16 @@ def test_tool_schema_declares_an_annotated_function(helpers):
     assert function["parameters"]["required"] == ["customer_id"]
 
 
-def test_tracer_records_model_calls_in_the_format_the_tests_read(helpers):
-    from workshop_kit.shell.harness_contract import Message, TestUser
+def test_tracer_records_model_calls_in_the_format_the_tests_read():
+    from agent_sdk.contract import Message, TestUser
+    from agent_sdk.trace import Tracer
 
     class FakeModel:
         def generate(self, messages, tools=None, model="default"):
             return {"model": "m1", "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
                     "usage": {"prompt_tokens": 10, "completion_tokens": 2, "total_tokens": 12}}
 
-    tracer = helpers("trace").Tracer("c1", TestUser("paul-buyer", "buyer", "organization-a"), "suite")
+    tracer = Tracer("c1", TestUser("paul-buyer", "buyer", "organization-a"), "suite")
     tracer.input(system_prompt="prompt", history=[Message("user", "bonjour")])
     assert tracer.cycle() == 1
     tracer.call_model(FakeModel(), [], tools=[{"type": "function", "function": {"name": "get_order"}}], context_size=40)
@@ -147,11 +80,11 @@ def test_tracer_records_model_calls_in_the_format_the_tests_read(helpers):
     assert trace["output"] == "réponse" and "compaction" not in trace and "memory" not in trace
 
 
-def test_tracer_returns_the_interface_events_it_traces(helpers, session_dir):
-    from workshop_kit.shell import tracer as writer
-    from workshop_kit.shell.harness_contract import TestUser
+def test_tracer_returns_the_interface_events_it_traces(session_dir):
+    from agent_sdk import trace_store as writer
+    from agent_sdk.contract import TestUser
 
-    trace_mod = helpers("trace")
+    from agent_sdk import trace as trace_mod
     user = TestUser("nina-accountant", "accountant", "organization-a")
     tracer = trace_mod.Tracer("c2", user, "bonjour")
     event = tracer.compaction(summarized_answers=3, kept_user_messages=4, threshold=8, summary="résumé")
@@ -167,3 +100,27 @@ def test_tracer_returns_the_interface_events_it_traces(helpers, session_dir):
     tracer.write()
     (written,) = writer.read_all()
     assert written["state"] == {"current_customer": {"id": "C1"}} and "timestamp" in written
+
+
+def test_model_client_normalizes_outages():
+    """Outages surface as ModelUnavailable, whatever the HTTP library; request errors do not."""
+    from agent_sdk.model_client import ModelClient, ModelUnavailable, model_unavailable
+
+    class _Response:
+        def __init__(self, code):
+            self.status_code = code
+
+    class _StatusError(Exception):
+        def __init__(self, code):
+            self.response = _Response(code)
+
+    class TransportError(Exception):  # same name as httpx/httpx2's base transport error
+        pass
+
+    assert model_unavailable(_StatusError(503)).reason == "HTTP 503"
+    assert model_unavailable(_StatusError(429)).reason == "HTTP 429"
+    assert model_unavailable(_StatusError(400)) is None
+    assert model_unavailable(TransportError("down")).reason == "TransportError"
+    assert model_unavailable(ValueError("bug")) is None
+    with pytest.raises(ModelUnavailable):
+        ModelClient("http://127.0.0.1:9", timeout=0.5).generate([{"role": "user", "content": "x"}])

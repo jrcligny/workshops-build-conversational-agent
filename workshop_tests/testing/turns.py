@@ -7,7 +7,7 @@ import httpx
 from workshop_kit.llm_proxy.tokens import reset_usage
 from workshop_config import settings
 from workshop_tests.evaluation.judge import judge
-from workshop_kit.shell.tracer import read_all
+from agent_sdk.trace_store import read_all
 
 
 def successful_turn(chat_client, message: str, **kwargs):

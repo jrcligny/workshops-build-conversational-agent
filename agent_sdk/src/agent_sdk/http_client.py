@@ -9,7 +9,7 @@ with `status_code` (None when the service could not be reached) and the `detail`
 What stays yours: which route to call and with which filters (05, 07), validating the inputs
 before any call (04), the token to present (10a), and what an error means for the user (18).
 
-    from agent_helpers.http_client import ServiceError, business_api
+    from agent_sdk.http_client import ServiceError, business_api
 
     try:
         order = business_api(user.app_token).get("/orders/CMD-1042")

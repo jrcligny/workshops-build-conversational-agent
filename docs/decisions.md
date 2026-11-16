@@ -109,7 +109,7 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
   refuses to run once `my-agent/` differs from the bootstrap recorded in
   `workshop_tests/inert_agent/bootstrap.sha256`.
 - **Connected bootstrap:** the bootstrap `my-agent/harness.py` already converses through the
-  model (system prompt, history, answer, trace written with `agent_helpers.trace.Tracer`), so
+  model (system prompt, history, answer, trace written with `agent_sdk.trace.Tracer`), so
   students start from a working agent. `workshop check-shell` therefore tolerates the tests
   listed in `workshop_tests/bootstrap_passes.txt` and fails on any other passing test;
   `check-inert` tolerates none.

@@ -69,7 +69,7 @@ Les tests sont dans [tests/](tests/).
 - Lisez `workshop_kit/apps/business_api/auth.py` : `issue_token`, `decode_token`, `user_from_header`, `ROLES`.
 - La route d'observation `POST /observation/test-token` (`workshop_kit/apps/business_api/app.py`) renvoie pour un utilisateur un `entry_token` et un `app_token` ; les tests s'en servent.
 - `workshop_kit/shell/chat_app.py` montre comment `app_token` (ou le jeton émis quand `sign_in` vaut `true`) passe de `POST /conversations` à l'utilisateur remis au harnais.
-- `list_tools(jeton)` et `call_tool(..., jeton)` de `my-agent/agent_helpers/mcp_client.py` envoient le jeton en `Authorization: Bearer` ; sa vérification et son échange restent à vous.
+- `list_tools(jeton)` et `call_tool(..., jeton)` de `agent_sdk/src/agent_sdk/mcp_client.py` envoient le jeton en `Authorization: Bearer` ; sa vérification et son échange restent à vous.
 - Le test appelle l'outil générique avec le filtre `id`. Celui-ci n'est pas listé dans les champs de `GET /sources/orders`, mais l'application l'accepte : une validation stricte des clés de filtre le refuserait.
 
 ## Vérifier

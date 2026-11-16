@@ -22,6 +22,7 @@ dependencies = [
     "workshop-text-vectors",
     "workshop-business-api",
     "workshop-docs-search",
+    "workshop-agent-sdk",
 ]
 
 [tool.uv]
@@ -33,10 +34,11 @@ workshop-config = { path = "../shared/workshop_config", editable = true }
 workshop-text-vectors = { path = "../shared/text_vectors", editable = true }
 workshop-business-api = { path = "../business/business_api", editable = true }
 workshop-docs-search = { path = "../business/docs_search", editable = true }
+workshop-agent-sdk = { path = "../agent_sdk", editable = true }
 
 [tool.pytest.ini_options]
 # Kit tests sit next to the component they test (`<component>/tests/`); chat-ui has its own project.
-testpaths = ["../business", "../workshop_kit", "../workshop_tests", "../workshops"]
+testpaths = ["../agent_sdk", "../business", "../workshop_kit", "../workshop_tests", "../workshops"]
 norecursedirs = [".*", "__pycache__", "node_modules", "venv", "chat-ui", "inert_agent"]
 pythonpath = [".."]
 # Fixture loading and source paths remain explicit when running from another cwd.

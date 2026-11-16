@@ -5,7 +5,7 @@ Read-only area for the documents attached to a conversation turn
 
 - the optional `attachments` field of `POST /conversations/{id}/messages`;
 - `GET /attachments`, which lists the files dropped here (read by
-  `workshop_kit/services/attachments/registry.py`, setting `attachments_dir`,
+  `agent_sdk/src/agent_sdk/attachments.py`, setting `attachments_dir`,
   default `my-agent/attachments`).
 
 No sample quote is provided in the shell. You will drop the files here

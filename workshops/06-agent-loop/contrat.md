@@ -72,8 +72,8 @@ Lancez enfin `workshop check 06`.
 ## Pistes techniques
 
 - Les types d'événements et le paramètre `interrupt_requested` sont décrits dans
-  `workshop_kit/shell/harness_contract.py` et `docs/interface-contract.md`. Les constructeurs
-  `step(outil)`, `mention(texte)` et `interruption()` de `my-agent/agent_helpers/events.py`
+  `agent_sdk/src/agent_sdk/contract.py` et `docs/interface-contract.md`. Les constructeurs
+  `step(outil)`, `mention(texte)` et `interruption()` de `agent_sdk/src/agent_sdk/events.py`
   produisent des événements bien formés ; quand les émettre reste à vous.
 - `workshop_kit/shell/chat_app.py` montre comment l'interface transmet l'interruption :
   `interrupt_requested` est fixé au début du tour (via `/interruption` ou le champ

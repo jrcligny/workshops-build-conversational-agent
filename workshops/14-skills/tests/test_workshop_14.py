@@ -12,7 +12,7 @@ Invoice approval is written by the `accountant` role (nina-accountant).
 
 import pytest
 
-from workshop_kit.services.skills_catalog.catalog import catalog_dir, load_manifest
+from agent_sdk.skills import catalog_dir, load_manifest
 from workshop_config import settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import model_input, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools

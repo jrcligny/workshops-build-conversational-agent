@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from workshop_kit.shell.harness_contract import Event
+from agent_sdk.contract import Event
 
 
 def text(content: str) -> Event:

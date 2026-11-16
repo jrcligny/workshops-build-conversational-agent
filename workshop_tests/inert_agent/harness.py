@@ -8,16 +8,12 @@ every workshop test, public and private, fails against it.
 from __future__ import annotations
 
 import re
-import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-if str(Path(__file__).resolve().parent) not in sys.path:
-    sys.path.append(str(Path(__file__).resolve().parent))
-
-from agent_helpers import events  # noqa: E402
-from agent_helpers.trace import Tracer  # noqa: E402
-from workshop_kit.shell.harness_contract import Event, Message, TestUser  # noqa: E402
+from agent_sdk import events
+from agent_sdk.trace import Tracer
+from agent_sdk.contract import Event, Message, TestUser
 
 ANSWER = (
     "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer "

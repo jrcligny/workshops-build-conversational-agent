@@ -79,7 +79,7 @@ data: {"ok": true}
   - `POST /drafts/{id}/submit`, qui renvoie `request_id`, `on_behalf_of` et `assigned_to`.
 - `workshop_kit/shell/chat_app.py` : `POST /conversations/{id}/confirmation` et le paramètre `confirmation` transmis au harnais. Le drapeau reste vrai pour les tours suivants de la conversation : décidez à quel brouillon il s'applique.
 - La soumission n'est pas idempotente côté application : une seconde soumission crée une seconde demande.
-- Le contrat des événements est dans `docs/interface-contract.md` et `workshop_kit/shell/harness_contract.py` ; `confirmation_requested(draft_id)` de `my-agent/agent_helpers/events.py` le construit.
+- Le contrat des événements est dans `docs/interface-contract.md` et `agent_sdk/src/agent_sdk/contract.py` ; `confirmation_requested(draft_id)` de `agent_sdk/src/agent_sdk/events.py` le construit.
 
 ## Vérifier
 

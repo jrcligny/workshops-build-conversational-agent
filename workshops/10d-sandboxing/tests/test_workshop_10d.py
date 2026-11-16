@@ -3,7 +3,7 @@
 Contract read here:
 - `my-agent/sandbox/policy.yaml`: `active: true`, a non-empty `allowlist` (hosts or URL
   prefixes) that admits the business application and refuses any other destination; the
-  kit evaluates it with `workshop_kit.services.sandbox.interface.is_egress_allowed(url)`.
+  kit evaluates it with `agent_sdk.sandbox.is_egress_allowed(url)`.
 - Runtime probes (`workshop_tests/testing/probes.py`): files opened and hosts resolved by the
   code of `my-agent/` during the turn.
 - Trace: `limit_reached` ("duration" or "token_budget") when a turn stops at its limit;
@@ -14,7 +14,7 @@ import re
 
 import pytest
 
-from workshop_kit.services.sandbox.interface import is_egress_allowed, is_policy_enforced, policy
+from agent_sdk.sandbox import is_egress_allowed, is_policy_enforced, policy
 from workshop_config import repo_path, settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.probes import contacted_hosts, opened_files, student_activity

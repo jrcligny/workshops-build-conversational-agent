@@ -1,7 +1,7 @@
 """Shared pytest fixtures: applications, proxy, traces, dataset.
 
 Loaded as a pytest plugin by `workshop_tests/pyproject.toml`, so that the kit tests
-(`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/`, `workshop_tests/my_agent_bootstrap/`) and the workshop tests (`workshops/*/tests/`) share them.
+(`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/`, `workshop_tests/integration/`) and the workshop tests (`workshops/*/tests/`) share them.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from docs_search.app import app as docs_app, clear_log as clear_docs_log  # noqa
 from docs_search.indexing import rebuild  # noqa: E402
 from workshop_kit.llm_proxy.app import app as proxy_app, clear_log as clear_proxy_log  # noqa: E402
 from workshop_kit.llm_proxy.tokens import reset_usage  # noqa: E402
-from workshop_kit.shell import tracer  # noqa: E402
+from agent_sdk import trace_store as tracer  # noqa: E402
 from workshop_kit.shell.chat_app import app as interface_app, reset_conversations  # noqa: E402
 from workshop_config import settings  # noqa: E402
 from workshop_tests.testing.chat_client import ChatClient  # noqa: E402

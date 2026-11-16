@@ -60,7 +60,7 @@ Chargez le jeu `volume` par la route d'observation `POST /observation/reset` ave
 
 - `GET /customers/{id}/orders` accepte `filter`, `limit` et `offset`. Il renvoie `orders`, `total`, `total_status` (`exact` ou `minimum` au-delà de 200), `truncated`, `limit`, `offset` et `next_offset` ; voir `workshop_kit/apps/business_api/services.py`.
 - `GET /orders/{reference}` donne le détail d'une commande.
-- Mesurez `context_size` juste avant chaque appel au modèle et enregistrez-le dans la trace du tour (`tracer.call_model(..., context_size=...)` ou `tracer.model_call(...)`, `my-agent/agent_helpers/trace.py`).
+- Mesurez `context_size` juste avant chaque appel au modèle et enregistrez-le dans la trace du tour (`tracer.call_model(..., context_size=...)` ou `tracer.model_call(...)`, `agent_sdk/src/agent_sdk/trace.py`).
 - Les assertions détaillées sont dans [tests/](tests/).
 
 ## Vérifier

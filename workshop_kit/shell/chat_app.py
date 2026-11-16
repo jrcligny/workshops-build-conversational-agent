@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from workshop_kit.shell.harness_contract import Event, HarnessNotImplemented, Message, TestUser
+from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
 from workshop_kit.shell.loader import load_harness
 
 app = FastAPI(title="Workshop chat interface", version="0.1.0")
@@ -85,7 +85,7 @@ def list_users():
 @app.get("/attachments")
 def list_attachments():
     """Contract entry point for workshop 15. The area is empty in the shell."""
-    from workshop_kit.services.attachments.registry import list_attachments as _list
+    from agent_sdk.attachments import list_attachments as _list
 
     return {"attachments": _list()}
 

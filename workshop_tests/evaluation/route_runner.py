@@ -165,7 +165,7 @@ def run_once(route: dict, open_client, observation) -> dict:
 
 
 def _run_turns(route: dict, open_client, observation) -> dict:
-    from workshop_kit.shell.tracer import read_all
+    from agent_sdk.trace_store import read_all
 
     user = route.get("user") or {}
     client = open_client(
