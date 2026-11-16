@@ -105,7 +105,97 @@ def get_order(client: BusinessClient, reference: str) -> dict:
     }
 
 
+def search_customers(client: BusinessClient, name: str) -> dict:
+    name = (name or "").strip()
+    if not name:
+        return {"status": "error", "error": "missing name"}
+    code, body = client.request("GET", "/customers", params={"name": name})
+    if code != 200:
+        return {"status": "error", "error": f"business API answered {code}"}
+    customers = [
+        {key: row.get(key) for key in ("id", "name", "city", "email", "segment") if row.get(key) is not None}
+        for row in body
+    ]
+    if not customers:
+        return {"status": "not_found", "name": name, "customers": []}
+    result: dict[str, Any] = {"status": "ok", "count": len(customers), "customers": customers}
+    if len(customers) > 1:
+        result["note"] = (
+            "several customers match: list them all (with their city) and ask the user which one; never pick one"
+        )
+    return result
+
+
+ORDER_FILTERS = {"all": None, "late": "late"}
+MAX_ORDERS = 20
+
+
+def list_customer_orders(client: BusinessClient, customer_id: str, filter: str = "all", limit: int | None = None) -> dict:
+    customer_id = (customer_id or "").strip()
+    if not customer_id:
+        return {"status": "error", "error": "missing customer_id (use search_customers first)"}
+    if filter not in ORDER_FILTERS:
+        return {"status": "error", "error": f"unknown filter {filter!r}; allowed: {sorted(ORDER_FILTERS)}"}
+    limit = min(int(limit or MAX_ORDERS), MAX_ORDERS)
+    params: dict[str, Any] = {"limit": limit}
+    if ORDER_FILTERS[filter]:
+        params["filter"] = ORDER_FILTERS[filter]
+    code, body = client.request("GET", f"/customers/{customer_id}/orders", params=params)
+    if code == 404:
+        return {"status": "not_found", "customer_id": customer_id}
+    if code != 200:
+        return {"status": "error", "error": f"business API answered {code}"}
+    result = {
+        "status": "ok",
+        "customer_id": customer_id,
+        "filter": filter,
+        "total": body.get("total"),
+        "returned": len(body.get("orders", [])),
+        "orders": [_order_view(o) for o in body.get("orders", [])],
+    }
+    if body.get("truncated"):
+        result["note"] = f"only the first {limit} of {body.get('total')} orders are listed: say so to the user"
+    return result
+
+
 TOOL_SPECS: dict[str, dict] = {
+    "search_customers": {
+        "type": "function",
+        "function": {
+            "name": "search_customers",
+            "description": (
+                "Searches customers by (part of) their name. Returns every match, namesakes included, "
+                "with id and city. Never pick one of several matches on behalf of the user."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"name": {"type": "string", "description": "Customer name or part of it"}},
+                "required": ["name"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "list_customer_orders": {
+        "type": "function",
+        "function": {
+            "name": "list_customer_orders",
+            "description": (
+                "Lists the orders of one customer (by customer id from search_customers). "
+                "Use filter='late' to keep only orders whose delivery is late: the filtering is done here, "
+                "do not filter the list yourself."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {"type": "string", "description": "Customer id, e.g. C-DURAND-1"},
+                    "filter": {"type": "string", "enum": list(ORDER_FILTERS), "description": "'late' or 'all'"},
+                    "limit": {"type": "integer", "description": f"Maximum number of orders (≤ {MAX_ORDERS})"},
+                },
+                "required": ["customer_id", "filter"],
+                "additionalProperties": False,
+            },
+        },
+    },
     "get_order": {
         "type": "function",
         "function": {
@@ -125,4 +215,10 @@ TOOL_SPECS: dict[str, dict] = {
     },
 }
 
-TOOL_FUNCTIONS = {"get_order": lambda client, args: get_order(client, args.get("reference", ""))}
+TOOL_FUNCTIONS = {
+    "get_order": lambda client, args: get_order(client, args.get("reference", "")),
+    "search_customers": lambda client, args: search_customers(client, args.get("name", "")),
+    "list_customer_orders": lambda client, args: list_customer_orders(
+        client, args.get("customer_id", ""), args.get("filter") or "all", args.get("limit")
+    ),
+}

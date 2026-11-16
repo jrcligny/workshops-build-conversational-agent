@@ -27,14 +27,20 @@ SYSTEM_PROMPT = (
     "et la référence la plus proche trouvée, en signalant la différence, puis donne son statut.\n"
     "- status 'not_found' : dis que la commande est introuvable, sans rien proposer d'autre.\n"
     "- status 'error' : dis que tu n'as pas pu consulter l'application.\n"
+    "Pour un client désigné par son nom : search_customers, puis list_customer_orders avec son id. "
+    "Si plusieurs clients correspondent (homonymes), ne choisis jamais à la place de l'utilisateur : "
+    "liste-les tous avec leur ville et demande lequel il veut. "
+    "Pour les commandes en retard, utilise filter='late' : ne filtre jamais toi-même une liste. "
+    "Si une liste est tronquée, dis-le.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
 )
 
 STUDENT_TOKEN = os.environ.get("COURSE_TOKEN", "test-student")
-MAX_TOOL_CALLS = 1
-TOOLS = ["get_order"]
+MAX_TOOL_CALLS = 6
+PER_TOOL_LIMITS = {"get_order": 1}
+TOOLS = ["get_order", "search_customers", "list_customer_orders"]
 
 
 class _InProcessModelClient(ModelClient):
@@ -94,7 +100,6 @@ class Harness:
         cycle = 0
         while True:
             cycle += 1
-            budget_left = len(tool_calls_done) < MAX_TOOL_CALLS
             started = time.perf_counter()
             response = self.model.generate(messages, tool_specs)
             choice = (response.get("choices") or [{}])[0]
@@ -111,6 +116,10 @@ class Harness:
             if not requested:
                 text = reply.get("content") or ""
                 break
+            if cycle > MAX_TOOL_CALLS + 1:
+                # The model keeps asking for tools despite the exhausted budget.
+                text = "Je n'ai pas pu terminer la recherche : merci de préciser votre demande."
+                break
             messages.append({"role": "assistant", "content": reply.get("content"), "tool_calls": requested})
             for call in requested:
                 function = call.get("function") or {}
@@ -119,10 +128,13 @@ class Harness:
                     arguments = json.loads(function.get("arguments") or "{}")
                 except json.JSONDecodeError:
                     arguments = {}
-                if not budget_left or len(tool_calls_done) >= MAX_TOOL_CALLS:
+                used = sum(1 for t in tool_calls_done if t["name"] == name)
+                if len(tool_calls_done) >= MAX_TOOL_CALLS:
                     result = {"status": "error", "error": "tool budget exhausted for this message: answer now"}
                 elif name not in TOOLS:
                     result = {"status": "error", "error": f"unknown tool {name}"}
+                elif used >= PER_TOOL_LIMITS.get(name, MAX_TOOL_CALLS):
+                    result = {"status": "error", "error": f"{name} already used for this message: answer now"}
                 else:
                     client = client or agent_tools.BusinessClient(user)
                     try:
@@ -133,11 +145,6 @@ class Harness:
                 messages.append(
                     {"role": "tool", "tool_call_id": call.get("id"), "content": json.dumps(result, ensure_ascii=False)}
                 )
-            if not budget_left:
-                # The model ignored the budget: one last call, whose tool requests are not executed.
-                if cycle > MAX_TOOL_CALLS + 2:
-                    text = "Je n'ai pas pu terminer la recherche."
-                    break
 
         last = model_calls[-1]
         tracer.write(
