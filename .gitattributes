@@ -4,3 +4,6 @@ workshops/17-evaluation/routes/** text eol=lf
 *.py text eol=lf
 *.toml text eol=lf
 uv.lock text eol=lf
+# Private generalization tests are not part of the student material (git archive).
+workshops/**/tests/*_private.py export-ignore
+workshops/**/tests/fixtures_private/** export-ignore

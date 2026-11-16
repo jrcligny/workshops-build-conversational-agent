@@ -79,7 +79,7 @@ def _pytest(folders: list[Path], extra: list[str] | None = None, env_overrides: 
     return subprocess.call(args, cwd=REPO_ROOT, env={**_test_env(), **(env_overrides or {})})
 
 
-def cmd_check(workshop_id: str, non_regression: bool) -> int:
+def cmd_check(workshop_id: str, non_regression: bool, private: bool = False) -> int:
     _check_id(workshop_id)
     ids = up_to(workshop_id) if non_regression else [workshop_id]
     missing = [i for i in ids if not workshop_tests_dir(i).is_dir()]
@@ -88,7 +88,8 @@ def cmd_check(workshop_id: str, non_regression: bool) -> int:
         return 2
     print(f"Checking workshops: {', '.join(ids)}")
     # Tests marked superseded_by(<id>) are skipped once the target workshop reaches <id>.
-    return _pytest([workshop_tests_dir(i) for i in ids], ["-m", "workshop"], {"WORKSHOP_TARGET": workshop_id})
+    extra = ["-m", "workshop", *(["--private"] if private else [])]
+    return _pytest([workshop_tests_dir(i) for i in ids], extra, {"WORKSHOP_TARGET": workshop_id})
 
 
 def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None) -> int:
@@ -104,6 +105,7 @@ def _run_expect_all_fail(label: str, env_overrides: dict[str, str] | None = None
             *_pytest_command(),
             *[str(d) for d in folders],
             "-m", "workshop",
+            "--private",
             "-q",
             "--tb=no",
             "--color=no",
@@ -268,6 +270,7 @@ def main(argv: list[str] | None = None) -> int:
     check = sub.add_parser("check", help="Run the tests of one workshop")
     check.add_argument("workshop_id")
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
+    check.add_argument("--private", action="store_true", help="Also run the private tests (*_private.py), not given to students")
 
     sub.add_parser("check-shell", help="Check that every workshop test fails on the bootstrap of my-agent/")
     sub.add_parser("check-inert", help="Check that every workshop test fails against the inert agent")
@@ -282,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "check":
-        return cmd_check(args.workshop_id, args.non_regression)
+        return cmd_check(args.workshop_id, args.non_regression, args.private)
     if args.command == "check-shell":
         return cmd_check_shell()
     if args.command == "check-inert":

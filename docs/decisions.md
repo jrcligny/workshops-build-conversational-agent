@@ -113,6 +113,21 @@ A workshop sometimes deliberately reverses an earlier one (workshop 03 has no to
 (`workshop_tests/testing/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
 and the test is skipped, with an explicit reason, once the target reaches the marker.
 
+## Private generalization tests
+
+Next to a public test file, `test_workshop_<id>_private.py` checks the same success criteria
+with other inputs (other customers, references, wordings, users, thresholds, attachments in
+`tests/fixtures_private/`): an implementation tuned to the public cases fails them. They are
+for the trainers, not the students:
+
+- they are deselected unless pytest gets `--private` (`workshop_tests/testing/private.py`);
+  `workshop check <id> --private` runs them, `check-inert` and `check-shell` always include them;
+- `.gitattributes` marks them `export-ignore`: the student material is produced with
+  `git archive`, which leaves them out.
+
+Workshops 09, 14, 17 and 19 have tests with no input to vary (catalog, manifest, routes): those
+tests have no private variant, and workshop 19 has no private file.
+
 ## Simulated and live modes
 
 The live mode is the reference for every workshop, workshop 03 included: the guides and the

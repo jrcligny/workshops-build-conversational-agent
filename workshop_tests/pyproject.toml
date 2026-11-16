@@ -30,7 +30,7 @@ workshop-tools = { path = "../workshop_kit/bootstrap", editable = true }
 testpaths = ["../workshop_kit/tests", "../workshops"]
 pythonpath = [".."]
 # Fixture loading and source paths remain explicit when running from another cwd.
-addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures -p workshop_tests.testing.superseded"
+addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures -p workshop_tests.testing.superseded -p workshop_tests.testing.private"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
