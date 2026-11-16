@@ -26,3 +26,7 @@ jobs:
         run: uv run pytest tests/kit
       - name: Workshop tests must fail on the empty shell
         run: uv run workshop check-shell
+      - name: Install the chat UI in its own project environment
+        run: uv sync --project workshop_kit/chat-ui --extra dev --locked
+      - name: Chainlit adapter and presentation tests
+        run: uv run --project workshop_kit/chat-ui pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests

@@ -14,6 +14,9 @@ The chat interface is `workshop_kit/shell/chat_app.py`.
 | Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
 
 The tests use the internal client (`workshop_kit/testing/chat_client.py`), not a browser.
+The standard Chainlit UI in `workshop_kit/chat-ui/` consumes the same HTTP/SSE
+contract from its own Python environment. Run `uv run workshop serve` to start
+the complete environment, including that UI.
 
 ## Attachments (reserved for workshop 15)
 

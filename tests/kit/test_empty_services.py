@@ -63,11 +63,19 @@ def test_evaluation_routes_checksum():
 
 
 def test_student_files_only_in_my_agent():
-    """Nothing a student edits lives in workshop_kit/: no data file, only Python code."""
+    """Student assets stay in my-agent; the kit UI owns only its infrastructure resources."""
     kit = REPO_ROOT / "workshop_kit"
-    data_files = [
-        p.relative_to(REPO_ROOT).as_posix()
-        for p in kit.rglob("*")
-        if p.is_file() and "__pycache__" not in p.parts and p.suffix not in {".py"}
-    ]
+    data_files = []
+    for folder, directories, filenames in kit.walk():
+        directories[:] = [d for d in directories if d != "__pycache__"]
+        if folder == kit:
+            directories.remove("chat-ui")
+        data_files.extend(
+            (folder / name).relative_to(REPO_ROOT).as_posix()
+            for name in filenames if Path(name).suffix != ".py"
+        )
     assert data_files == []
+    ui = kit / "chat-ui"
+    assert (ui / "pyproject.toml").is_file()
+    assert (ui / "uv.lock").is_file()
+    assert (ui / "workshop_chat_ui" / "welcome.md").is_file()

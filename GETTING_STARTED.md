@@ -20,6 +20,14 @@ No real model is provided while this repository is being designed, and none is n
 
 ## Useful commands
 
+Run `python start.py` on Windows or `python3 start.py` on Linux to prepare the
+dependencies and start all services. `uv run workshop serve` also starts them
+when the kit dependencies are already installed. This includes
+and the [Chainlit UI](workshop_kit/chat-ui/README.md), a standard part of the kit.
+Open <http://127.0.0.1:8080>. It displays the existing agent's responses, steps,
+and tool calls without implementing any workshop for you. Each Python project
+keeps its own dependencies and environment.
+
 - `uv run workshop start 07` shows the guide, without copying any solution.
 - `uv run workshop check 07` runs `workshops/07-context-compaction/tests/`.
 - `uv run workshop check 07 --non-regression` runs the tests of workshops 03 to 07.
