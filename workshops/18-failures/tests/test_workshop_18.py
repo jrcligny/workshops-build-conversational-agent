@@ -1,47 +1,46 @@
-"""Tests de bout en bout de l'atelier 18. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 18. They must fail on the empty shell."""
 
 import httpx
 import pytest
 
-from tests.communs.tours import appliquer_grille, journal_metier, plat, tour_reussi
+from workshop_kit.testing.turns import apply_rubric, business_log, flat, successful_turn
 
-pytestmark = pytest.mark.atelier
+pytestmark = pytest.mark.workshop
 
-GRILLE_REPLI = {
-    "id": "18-repli-puis-fin",
-    "juge_sens": True,
-    "exigences": [
+FALLBACK_RUBRIC = {
+    "id": "18-fallback-then-end",
+    "judge_meaning": True,
+    "requirements": [
         {
-            "type": "requis_un_de",
-            "motifs": ["repli", "secours", "alternatif", "indisponible", "pas pu", "échec", "echec"],
+            "type": "required_any",
+            "patterns": ["fallback", "backup", "alternative", "unavailable", "could not", "failed", "failure"],
         },
     ],
 }
 
 
-def test_soumission_jamais_rejouee(client_chat, observation):
-    observation.armer_panne("issue_inconnue", True)
-    tour, _ = tour_reussi(client_chat, "Soumets la demande d'achat déjà préparée.")
-    assert "vérif" in tour.texte.lower() or "verif" in tour.texte.lower()
-    soumissions = [e for e in journal_metier(observation) if "soumet" in str(e).lower()]
-    assert len(soumissions) <= 1
+def test_submission_never_replayed(chat_client, observation):
+    observation.arm_failure("unknown_outcome", True)
+    turn, _ = successful_turn(chat_client, "Submit the purchase request that was already prepared.")
+    assert "check" in turn.text.lower() or "verif" in turn.text.lower()
+    submissions = [e for e in business_log(observation) if "submit" in str(e).lower()]
+    assert len(submissions) <= 1
 
 
-def test_repli_unique_puis_fin(client_chat, services):
+def test_single_fallback_then_end(chat_client, services):
     httpx.post(
-        f"{services['proxy']}/_test/pannes",
-        json={"type": "modele_principal", "active": True},
+        f"{services['proxy']}/_test/failures",
+        json={"type": "primary_model", "active": True},
         timeout=10,
     )
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-1042 de Martin Durand ?")
-    plat_t = plat(trace).lower()
-    assert "repli" in plat_t or "fallback" in plat_t or "modele_repli" in plat_t
-    appliquer_grille(GRILLE_REPLI, tour, trace)
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
+    assert "fallback" in flat(trace).lower()
+    apply_rubric(FALLBACK_RUBRIC, turn, trace)
 
 
-def test_versions_dans_la_trace(client_chat):
-    _, trace = tour_reussi(client_chat, "Où en est la commande CMD-1042 ?")
-    plat_t = plat(trace).lower()
-    assert "version" in plat_t
-    for composant in ("consigne", "skill", "outil", "index"):
-        assert composant in plat_t, f"la trace doit porter la version de : {composant}"
+def test_versions_in_the_trace(chat_client):
+    _, trace = successful_turn(chat_client, "What is the status of order CMD-1042?")
+    flat_t = flat(trace).lower()
+    assert "version" in flat_t
+    for component in ("instructions", "skill", "tool", "index"):
+        assert component in flat_t, f"the trace must carry the version of: {component}"

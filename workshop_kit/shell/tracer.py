@@ -1,5 +1,4 @@
-
-"""Traces JSONL, une par tour, sans secret."""
+"""JSONL traces, one per turn, without secrets."""
 
 from __future__ import annotations
 
@@ -10,46 +9,47 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
 _lock = threading.Lock()
+TRACE_FILE = "turns.jsonl"
 
 
-def dossier() -> Path:
-    path = Path(reglages.traces_dir)
+def folder() -> Path:
+    path = Path(settings.traces_dir)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def nouvel_id() -> str:
+def new_id() -> str:
     return uuid.uuid4().hex
 
 
-def ecrire(trace: dict[str, Any]) -> Path:
+def write(trace: dict[str, Any]) -> Path:
     trace = dict(trace)
-    trace.setdefault("horodatage", datetime.now(timezone.utc).isoformat())
-    # Masquage minimal : jamais de clé ni de jeton.
-    for secret in ("azure_openai_api_key", "api_key", "authorization", "jeton"):
+    trace.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    # Minimal masking: never a key nor a token.
+    for secret in ("azure_openai_api_key", "api_key", "authorization", "token"):
         trace.pop(secret, None)
-    chemin = dossier() / "tours.jsonl"
+    path = folder() / TRACE_FILE
     with _lock:
-        with chemin.open("a", encoding="utf-8") as fh:
+        with path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(trace, ensure_ascii=False) + "\n")
-    return chemin
+    return path
 
 
-def lire_tout() -> list[dict[str, Any]]:
-    chemin = dossier() / "tours.jsonl"
-    if not chemin.exists():
+def read_all() -> list[dict[str, Any]]:
+    path = folder() / TRACE_FILE
+    if not path.exists():
         return []
-    lignes = []
-    for ligne in chemin.read_text(encoding="utf-8").splitlines():
-        if ligne.strip():
-            lignes.append(json.loads(ligne))
-    return lignes
+    lines = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            lines.append(json.loads(line))
+    return lines
 
 
-def vider() -> None:
-    chemin = dossier() / "tours.jsonl"
-    if chemin.exists():
-        chemin.unlink()
+def clear() -> None:
+    path = folder() / TRACE_FILE
+    if path.exists():
+        path.unlink()

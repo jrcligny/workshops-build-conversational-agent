@@ -1,9 +1,8 @@
-"""Emplacement et interface du confinement, sans politique appliquée.
+"""Location and interface of the sandbox, with no policy enforced.
 
-À l'atelier 10d, le serveur d'outils tournera dans un conteneur (utilisateur
-non privilégié, système de fichiers en lecture seule, proxy de sortie à liste
-d'autorisation). Cette coquille expose seulement le contrat et l'emplacement
-des fichiers ; elle n'applique aucune politique.
+In workshop 10d, the tool server will run in a container (unprivileged user,
+read-only file system, egress proxy with an allowlist). This shell only exposes
+the contract and the location of the files; it enforces no policy.
 """
 
 from __future__ import annotations
@@ -12,27 +11,27 @@ from pathlib import Path
 
 import yaml
 
-DOSSIER = Path(__file__).resolve().parent
-FICHIER_POLITIQUE = DOSSIER / "politique.yaml"
+FOLDER = Path(__file__).resolve().parent
+POLICY_FILE = FOLDER / "policy.yaml"
 
 
-def politique() -> dict:
-    data = yaml.safe_load(FICHIER_POLITIQUE.read_text(encoding="utf-8")) or {}
+def policy() -> dict:
+    data = yaml.safe_load(POLICY_FILE.read_text(encoding="utf-8")) or {}
     return {
         "active": bool(data.get("active")),
-        "liste_autorisation": list(data.get("liste_autorisation") or []),
-        "limites": dict(data.get("limites") or {}),
-        "emplacement": str(FICHIER_POLITIQUE),
+        "allowlist": list(data.get("allowlist") or []),
+        "limits": dict(data.get("limits") or {}),
+        "location": str(POLICY_FILE),
     }
 
 
-def politique_appliquee() -> bool:
-    return politique()["active"]
+def is_policy_enforced() -> bool:
+    return policy()["active"]
 
 
-def autorise_sortie(_url: str) -> bool | None:
-    """Renvoie None tant qu'aucune politique n'est active (coquille)."""
-    if not politique_appliquee():
+def is_egress_allowed(_url: str) -> bool | None:
+    """Returns None while no policy is active (empty shell)."""
+    if not is_policy_enforced():
         return None
-    # L'implémentation de la liste d'autorisation est le travail de l'atelier 10d.
-    raise NotImplementedError("politique de confinement à implémenter (atelier 10d)")
+    # Implementing the allowlist is the work of workshop 10d.
+    raise NotImplementedError("sandbox policy to implement (workshop 10d)")

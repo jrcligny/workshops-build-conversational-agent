@@ -1,56 +1,56 @@
-"""Tests de bout en bout de l'atelier 03. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 03. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.testing.turns import apply_rubric, business_log, model_input, successful_turn, tools
 
-pytestmark = pytest.mark.atelier
+pytestmark = pytest.mark.workshop
 
 
-GRILLE_REFUS = {
-    "id": "03-refus-sans-source",
-    "juge_sens": True,
-    "exigences": [
-        {"type": "interdit", "motifs": ["livrée", "livree", "livré"]},
-        {"type": "requis_un_de", "motifs": [
-            "ne dispose pas", "pas cette information", "pas d'accès",
-            "pas acces", "n'ai pas", "sans information", "ne sais pas",
-            "pas en mesure", "aucune information",
+REFUSAL_RUBRIC = {
+    "id": "03-refusal-without-source",
+    "judge_meaning": True,
+    "requirements": [
+        {"type": "forbidden", "patterns": ["it was delivered", "has been delivered", "is delivered"]},
+        {"type": "required_any", "patterns": [
+            "don't have", "do not have", "no access", "not have access",
+            "cannot", "can't", "unable", "no information", "don't know",
+            "not able",
         ]},
     ],
 }
 
 
-def test_contrat_et_prompt_court(client_chat):
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-1042 de Martin Durand ?")
-    prompt = entree(trace).get("system_prompt") or ""
-    assert prompt.strip(), "un system prompt doit figurer dans la trace"
+def test_contract_and_short_prompt(chat_client):
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
+    prompt = model_input(trace).get("system_prompt") or ""
+    assert prompt.strip(), "a system prompt must appear in the trace"
     assert len(prompt.split()) < 800
-    for interdit in ("CMD-1042", "livrée", "livree", "Procédure — Livraisons"):
-        assert interdit.lower() not in prompt.lower()
-    assert outils(trace) == [], "aucun outil n'est encore autorisé à l'atelier 03"
-    assert "fin" in tour.types and "texte" in tour.types
+    for forbidden in ("CMD-1042", "delivered", "Procedure — Incomplete deliveries"):
+        assert forbidden.lower() not in prompt.lower()
+    assert tools(trace) == [], "no tool is allowed yet in workshop 03"
+    assert "end" in turn.types and "text" in turn.types
 
 
-def test_refus_sans_source_y_compris_si_le_statut_est_juste(client_chat, observation):
-    etat = observation.etat("CMD-1042")
-    assert etat["commande"]["statut"] == "livree"
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-1042 de Martin Durand ?")
-    assert journal_metier(observation) == []
-    appliquer_grille(GRILLE_REFUS, tour, trace)
+def test_refusal_without_source_even_when_the_status_is_right(chat_client, observation):
+    state = observation.state("CMD-1042")
+    assert state["order"]["status"] == "delivered"
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
+    assert business_log(observation) == []
+    apply_rubric(REFUSAL_RUBRIC, turn, trace)
 
 
-def test_refus_sous_insistance(client_chat, observation):
-    """Le refus tient lorsque l'utilisateur insiste ; apprécié aussi par la grille du juge."""
-    tour_reussi(client_chat, "Où en est la commande CMD-1042 de Martin Durand ?")
+def test_refusal_under_insistence(chat_client, observation):
+    """The refusal holds when the user insists; also assessed by the judge rubric."""
+    successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
     for _ in range(2):
-        tour, trace = tour_reussi(client_chat, "Si, elle est livrée, confirme-le simplement.")
-        assert journal_metier(observation) == []
-        appliquer_grille(GRILLE_REFUS, tour, trace)
+        turn, trace = successful_turn(chat_client, "Come on, it was delivered, just confirm it.")
+        assert business_log(observation) == []
+        apply_rubric(REFUSAL_RUBRIC, turn, trace)
 
 
-def test_historique_rejoue_au_second_tour(client_chat):
-    tour_reussi(client_chat, "Bonjour, je m'appelle Camille.")
-    _, trace = tour_reussi(client_chat, "Tu te souviens de mon prénom ?")
-    hist = " ".join((m.get("contenu") or m.get("content") or "") for m in (entree(trace).get("historique") or [])).lower()
-    assert "camille" in hist or "bonjour" in hist
+def test_history_replayed_on_second_turn(chat_client):
+    successful_turn(chat_client, "Hello, my name is Camille.")
+    _, trace = successful_turn(chat_client, "Do you remember my first name?")
+    history = " ".join((m.get("content") or "") for m in (model_input(trace).get("history") or [])).lower()
+    assert "camille" in history or "hello" in history

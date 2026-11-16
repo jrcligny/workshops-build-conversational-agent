@@ -1,2 +1,3 @@
-atelier: '14'
-titre: 'Skills'
+workshop: '14'
+title: 'Skills'
+tests: tests/

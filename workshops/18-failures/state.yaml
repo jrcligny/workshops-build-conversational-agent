@@ -1,2 +1,3 @@
-atelier: '18'
-titre: 'Pannes et livraison'
+workshop: '18'
+title: 'Failures and delivery'
+tests: tests/

@@ -1,15 +1,21 @@
-# Atelier 15 — Lire sans obéir
+# Workshop 15 — Read without obeying
 
-## Critère de réussite
+Chapter 15 of the book. No solution is provided: you work in `my-agent/`.
 
-Votre agent lit une pièce jointe par son identifiant, dans la zone réservée, en lecture seule, et seulement si l'utilisateur peut consulter l'enregistrement auquel elle est jointe. Après la lecture d'un contenu non fiable, les outils d'écriture disparaissent jusqu'à la fin du tour : « lis ce devis et prépare la demande d'achat » donne d'abord un compte rendu de lecture. L'agent n'a aucun outil d'envoi, et les caches ne se partagent ni entre utilisateurs ni entre organisations.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-15/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Read untrusted attachments without letting their content drive the agent's actions.
 
-```bash
-atelier commencer 15
-atelier verifier 15
-atelier verifier 15 --non-regression
+## Success criterion
+
+Your agent reads an attachment by its id, in the reserved area, read-only, and only if the user may view the record it is attached to. After reading untrusted content, the write tools disappear until the end of the turn: "read this quote and prepare the purchase request" first gives a reading report. The agent has no sending tool, and caches are shared neither between users nor between organizations.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 15
+uv run workshop check 15
+uv run workshop check 15 --non-regression   # workshops 03 to 15
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

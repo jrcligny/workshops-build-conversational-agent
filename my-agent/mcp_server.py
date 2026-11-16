@@ -1,8 +1,8 @@
-"""Serveur MCP vide de la coquille.
+"""Empty MCP server of the shell.
 
-Il démarre, répond au handshake du protocole MCP (SDK Python officiel `mcp`)
-et n'expose aucun outil métier. Vous brancherez l'API métier à l'atelier 09.
-Transport prévu : HTTP en flux (streamable-http), mode sans état.
+It starts, answers the MCP protocol handshake (official Python SDK `mcp`)
+and exposes no business tool. You will wire it to the business API in workshop 09.
+Planned transport: streamable HTTP, stateless mode.
 """
 
 from __future__ import annotations
@@ -11,43 +11,43 @@ import os
 
 from mcp.server import MCPServer
 
-NOM = "ateliers-outils"
+NAME = "workshop-tools"
 VERSION = "0.1.0"
-CHEMIN_MCP = "/mcp"
-HOTE_DEFAUT = "127.0.0.1"
-PORT_DEFAUT = 8004
+MCP_PATH = "/mcp"
+DEFAULT_HOST = "127.0.0.1"
+DEFAULT_PORT = 8004
 
 
-def creer_serveur() -> MCPServer:
+def create_server() -> MCPServer:
     return MCPServer(
-        name=NOM,
+        name=NAME,
         version=VERSION,
         instructions=(
-            "Coquille vide : aucun outil métier n'est encore exposé. "
-            "À l'atelier 09, vous migrerez les outils vers ce serveur sans état "
-            "et vous les brancherez sur l'API métier."
+            "Empty shell: no business tool is exposed yet. "
+            "In workshop 09, you will move the tools to this stateless server "
+            "and wire them to the business API."
         ),
     )
 
 
 def application():
-    """Application Starlette servie par uvicorn (tests et lancement local)."""
-    return creer_serveur().streamable_http_app(
+    """Starlette application served by uvicorn (tests and local run)."""
+    return create_server().streamable_http_app(
         stateless_http=True,
         json_response=True,
-        streamable_http_path=CHEMIN_MCP,
-        host=HOTE_DEFAUT,
+        streamable_http_path=MCP_PATH,
+        host=DEFAULT_HOST,
     )
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("MCP_PORT", str(PORT_DEFAUT)))
-    hote = os.environ.get("MCP_HOST", HOTE_DEFAUT)
-    creer_serveur().run(
+    port = int(os.environ.get("MCP_PORT", str(DEFAULT_PORT)))
+    host = os.environ.get("MCP_HOST", DEFAULT_HOST)
+    create_server().run(
         transport="streamable-http",
-        host=hote,
+        host=host,
         port=port,
         stateless_http=True,
         json_response=True,
-        streamable_http_path=CHEMIN_MCP,
+        streamable_http_path=MCP_PATH,
     )

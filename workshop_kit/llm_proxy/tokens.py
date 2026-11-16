@@ -1,5 +1,4 @@
-
-"""Jetons de cours, distincts de la clé Azure, et quotas par étudiant."""
+"""Course tokens, distinct from the Azure key, and per-student quotas."""
 
 from __future__ import annotations
 
@@ -9,67 +8,67 @@ from typing import Any
 import jwt
 from fastapi import Header, HTTPException
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
-# Jetons d'essai livrés avec le dépôt (pas la clé Azure).
-ETUDIANTS = {
-    "etudiant-essai": {"nom": "Étudiant d'essai", "quota_jetons": None, "quota_requetes": None},
-    "juge-essai": {"nom": "Juge d'essai", "quota_jetons": None, "quota_requetes": None},
+# Test tokens shipped with the repository (not the Azure key).
+STUDENTS = {
+    "test-student": {"name": "Test student", "token_quota": None, "request_quota": None},
+    "test-judge": {"name": "Test judge", "token_quota": None, "request_quota": None},
 }
 
-# Compteurs en mémoire (suffisant en conception).
-_usage: dict[str, dict[str, int]] = {}
+# In-memory counters (enough during design).
+_usage: dict[str, dict[str, Any]] = {}
 
 
-def _cle_jour() -> str:
+def _day_key() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
-def emettre_jeton_etudiant(etudiant_id: str) -> str:
-    if etudiant_id not in ETUDIANTS:
-        ETUDIANTS[etudiant_id] = {"nom": etudiant_id, "quota_jetons": None, "quota_requetes": None}
+def issue_student_token(student_id: str) -> str:
+    if student_id not in STUDENTS:
+        STUDENTS[student_id] = {"name": student_id, "token_quota": None, "request_quota": None}
     payload = {
-        "sub": etudiant_id,
-        "typ": "cours",
+        "sub": student_id,
+        "typ": "course",
         "iat": int(datetime.now(timezone.utc).timestamp()),
         "exp": int((datetime.now(timezone.utc) + timedelta(days=30)).timestamp()),
     }
-    return jwt.encode(payload, reglages.secret_jetons, algorithm="HS256")
+    return jwt.encode(payload, settings.token_secret, algorithm="HS256")
 
 
-def exiger_etudiant(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def require_student(authorization: str | None = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="jeton de cours manquant")
-    jeton = authorization.split(" ", 1)[1].strip()
-    # Les jetons prédéfinis « etudiant-essai » / « juge-essai » sont acceptés tels quels en simulé.
-    if jeton in ETUDIANTS:
-        return {"sub": jeton, "typ": "cours"}
+        raise HTTPException(status_code=401, detail="missing course token")
+    token = authorization.split(" ", 1)[1].strip()
+    # The predefined tokens "test-student" / "test-judge" are accepted as is in simulated mode.
+    if token in STUDENTS:
+        return {"sub": token, "typ": "course"}
     try:
-        claims = jwt.decode(jeton, reglages.secret_jetons, algorithms=["HS256"])
+        claims = jwt.decode(token, settings.token_secret, algorithms=["HS256"])
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail="jeton de cours invalide") from exc
-    if claims.get("typ") != "cours":
-        raise HTTPException(status_code=401, detail="jeton de cours invalide")
+        raise HTTPException(status_code=401, detail="invalid course token") from exc
+    if claims.get("typ") != "course":
+        raise HTTPException(status_code=401, detail="invalid course token")
     return claims
 
 
-def consommer(etudiant_id: str, tokens: int) -> None:
-    jour = _cle_jour()
-    usage = _usage.setdefault(etudiant_id, {"jour": jour, "tokens": 0, "requetes": 0})
-    if usage["jour"] != jour:
-        usage.update({"jour": jour, "tokens": 0, "requetes": 0})
-    fiche = ETUDIANTS.get(etudiant_id, {})
-    q_tok = fiche.get("quota_jetons") or reglages.quota_jetons_par_jour
-    q_req = fiche.get("quota_requetes") or reglages.quota_requetes_par_jour
-    if usage["requetes"] + 1 > q_req or usage["tokens"] + tokens > q_tok:
-        raise HTTPException(status_code=429, detail="quota étudiant dépassé")
-    usage["requetes"] += 1
-    usage["tokens"] += tokens
+def consume(student_id: str, tokens: int) -> None:
+    day = _day_key()
+    counters = _usage.setdefault(student_id, {"day": day, "tokens": 0, "requests": 0})
+    if counters["day"] != day:
+        counters.update({"day": day, "tokens": 0, "requests": 0})
+    record = STUDENTS.get(student_id, {})
+    token_quota = record.get("token_quota") or settings.daily_token_quota
+    request_quota = record.get("request_quota") or settings.daily_request_quota
+    if counters["requests"] + 1 > request_quota or counters["tokens"] + tokens > token_quota:
+        raise HTTPException(status_code=429, detail="student quota exceeded")
+    counters["requests"] += 1
+    counters["tokens"] += tokens
 
 
-def usage(etudiant_id: str) -> dict[str, int]:
-    return dict(_usage.get(etudiant_id, {"tokens": 0, "requetes": 0}))
+def usage(student_id: str) -> dict[str, Any]:
+    return dict(_usage.get(student_id, {"tokens": 0, "requests": 0}))
 
 
-def reinitialiser_usage() -> None:
+def reset_usage() -> None:
     _usage.clear()

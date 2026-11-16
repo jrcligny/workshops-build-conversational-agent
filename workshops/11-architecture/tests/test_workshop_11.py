@@ -1,46 +1,48 @@
-"""Tests de bout en bout de l'atelier 11. Ils doivent échouer sur la coquille vide."""
-
-import pytest
-
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
-
-pytestmark = pytest.mark.atelier
-
+"""End-to-end tests of workshop 11. They must fail on the empty shell."""
 
 import importlib.util
 import json
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
+import pytest
+
+from workshop_kit.testing.turns import flat
+
+pytestmark = pytest.mark.workshop
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+EXAMPLE_TRACES = Path(__file__).parent / "fixtures" / "example-traces.jsonl"
 
 
-def _charger_requetes():
-    fichier = RACINE / "mon-agent" / "requetes_trace.py"
-    assert fichier.is_file(), (
-        "livrable manquant : mon-agent/requetes_trace.py "
-        "(fonctions part_lectures_intermediaires et domaines_incompatibles)"
+def _load_queries():
+    path = REPO_ROOT / "my-agent" / "trace_queries.py"
+    assert path.is_file(), (
+        "missing deliverable: my-agent/trace_queries.py "
+        "(functions intermediate_reads_share and incompatible_domains)"
     )
-    spec = importlib.util.spec_from_file_location("requetes_trace_etudiant", fichier)
-    module = importlib.util.module_from_spec(spec)
+    spec = importlib.util.spec_from_file_location("student_trace_queries", path)
     assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-def _traces_exemple() -> list[dict]:
-    chemin = Path(__file__).parent / "traces-exemple.jsonl"
-    return [json.loads(ligne) for ligne in chemin.read_text(encoding="utf-8").splitlines() if ligne.strip()]
+def _example_traces() -> list[dict]:
+    return [json.loads(line) for line in EXAMPLE_TRACES.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def test_requetes_de_trace_presentes_et_executables():
-    module = _charger_requetes()
-    traces = _traces_exemple()
-    assert hasattr(module, "part_lectures_intermediaires"), "fonction part_lectures_intermediaires manquante"
-    assert hasattr(module, "domaines_incompatibles"), "fonction domaines_incompatibles manquante"
-    parts = module.part_lectures_intermediaires(traces)
-    incompatibles = module.domaines_incompatibles(traces)
-    assert isinstance(parts, list) and parts, "la part des lectures intermédiaires doit être calculée tour par tour"
-    assert any("t1" in plat(p) or p.get("tour_id") == "t1" or "0.6" in plat(p) or (isinstance(p, dict) and p.get("part", 0) >= 0.5) for p in parts)
-    assert isinstance(incompatibles, list)
-    # le second tour d'exemple mélange commandes et factures
-    assert incompatibles, "le tour t2 mélange des domaines aux droits incompatibles et doit être signalé"
+def test_trace_queries_present_and_runnable():
+    module = _load_queries()
+    traces = _example_traces()
+    assert hasattr(module, "intermediate_reads_share"), "function intermediate_reads_share missing"
+    assert hasattr(module, "incompatible_domains"), "function incompatible_domains missing"
+    shares = module.intermediate_reads_share(traces)
+    incompatible = module.incompatible_domains(traces)
+    assert isinstance(shares, list) and shares, "the share of intermediate reads must be computed turn by turn"
+    assert any(
+        "t1" in flat(s) or (isinstance(s, dict) and (s.get("turn_id") == "t1" or s.get("share", 0) >= 0.5)) or "0.6" in flat(s)
+        for s in shares
+    )
+    assert isinstance(incompatible, list)
+    # the second example turn mixes orders and invoices
+    assert incompatible, "turn t2 mixes domains with incompatible permissions and must be reported"

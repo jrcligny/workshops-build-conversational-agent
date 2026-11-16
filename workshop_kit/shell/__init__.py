@@ -1,1 +1,1 @@
-"""Socle commun : configuration, contrat, traces, client de modèle, interface."""
+"""Minimal shell: settings, harness contract, traces, model client, chat interface."""

@@ -1,2 +1,3 @@
-atelier: '15'
-titre: 'Lire sans obéir'
+workshop: '15'
+title: 'Read without obeying'
+tests: tests/

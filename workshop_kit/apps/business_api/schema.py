@@ -1,93 +1,92 @@
-
-"""Schéma SQLite de l'application métier."""
+"""SQLite schema of the business application."""
 
 from __future__ import annotations
 
-from application.db import connexion
+from workshop_kit.apps.business_api.db import connection
 
 DDL = """
-CREATE TABLE IF NOT EXISTS organisations (
+CREATE TABLE IF NOT EXISTS organizations (
     id TEXT PRIMARY KEY,
-    nom TEXT NOT NULL
+    name TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS utilisateurs (
+CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    nom TEXT NOT NULL,
+    name TEXT NOT NULL,
     role TEXT NOT NULL,
-    organisation_id TEXT NOT NULL REFERENCES organisations(id)
+    organization_id TEXT NOT NULL REFERENCES organizations(id)
 );
-CREATE TABLE IF NOT EXISTS clients (
+CREATE TABLE IF NOT EXISTS customers (
     id TEXT PRIMARY KEY,
-    nom TEXT NOT NULL,
-    ville TEXT,
-    organisation_id TEXT NOT NULL REFERENCES organisations(id)
+    name TEXT NOT NULL,
+    city TEXT,
+    organization_id TEXT NOT NULL REFERENCES organizations(id)
 );
-CREATE TABLE IF NOT EXISTS fournisseurs (
+CREATE TABLE IF NOT EXISTS suppliers (
     id TEXT PRIMARY KEY,
-    nom TEXT NOT NULL,
-    organisation_id TEXT NOT NULL REFERENCES organisations(id)
+    name TEXT NOT NULL,
+    organization_id TEXT NOT NULL REFERENCES organizations(id)
 );
-CREATE TABLE IF NOT EXISTS commandes (
-    id TEXT PRIMARY KEY,
-    reference TEXT NOT NULL,
-    client_id TEXT NOT NULL REFERENCES clients(id),
-    organisation_id TEXT NOT NULL REFERENCES organisations(id),
-    statut TEXT NOT NULL,
-    montant REAL NOT NULL,
-    date_commande TEXT NOT NULL,
-    date_promise TEXT,
-    date_livraison TEXT,
-    ville_livraison TEXT,
-    supprimee INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE IF NOT EXISTS factures (
+CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
     reference TEXT NOT NULL,
-    commande_id TEXT REFERENCES commandes(id),
-    fournisseur_id TEXT REFERENCES fournisseurs(id),
-    organisation_id TEXT NOT NULL REFERENCES organisations(id),
-    statut TEXT NOT NULL,
-    montant REAL NOT NULL,
-    date_facture TEXT NOT NULL,
-    doublon_de TEXT
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    status TEXT NOT NULL,
+    amount REAL NOT NULL,
+    order_date TEXT NOT NULL,
+    promised_date TEXT,
+    delivery_date TEXT,
+    delivery_city TEXT,
+    deleted INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE IF NOT EXISTS demandes_achat (
+CREATE TABLE IF NOT EXISTS invoices (
     id TEXT PRIMARY KEY,
-    organisation_id TEXT NOT NULL REFERENCES organisations(id),
-    fournisseur_id TEXT,
-    statut TEXT NOT NULL,
-    objet TEXT NOT NULL,
-    montant REAL,
-    brouillon INTEGER NOT NULL DEFAULT 1,
-    attribue_a TEXT,
-    pour_le_compte_de TEXT,
-    date_creation TEXT NOT NULL,
-    date_soumission TEXT
+    reference TEXT NOT NULL,
+    order_id TEXT REFERENCES orders(id),
+    supplier_id TEXT REFERENCES suppliers(id),
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    status TEXT NOT NULL,
+    amount REAL NOT NULL,
+    invoice_date TEXT NOT NULL,
+    duplicate_of TEXT
 );
-CREATE TABLE IF NOT EXISTS brouillons (
+CREATE TABLE IF NOT EXISTS purchase_requests (
+    id TEXT PRIMARY KEY,
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    supplier_id TEXT,
+    status TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    amount REAL,
+    draft INTEGER NOT NULL DEFAULT 1,
+    assigned_to TEXT,
+    on_behalf_of TEXT,
+    created_at TEXT NOT NULL,
+    submitted_at TEXT
+);
+CREATE TABLE IF NOT EXISTS drafts (
     id TEXT PRIMARY KEY,
     type TEXT NOT NULL,
-    organisation_id TEXT NOT NULL,
-    utilisateur_id TEXT NOT NULL,
+    organization_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
     payload TEXT NOT NULL,
-    soumis INTEGER NOT NULL DEFAULT 0,
-    date_creation TEXT NOT NULL
+    submitted INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS reglages (
-    utilisateur_id TEXT PRIMARY KEY,
-    preferer_hors_taxes INTEGER NOT NULL DEFAULT 0
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id TEXT PRIMARY KEY,
+    prefer_excl_tax INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE IF NOT EXISTS journal_appels (
+CREATE TABLE IF NOT EXISTS call_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    horodatage TEXT NOT NULL,
-    methode TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    method TEXT NOT NULL,
     route TEXT NOT NULL,
-    utilisateur_id TEXT,
-    organisation_id TEXT,
+    user_id TEXT,
+    organization_id TEXT,
     role TEXT,
     code INTEGER NOT NULL
 );
-CREATE TABLE IF NOT EXISTS pannes (
+CREATE TABLE IF NOT EXISTS failures (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     type TEXT,
     active INTEGER NOT NULL DEFAULT 0
@@ -95,7 +94,7 @@ CREATE TABLE IF NOT EXISTS pannes (
 """
 
 
-def initialiser_schema(conn=None) -> None:
-    conn = conn or connexion()
+def init_schema(conn=None) -> None:
+    conn = conn or connection()
     conn.executescript(DDL)
     conn.commit()

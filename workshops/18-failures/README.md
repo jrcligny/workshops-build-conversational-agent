@@ -1,15 +1,21 @@
-# Atelier 18 — Pannes et livraison
+# Workshop 18 — Failures and delivery
 
-## Critère de réussite
+Chapter 18 of the book. No solution is provided: you work in `my-agent/`.
 
-Lorsque le modèle principal est indisponible, votre agent bascule une seule fois vers le modèle de repli ; si l'échec persiste, il termine la réponse proprement. Une lecture peut être réessayée ; une soumission ne l'est jamais, et l'utilisateur est invité à vérifier dans l'application. La trace porte la version des consignes, du catalogue de skills, des définitions d'outils et de l'index documentaire.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-18/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Handle failures: a single fallback to a backup model, safe retries for reads only, and versions in the trace.
 
-```bash
-atelier commencer 18
-atelier verifier 18
-atelier verifier 18 --non-regression
+## Success criterion
+
+When the primary model is unavailable, your agent switches once to the fallback model; if the failure persists, it ends the answer cleanly. A read may be retried; a submission never is, and the user is invited to check in the application. The trace carries the version of the instructions, of the skills catalog, of the tool definitions and of the document index.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 18
+uv run workshop check 18
+uv run workshop check 18 --non-regression   # workshops 03 to 18
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

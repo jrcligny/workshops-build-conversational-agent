@@ -1,15 +1,21 @@
-# Atelier 06 — Boucle agentique
+# Workshop 06 — Agent loop
 
-## Critère de réussite
+Chapter 6 of the book. No solution is provided: you work in `my-agent/`.
 
-Votre agent enchaîne plusieurs cycles dans un même tour et groupe les appels indépendants. À la limite de cycles, il rend une réponse qui se déclare partielle. Chaque étape en cours est signalée à l'interface, et une interruption arrête le tour proprement, sans nouvel appel. La trace permet de compter les cycles de chaque tour.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-06/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Turn the conversational loop into an agent loop that chains several model/tool cycles within one turn.
 
-```bash
-atelier commencer 06
-atelier verifier 06
-atelier verifier 06 --non-regression
+## Success criterion
+
+Your agent chains several cycles within one turn and groups independent calls. At the cycle limit, it returns an answer that declares itself partial. Each ongoing step is reported to the interface, and an interruption stops the turn cleanly, with no new call. The trace lets you count the cycles of each turn.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 06
+uv run workshop check 06
+uv run workshop check 06 --non-regression   # workshops 03 to 06
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

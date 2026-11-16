@@ -1,53 +1,44 @@
-"""Aides partagées par les tests d'atelier. Tous exigent un tour réussi (rouge sur la coquille)."""
+"""Helpers shared by the workshop tests. All of them require a successful turn (red on the empty shell)."""
 
 from __future__ import annotations
 
-from socle.evaluation.juge import juger
-from socle.traces.tracer import lire_tout
+from workshop_kit.evaluation.judge import judge
+from workshop_kit.shell.tracer import read_all
 
 
-def tour_reussi(client_chat, message: str, **kwargs):
-    tour = client_chat.tour(message, **kwargs)
-    assert tour.ok, (
-        f"le tour doit aboutir (texte + fin) ; reçu : ok={tour.ok}, erreur={tour.erreur!r}"
+def successful_turn(chat_client, message: str, **kwargs):
+    turn = chat_client.turn(message, **kwargs)
+    assert turn.ok, (
+        f"the turn must complete (text + end); got: ok={turn.ok}, error={turn.error!r}"
     )
-    assert "texte" in tour.types
-    assert "fin" in tour.types
-    traces = lire_tout()
-    assert traces, "une trace de tour est exigée"
-    return tour, traces[-1]
+    assert "text" in turn.types
+    assert "end" in turn.types
+    traces = read_all()
+    assert traces, "a turn trace is required"
+    return turn, traces[-1]
 
 
-def journal_metier(observation) -> list:
-    return [e for e in observation.journal() if not str(e.get("route", "")).startswith("/observation")]
+def business_log(observation) -> list:
+    return [e for e in observation.log() if not str(e.get("route", "")).startswith("/observation")]
 
 
-def entree(trace: dict) -> dict:
-    return trace.get("entree") or {}
+def model_input(trace: dict) -> dict:
+    return trace.get("input") or {}
 
 
-def outils(trace: dict) -> list:
-    return list(trace.get("outils") or [])
+def tools(trace: dict) -> list:
+    return list(trace.get("tools") or [])
 
 
-def historique(trace: dict) -> list:
-    return list(entree(trace).get("historique") or [])
+def history(trace: dict) -> list:
+    return list(model_input(trace).get("history") or [])
 
 
-def textes_role(trace: dict, role: str) -> list[str]:
-    morceaux = []
-    for m in historique(trace):
-        r = (m.get("role") or "").lower()
-        if r == role or r == ("assistant" if role == "assistant" else r):
-            morceaux.append(m.get("contenu") or m.get("content") or "")
-    return morceaux
-
-
-def plat(obj) -> str:
+def flat(obj) -> str:
     return str(obj)
 
 
-def appliquer_grille(grille: dict, tour, trace=None) -> dict:
-    verdict = juger(grille, {"reponse": tour.texte, "trace": plat(trace) if trace is not None else ""})
-    assert verdict["reussi"], f"grille {grille.get('id')}: {verdict.get('justification')}"
+def apply_rubric(rubric: dict, turn, trace=None) -> dict:
+    verdict = judge(rubric, {"response": turn.text, "trace": flat(trace) if trace is not None else ""})
+    assert verdict["passed"], f"rubric {rubric.get('id')}: {verdict.get('rationale')}"
     return verdict

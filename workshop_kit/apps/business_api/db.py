@@ -1,5 +1,4 @@
-
-"""Connexion SQLite et journal d'appels."""
+"""SQLite connection and call log."""
 
 from __future__ import annotations
 
@@ -8,17 +7,17 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
 _local = threading.local()
 
 
-def chemin_db() -> Path:
-    return Path(reglages.application_db)
+def db_path() -> Path:
+    return Path(settings.business_api_db)
 
 
-def connecter(db_path: str | Path | None = None) -> sqlite3.Connection:
-    path = str(db_path or chemin_db())
+def connect(path: str | Path | None = None) -> sqlite3.Connection:
+    path = str(path or db_path())
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
@@ -26,23 +25,23 @@ def connecter(db_path: str | Path | None = None) -> sqlite3.Connection:
     return conn
 
 
-def connexion() -> sqlite3.Connection:
+def connection() -> sqlite3.Connection:
     if not hasattr(_local, "conn") or _local.conn is None:
-        _local.conn = connecter()
+        _local.conn = connect()
     return _local.conn
 
 
-def reassigner(db_path: str) -> None:
+def reassign(path: str) -> None:
     if hasattr(_local, "conn") and _local.conn is not None:
         _local.conn.close()
         _local.conn = None
-    reglages.application_db = db_path
-    _local.conn = connecter(db_path)
+    settings.business_api_db = path
+    _local.conn = connect(path)
 
 
 @contextmanager
 def transaction():
-    conn = connexion()
+    conn = connection()
     try:
         yield conn
         conn.commit()

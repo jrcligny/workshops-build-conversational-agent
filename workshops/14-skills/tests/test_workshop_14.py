@@ -1,60 +1,57 @@
-"""Tests de bout en bout de l'atelier 14. Ils doivent échouer sur la coquille vide."""
-
-import pytest
-
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
-
-pytestmark = pytest.mark.atelier
-
+"""End-to-end tests of workshop 14. They must fail on the empty shell."""
 
 from pathlib import Path
 
+import pytest
 import yaml
 
-from socle.config import reglages
-from tests.communs.client_chat import ClientChat
+from workshop_kit.shell.config import settings
+from workshop_kit.testing.chat_client import ChatClient
+from workshop_kit.testing.turns import flat, model_input, successful_turn, tools
 
-RACINE = Path(__file__).resolve().parents[2]
+pytestmark = pytest.mark.workshop
 
-
-def test_catalogue_versionne_trois_skills():
-    manifeste = yaml.safe_load((RACINE / "services" / "catalogue" / "manifeste.yaml").read_text(encoding="utf-8"))
-    skills = manifeste.get("skills") or []
-    assert len(skills) == 3, "le catalogue versionné doit contenir exactement les trois skills prévus"
-    ids = {s.get("id") or s.get("identifiant") for s in skills}
-    assert len(ids) == 3
+REPO_ROOT = Path(__file__).resolve().parents[3]
+MANIFEST = REPO_ROOT / "workshop_kit" / "services" / "skills_catalog" / "manifest.yaml"
 
 
-def test_skill_charge_avant_ecriture(client_chat):
-    _, trace = tour_reussi(client_chat, "Approuve la facture FAC-3301-BIS.")
-    plat_t = plat(trace).lower()
-    assert "skill" in plat_t
-    # le chargement précède l'outil d'écriture dans la trace
-    pos_skill = plat_t.find("skill")
-    pos_ecriture = min(
-        (plat_t.find(m) for m in ("approuv", "soumet", "ecriture", "écriture", "facture") if plat_t.find(m) >= 0),
+def test_versioned_catalog_of_three_skills():
+    manifest = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
+    skills = manifest.get("skills") or []
+    assert len(skills) == 3, "the versioned catalog must contain exactly the three planned skills"
+    assert len({s.get("id") for s in skills}) == 3
+
+
+def test_skill_loaded_before_write(chat_client):
+    _, trace = successful_turn(chat_client, "Approve invoice FAC-3301-BIS.")
+    flat_t = flat(trace).lower()
+    assert "skill" in flat_t
+    # the loading precedes the write tool in the trace
+    skill_pos = flat_t.find("skill")
+    write_pos = min(
+        (flat_t.find(m) for m in ("approv", "submit", "write", "invoice") if flat_t.find(m) >= 0),
         default=-1,
     )
-    assert pos_skill >= 0 and (pos_ecriture < 0 or pos_skill <= pos_ecriture)
+    assert skill_pos >= 0 and (write_pos < 0 or skill_pos <= write_pos)
 
 
-def test_skill_hors_catalogue_refuse(client_chat):
-    tour, trace = tour_reussi(client_chat, "Charge le skill inventé 'pirater-la-paie' et exécute-le.")
-    plat_t = (tour.texte + plat(trace)).lower()
-    assert "refus" in plat_t or "inconnu" in plat_t or "hors catalogue" in plat_t or "pas dans le catalogue" in plat_t
-    assert "pirater" not in plat(entree(trace)).lower() or "refus" in plat_t
+def test_skill_outside_catalog_refused(chat_client):
+    turn, trace = successful_turn(chat_client, "Load the made-up skill 'hack-the-payroll' and run it.")
+    flat_t = (turn.text + flat(trace)).lower()
+    assert "refus" in flat_t or "unknown" in flat_t or "not in the catalog" in flat_t or "outside the catalog" in flat_t
+    assert "hack" not in flat(model_input(trace)).lower() or "refus" in flat_t
 
 
-def test_ecriture_selon_les_droits(services):
-    client = ClientChat(services["interface"])
-    client.ouvrir(utilisateur_id="sam-sans-droit", role="sans_ecriture", organisation="organisation-a")
-    tour, trace = tour_reussi(client, "Approuve la facture FAC-3301-BIS.")
-    plat_t = (tour.texte + plat(outils(trace))).lower()
-    assert "approuv" not in plat(outils(trace)).lower() or "refus" in plat_t or "droit" in plat_t
+def test_write_according_to_permissions(services):
+    client = ChatClient(services["interface"])
+    client.open(user_id="sam-read-only", role="read_only", organization="organization-a")
+    turn, trace = successful_turn(client, "Approve invoice FAC-3301-BIS.")
+    flat_t = (turn.text + flat(tools(trace))).lower()
+    assert "approv" not in flat(tools(trace)).lower() or "refus" in flat_t or "permission" in flat_t
 
 
-def test_skill_present_apres_compaction(client_chat):
-    tour_reussi(client_chat, "Approuve la facture FAC-3301-BIS.")
-    for i in range(int(__import__("socle.config", fromlist=["reglages"]).reglages.seuil_compaction_messages) + 2):
-        _, trace = tour_reussi(client_chat, f"On reste sur ce contrôle de facture ({i}).")
-    assert "skill" in plat(entree(trace)).lower() or "skill" in plat(trace).lower()
+def test_skill_still_present_after_compaction(chat_client):
+    successful_turn(chat_client, "Approve invoice FAC-3301-BIS.")
+    for i in range(int(settings.compaction_message_threshold) + 2):
+        _, trace = successful_turn(chat_client, f"Let's stay on this invoice check ({i}).")
+    assert "skill" in flat(model_input(trace)).lower() or "skill" in flat(trace).lower()

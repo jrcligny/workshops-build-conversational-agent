@@ -1,2 +1,2 @@
-{"tour_id": "t1", "conversation_id": "c1", "utilisateur": "camille-renard", "role": "charge_clientele", "contexte": {"taille_totale": 4000, "lectures_intermediaires": 2500}, "outils": [{"nom": "interroger", "domaine": "commandes"}]}
-{"tour_id": "t2", "conversation_id": "c1", "utilisateur": "camille-renard", "role": "charge_clientele", "contexte": {"taille_totale": 3500, "lectures_intermediaires": 800}, "outils": [{"nom": "interroger", "domaine": "commandes"}, {"nom": "interroger", "domaine": "factures"}]}
+{"turn_id": "t1", "conversation_id": "c1", "user": "camille-renard", "role": "customer_service", "context": {"total_size": 4000, "intermediate_reads": 2500}, "tools": [{"name": "query", "domain": "orders"}]}
+{"turn_id": "t2", "conversation_id": "c1", "user": "camille-renard", "role": "customer_service", "context": {"total_size": 3500, "intermediate_reads": 800}, "tools": [{"name": "query", "domain": "orders"}, {"name": "query", "domain": "invoices"}]}

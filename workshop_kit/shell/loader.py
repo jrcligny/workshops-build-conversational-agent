@@ -1,5 +1,4 @@
-
-"""Charge le harness de l'étudiant depuis mon-agent/, sans fournir de boucle."""
+"""Loads the student's harness from my-agent/, without providing any loop."""
 
 from __future__ import annotations
 
@@ -7,42 +6,41 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from socle.config import reglages
-from socle.harness_base.contrat import HarnessNonImplemente
+from workshop_kit.shell.config import settings
+from workshop_kit.shell.harness_contract import HarnessNotImplemented
 
 
-def charger_harness():
-    dossier = Path(reglages.mon_agent_dir)
-    fichier = dossier / "harness.py"
-    if not fichier.exists():
-        raise HarnessNonImplemente(
-            "Aucun fichier mon-agent/harness.py. Implémentez le contrat du harness (atelier 03)."
+def load_harness():
+    folder = Path(settings.my_agent_dir)
+    path = folder / "harness.py"
+    if not path.exists():
+        raise HarnessNotImplemented(
+            "No my-agent/harness.py file. Implement the harness contract (workshop 03)."
         )
-    spec = importlib.util.spec_from_file_location("mon_agent_harness", fichier)
+    spec = importlib.util.spec_from_file_location("my_agent_harness", path)
     if spec is None or spec.loader is None:
-        raise HarnessNonImplemente("Impossible de charger mon-agent/harness.py")
+        raise HarnessNotImplemented("Cannot load my-agent/harness.py")
     module = importlib.util.module_from_spec(spec)
-    sys.modules["mon_agent_harness"] = module
+    sys.modules["my_agent_harness"] = module
     spec.loader.exec_module(module)
     if not hasattr(module, "Harness"):
-        raise HarnessNonImplemente("mon-agent/harness.py doit exposer une classe Harness.")
+        raise HarnessNotImplemented("my-agent/harness.py must expose a Harness class.")
     return module.Harness()
 
 
-def charger_module_mon_agent(nom_fichier: str, nom_module: str):
-    """Charge un module de la coquille mon-agent/ (harness, serveur MCP, …)."""
-    dossier = Path(reglages.mon_agent_dir)
-    fichier = dossier / nom_fichier
-    if not fichier.exists():
-        raise FileNotFoundError(f"Fichier manquant dans la coquille : {fichier}")
-    spec = importlib.util.spec_from_file_location(nom_module, fichier)
+def load_my_agent_module(file_name: str, module_name: str):
+    """Loads a module from the my-agent/ shell (harness, MCP server, ...)."""
+    path = Path(settings.my_agent_dir) / file_name
+    if not path.exists():
+        raise FileNotFoundError(f"File missing from the shell: {path}")
+    spec = importlib.util.spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:
-        raise ImportError(f"Impossible de charger {fichier}")
+        raise ImportError(f"Cannot load {path}")
     module = importlib.util.module_from_spec(spec)
-    sys.modules[nom_module] = module
+    sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def charger_serveur_mcp():
-    return charger_module_mon_agent("serveur_mcp.py", "mon_agent_serveur_mcp")
+def load_mcp_server():
+    return load_my_agent_module("mcp_server.py", "my_agent_mcp_server")

@@ -1,32 +1,32 @@
 # Installation
 
-Cible principale : **Windows**, avec la dernière version stable de Python publiée
-sur [python.org](https://www.python.org/downloads/) (Python **3.15**, actuellement
-3.15.2 au 25 octobre 2026). Linux et macOS sont également pris en charge. Le
-dépôt exige Python 3.15 ou plus récent (`requires-python`, fichier `.python-version`).
+Main target: **Windows**, with the latest stable Python release published on
+[python.org](https://www.python.org/downloads/) (Python **3.15**, currently
+3.15.2 as of 25 October 2026). Linux and macOS are supported too. The
+repository requires Python 3.15 or newer (`requires-python`, `.python-version` file).
 
-## Prérequis communs
+## Common requirements
 
-- Python 3.15 ou plus récent, **issu de python.org** (ou d'uv / Homebrew), pas le
-  Python système d'Apple ni, de préférence, le paquet Microsoft Store
+- Python 3.15 or newer, **from python.org** (or from uv / Homebrew), not Apple's
+  system Python nor, preferably, the Microsoft Store package
 - [uv](https://docs.astral.sh/uv/)
 
-Le chargement de l'extension **sqlite-vec** exige un interpréteur dont SQLite
-autorise `enable_load_extension`. C'est le cas des builds officiels python.org
-et des interpréteurs installés par `uv python install 3.15`. Voir plus bas si
-ce chargement échoue.
+Loading the **sqlite-vec** extension requires an interpreter whose SQLite
+allows `enable_load_extension`. This is the case for the official python.org
+builds and for the interpreters installed by `uv python install 3.15`. See below
+if loading fails.
 
 ## Windows (PowerShell)
 
-1. Installez Python 3.15 depuis [python.org](https://www.python.org/downloads/windows/)
-   (installateur **64 bits** officiel). Cochez **Add python.exe to PATH**.
-2. Installez uv, dans PowerShell :
+1. Install Python 3.15 from [python.org](https://www.python.org/downloads/windows/)
+   (official **64-bit** installer). Tick **Add python.exe to PATH**.
+2. Install uv, in PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-3. Fermez puis rouvrez le terminal, puis :
+3. Close and reopen the terminal, then:
 
 ```powershell
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
@@ -34,14 +34,14 @@ cd workshops-build-conversational-agent
 uv python install 3.15
 uv sync --extra dev --python 3.15
 Copy-Item .env.example .env
-uv run pytest tests/application tests/documentation tests/proxy tests/socle
-uv run atelier verifier-coquille
+uv run pytest tests/kit
+uv run workshop check-shell
 ```
 
-La commande `atelier` est fournie par le projet (`uv run atelier ...`). Elle
-n'utilise ni `fork` ni signaux POSIX ; elle fonctionne sous Windows.
+The `workshop` command is provided by the project (`uv run workshop ...`). It
+uses neither `fork` nor POSIX signals; it works on Windows.
 
-## Linux et macOS
+## Linux and macOS
 
 ```bash
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
@@ -49,69 +49,62 @@ cd workshops-build-conversational-agent
 uv python install 3.15
 uv sync --extra dev --python 3.15
 cp .env.example .env
-uv run pytest tests/application tests/documentation tests/proxy tests/socle
-uv run atelier verifier-coquille
+uv run pytest tests/kit
+uv run workshop check-shell
 ```
 
-Sur macOS, n'utilisez pas `/usr/bin/python3` (souvent compilé sans le chargement
-d'extensions SQLite). Préférez `uv python install 3.15`, Homebrew
-(`brew install python@3.15`) ou l'installateur python.org.
+On macOS, do not use `/usr/bin/python3` (often built without SQLite extension
+loading). Prefer `uv python install 3.15`, Homebrew (`brew install python@3.15`)
+or the python.org installer.
 
-## sqlite-vec : diagnostic
+## sqlite-vec: diagnostics
 
-Si l'index documentaire refuse de démarrer, le message d'erreur indique
-l'interpréteur, la version de SQLite et la cause. Vérification :
+If the document index refuses to start, the error message gives the
+interpreter, the SQLite version and the cause. Check:
 
 ```powershell
 uv run python -c "import sqlite3; print(hasattr(sqlite3.Connection, 'enable_load_extension'), sqlite3.sqlite_version)"
 ```
 
-```bash
-uv run python -c "import sqlite3; print(hasattr(sqlite3.Connection, 'enable_load_extension'), sqlite3.sqlite_version)"
-```
+The expected values are `True` and a recent SQLite version (3.41 or newer
+recommended). Then run `uv sync --python 3.15` again with an official interpreter.
 
-Les deux valeurs attendues sont `True` et une version SQLite récente (3.41 ou plus
-recommandée). Relancez ensuite `uv sync --python 3.15` avec un interpréteur officiel.
+## Check the framework
 
-## Vérifier le cadre
+`uv run workshop check-shell` succeeds if, and only if, every workshop test
+**fails** on the empty shell. This is the expected behaviour.
 
-`uv run atelier verifier-coquille` réussit si, et seulement si, tous les tests
-d'atelier **échouent** sur la coquille vide. C'est le comportement attendu.
+The `.env` file must never be committed. The `AZURE_OPENAI_API_KEY` key stays
+empty during design: the `simulated` mode is enough.
 
-Le fichier `.env` ne doit jamais être commité. La clé `AZURE_OPENAI_API_KEY`
-reste vide en conception : le mode `simule` suffit.
+## Start the services (optional, to explore by hand)
 
-## Lancer les services (optionnel, pour explorer à la main)
-
-Sous bash ou zsh, utilisez une barre inverse en fin de ligne à la place de l'accent grave de PowerShell.
+The automated tests start these services themselves: you do not need to start
+them for `workshop check`.
 
 ```powershell
-uv run uvicorn application.app:app --port 8001
-uv run uvicorn documentation.app:app --port 8002
-uv run uvicorn proxy.app:app --port 8003
-uv run uvicorn socle.interface.app:app --port 8000
-uv run python mon-agent/serveur_mcp.py
+uv run uvicorn workshop_kit.apps.business_api.app:app --port 8001
+uv run uvicorn workshop_kit.apps.docs_search.app:app --port 8002
+uv run uvicorn workshop_kit.llm_proxy.app:app --port 8003
+uv run uvicorn workshop_kit.shell.chat_app:app --port 8000
+uv run python my-agent/mcp_server.py
 ```
 
-Réinitialiser le jeu de données :
+Reset the dataset (PowerShell; in bash or zsh, replace the trailing backtick
+with a backslash):
 
 ```powershell
-curl -X POST http://127.0.0.1:8001/observation/reinitialiser `
-  -H "Authorization: Bearer essai-pedagogique" `
+curl -X POST http://127.0.0.1:8001/observation/reset `
+  -H "Authorization: Bearer workshop-observation" `
   -H "Content-Type: application/json" `
-  -d '{"jeu": "standard"}'
+  -d '{"dataset": "standard"}'
 ```
 
-Sous bash ou zsh, utilisez une barre inverse en fin de ligne à la place de l'accent grave de PowerShell.
-
-Puis reconstruire l'index documentaire :
+Then rebuild the document index:
 
 ```powershell
-curl -X POST http://127.0.0.1:8002/indexation/reconstruire `
-  -H "Authorization: Bearer essai-pedagogique" `
+curl -X POST http://127.0.0.1:8002/indexing/rebuild `
+  -H "Authorization: Bearer workshop-observation" `
   -H "Content-Type: application/json" `
-  -d '{"inclure_retires": false}'
+  -d '{"include_retired": false}'
 ```
-
-Les tests automatisés démarrent eux-mêmes ces services : vous n'avez pas à les
-lancer pour `atelier verifier`.

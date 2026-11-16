@@ -1,2 +1,3 @@
-atelier: '19'
-titre: 'Spécifier un contrôle'
+workshop: '19'
+title: 'Specify a control'
+tests: tests/

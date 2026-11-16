@@ -1,87 +1,89 @@
-
-"""API HTTP de la recherche documentaire."""
+"""HTTP API of the document search application."""
 
 from __future__ import annotations
 
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from application.auth import decoder_jeton
-from documentation.indexation import reconstruire
-from documentation.recherche import etat_index, get_passage, rechercher
-from socle.config import reglages
+from workshop_kit.apps.business_api.auth import decode_token
+from workshop_kit.apps.docs_search.indexing import rebuild
+from workshop_kit.apps.docs_search.search import get_passage, index_state, search
+from workshop_kit.shell.config import settings
 
-app = FastAPI(title="Recherche documentaire du fil rouge", version="0.1.0")
+app = FastAPI(title="Document search of the running example", version="0.1.0")
 
-_JOURNAL: list[dict] = []
+_LOG: list[dict] = []
 
 
-class RechercheIn(BaseModel):
-    requete: str
+class SearchIn(BaseModel):
+    query: str
     k: int = 5
-    seuil: float = 0.05
+    threshold: float = 0.05
 
 
-class ReconstruireIn(BaseModel):
-    inclure_retires: bool = False
+class RebuildIn(BaseModel):
+    include_retired: bool = False
 
 
-def _identite(authorization: str | None) -> dict:
+def _identity(authorization: str | None) -> dict:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="identité manquante")
+        raise HTTPException(status_code=401, detail="missing identity")
     try:
-        return decoder_jeton(authorization.split(" ", 1)[1].strip())
+        return decode_token(authorization.split(" ", 1)[1].strip())
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=401, detail="jeton invalide") from exc
+        raise HTTPException(status_code=401, detail="invalid token") from exc
 
 
-@app.get("/sante")
-def sante():
-    return {"statut": "ok"}
+def _bearer(authorization: str | None) -> str:
+    auth = authorization or ""
+    return auth.split(" ", 1)[1].strip() if auth.lower().startswith("bearer ") else ""
 
 
-@app.post("/recherche")
-def api_recherche(corps: RechercheIn, authorization: str | None = Header(default=None)):
-    identite = _identite(authorization)
-    resultat = rechercher(corps.requete, identite["organisation"], identite["role"], k=corps.k, seuil=corps.seuil)
-    _JOURNAL.append({"utilisateur": identite.get("sub"), "organisation": identite.get("organisation"), "requete": corps.requete})
-    return resultat
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.post("/search")
+def api_search(body: SearchIn, authorization: str | None = Header(default=None)):
+    identity = _identity(authorization)
+    result = search(body.query, identity["organization"], identity["role"], k=body.k, threshold=body.threshold)
+    _LOG.append({"user": identity.get("sub"), "organization": identity.get("organization"), "query": body.query})
+    return result
 
 
 @app.get("/passages/{passage_id}")
 def api_passage(passage_id: str, authorization: str | None = Header(default=None)):
-    _identite(authorization)
+    _identity(authorization)
     passage = get_passage(passage_id)
     if not passage:
-        raise HTTPException(status_code=404, detail="passage introuvable")
+        raise HTTPException(status_code=404, detail="passage not found")
     return passage
 
 
-@app.post("/indexation/reconstruire")
-def api_reconstruire(corps: ReconstruireIn, authorization: str | None = Header(default=None)):
-    # Réservé aux tests : jeton d'observation ou identité valide.
-    auth = authorization or ""
-    jeton = auth.split(" ", 1)[1].strip() if auth.lower().startswith("bearer ") else ""
-    if jeton != reglages.jeton_observation:
-        _identite(authorization)
-    return reconstruire(inclure_retires=corps.inclure_retires)
+@app.post("/indexing/rebuild")
+def api_rebuild(body: RebuildIn, authorization: str | None = Header(default=None)):
+    # Reserved for tests: observation token or a valid identity.
+    if _bearer(authorization) != settings.observation_token:
+        _identity(authorization)
+    return rebuild(include_retired=body.include_retired)
 
 
-@app.get("/indexation/etat")
-def api_etat(authorization: str | None = Header(default=None)):
-    _identite(authorization) if authorization else None
-    return etat_index()
+@app.get("/indexing/state")
+def api_index_state(authorization: str | None = Header(default=None)):
+    if authorization:
+        _identity(authorization)
+    return index_state()
 
 
-@app.get("/journal")
-def api_journal(authorization: str | None = Header(default=None)):
-    jeton = (authorization or "").split(" ", 1)[-1].strip()
-    if jeton != reglages.jeton_observation:
-        raise HTTPException(status_code=401, detail="jeton d'observation invalide")
-    return list(_JOURNAL)
+@app.get("/log")
+def api_log(authorization: str | None = Header(default=None)):
+    if _bearer(authorization) != settings.observation_token:
+        raise HTTPException(status_code=401, detail="invalid observation token")
+    return list(_LOG)
 
 
-def vider_journal() -> None:
-    _JOURNAL.clear()
+def clear_log() -> None:
+    _LOG.clear()

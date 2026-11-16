@@ -1,15 +1,21 @@
-# Atelier 10c — Regroupements
+# Workshop 10c — Groupings
 
-## Critère de réussite
+Chapter 10 of the book. No solution is provided: you work in `my-agent/`.
 
-Une question de regroupement est calculée par l'outil d'interrogation, et son résultat est borné et déclaré. Aucun code produit par le modèle n'est exécuté. À une demande de médiane, l'agent répond qu'il ne peut pas la calculer et propose les agrégats disponibles.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-10c/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Answer grouping and aggregate questions through the query tool, never by running code produced by the model.
 
-```bash
-atelier commencer 10c
-atelier verifier 10c
-atelier verifier 10c --non-regression
+## Success criterion
+
+A grouping question is computed by the query tool, and its result is bounded and declared. No code produced by the model is executed. Asked for a median, the agent answers that it cannot compute it and offers the available aggregates.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 10c
+uv run workshop check 10c
+uv run workshop check 10c --non-regression   # workshops 03 to 10c
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

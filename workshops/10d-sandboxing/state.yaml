@@ -1,2 +1,3 @@
-atelier: '10d'
-titre: 'Confinement'
+workshop: '10d'
+title: 'Sandboxing'
+tests: tests/

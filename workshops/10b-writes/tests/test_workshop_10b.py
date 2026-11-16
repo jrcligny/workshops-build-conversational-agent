@@ -1,48 +1,45 @@
-"""Tests de bout en bout de l'atelier 10b. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 10b. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.testing.chat_client import ChatClient
+from workshop_kit.testing.turns import apply_rubric, flat, successful_turn, tools
 
-pytestmark = pytest.mark.atelier
+pytestmark = pytest.mark.workshop
 
-
-from tests.communs.client_chat import ClientChat
-
-GRILLE_PAS_D_ANNONCE_PREMATUREE = {
-    "id": "10b-pas-annonce-avant-soumission",
-    "juge_sens": True,
-    "exigences": [
-        {"type": "interdit", "motifs": [
-            "j'ai soumis", "j'ai envoyé", "demande a été envoyée",
-            "demande a ete envoyee", "c'est soumis", "soumission effectuée",
-            "soumission effectuee",
+NO_EARLY_ANNOUNCEMENT_RUBRIC = {
+    "id": "10b-no-announcement-before-submission",
+    "judge_meaning": True,
+    "requirements": [
+        {"type": "forbidden", "patterns": [
+            "i have submitted", "i submitted", "i have sent", "request has been sent",
+            "request was sent", "it is submitted", "submission done", "submission completed",
         ]},
     ],
 }
 
 
-def test_confirmation_avant_soumission(client_chat, observation):
-    tour, _ = tour_reussi(client_chat, "Prépare une demande d'achat de ramettes pour 120 euros.")
-    assert "confirmation_demandee" in tour.types
-    assert observation.etat("soumissions")["demandes_soumises"] == []
-    appliquer_grille(GRILLE_PAS_D_ANNONCE_PREMATUREE, tour)
+def test_confirmation_before_submission(chat_client, observation):
+    turn, _ = successful_turn(chat_client, "Prepare a purchase request for paper reams, 120 euros.")
+    assert "confirmation_requested" in turn.types
+    assert observation.state("submissions")["submitted_requests"] == []
+    apply_rubric(NO_EARLY_ANNOUNCEMENT_RUBRIC, turn)
 
 
-def test_preparation_refusee_sans_droit(services, observation):
-    client = ClientChat(services["interface"])
-    client.ouvrir(utilisateur_id="sam-sans-droit", role="sans_ecriture", organisation="organisation-a")
-    tour, trace = tour_reussi(client, "Prépare une demande d'achat de ramettes pour 120 euros.")
-    assert observation.etat("soumissions")["demandes_soumises"] == []
-    plat_tout = (tour.texte + plat(outils(trace))).lower()
-    assert "droit" in plat_tout or "refus" in plat_tout or "autoris" in plat_tout or "pas le droit" in plat_tout
+def test_preparation_refused_without_permission(services, observation):
+    client = ChatClient(services["interface"])
+    client.open(user_id="sam-read-only", role="read_only", organization="organization-a")
+    turn, trace = successful_turn(client, "Prepare a purchase request for paper reams, 120 euros.")
+    assert observation.state("submissions")["submitted_requests"] == []
+    flat_all = (turn.text + flat(tools(trace))).lower()
+    assert "permission" in flat_all or "refus" in flat_all or "not allowed" in flat_all or "authoriz" in flat_all
 
 
-def test_soumission_attribuee_apres_confirmation(client_chat, observation):
-    tour_reussi(client_chat, "Prépare une demande d'achat de ramettes pour 120 euros.")
-    client_chat.confirmer(True)
-    tour, trace = tour_reussi(client_chat, "Je confirme la soumission de cette demande.")
-    soumissions = observation.etat("soumissions")["demandes_soumises"]
-    assert soumissions, "après le geste de confirmation, la soumission doit être enregistrée"
-    plat_s = plat(soumissions).lower()
-    assert "camille" in plat_s or "agent" in plat_s or "harness" in plat(trace).lower()
+def test_submission_attributed_after_confirmation(chat_client, observation):
+    successful_turn(chat_client, "Prepare a purchase request for paper reams, 120 euros.")
+    chat_client.confirm(True)
+    turn, trace = successful_turn(chat_client, "I confirm the submission of this request.")
+    submissions = observation.state("submissions")["submitted_requests"]
+    assert submissions, "after the confirmation gesture, the submission must be recorded"
+    flat_s = flat(submissions).lower()
+    assert "camille" in flat_s or "agent" in flat_s or "harness" in flat(trace).lower()

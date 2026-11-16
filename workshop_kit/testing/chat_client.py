@@ -1,4 +1,4 @@
-"""Client du contrat d'interface, consommé par les tests d'atelier."""
+"""Client of the interface contract, used by the workshop tests."""
 
 from __future__ import annotations
 
@@ -9,93 +9,93 @@ import httpx
 
 
 @dataclass
-class Tour:
-    evenements: list[tuple[str, dict]] = field(default_factory=list)
-    texte: str = ""
+class Turn:
+    events: list[tuple[str, dict]] = field(default_factory=list)
+    text: str = ""
     ok: bool = False
-    erreur: str | None = None
+    error: str | None = None
 
     @property
     def types(self) -> list[str]:
-        return [t for t, _ in self.evenements]
+        return [t for t, _ in self.events]
 
 
-class ClientChat:
+class ChatClient:
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip("/")
         self.conversation_id: str | None = None
 
-    def ouvrir(
+    def open(
         self,
-        utilisateur_id: str = "camille-renard",
-        role: str = "charge_clientele",
-        organisation: str = "organisation-a",
-        jeton_application: str | None = None,
-        limites: dict | None = None,
+        user_id: str = "camille-renard",
+        role: str = "customer_service",
+        organization: str = "organization-a",
+        app_token: str | None = None,
+        limits: dict | None = None,
     ) -> str:
-        corps = {
-            "utilisateur_id": utilisateur_id,
+        body = {
+            "user_id": user_id,
             "role": role,
-            "organisation": organisation,
-            "jeton_application": jeton_application,
+            "organization": organization,
+            "app_token": app_token,
         }
-        if limites:
-            corps["limites"] = limites
-        r = httpx.post(f"{self.base_url}/conversations", json=corps, timeout=10)
+        if limits:
+            body["limits"] = limits
+        r = httpx.post(f"{self.base_url}/conversations", json=body, timeout=10)
         r.raise_for_status()
         self.conversation_id = r.json()["id"]
         return self.conversation_id
 
-    def tour(
+    def turn(
         self,
-        texte: str,
-        pieces_jointes: list[str] | None = None,
-        interrompre: bool = False,
-    ) -> Tour:
+        text: str,
+        attachments: list[str] | None = None,
+        interrupt: bool = False,
+    ) -> Turn:
         if not self.conversation_id:
-            self.ouvrir()
+            self.open()
         with httpx.stream(
             "POST",
             f"{self.base_url}/conversations/{self.conversation_id}/messages",
             json={
-                "texte": texte,
-                "pieces_jointes": pieces_jointes or [],
-                "interrompre": interrompre,
+                "text": text,
+                "attachments": attachments or [],
+                "interrupt": interrupt,
             },
             timeout=30,
-        ) as reponse:
-            resultat = Tour()
-            evenement = "message"
-            for ligne in reponse.iter_lines():
-                if ligne.startswith("event:"):
-                    evenement = ligne.split(":", 1)[1].strip()
-                elif ligne.startswith("data:"):
-                    data = json.loads(ligne.split(":", 1)[1].strip() or "{}")
-                    resultat.evenements.append((evenement, data))
-                    if evenement == "texte":
-                        resultat.texte += data.get("contenu", "")
-                    if evenement == "erreur":
-                        resultat.erreur = data.get("detail")
-                    if evenement == "fin":
-                        resultat.ok = bool(data.get("ok", True)) and not resultat.erreur
-                        if data.get("texte") and not resultat.texte:
-                            resultat.texte = data["texte"]
-            return resultat
+        ) as response:
+            result = Turn()
+            event = "message"
+            for line in response.iter_lines():
+                if line.startswith("event:"):
+                    event = line.split(":", 1)[1].strip()
+                elif line.startswith("data:"):
+                    data = json.loads(line.split(":", 1)[1].strip() or "{}")
+                    result.events.append((event, data))
+                    if event == "text":
+                        result.text += data.get("content", "")
+                    if event == "error":
+                        result.error = data.get("detail")
+                    if event == "end":
+                        result.ok = bool(data.get("ok", True)) and not result.error
+                        if data.get("text") and not result.text:
+                            result.text = data["text"]
+            return result
 
-    def confirmer(self, confirme: bool = True) -> dict:
+    def confirm(self, confirmed: bool = True) -> dict:
         if not self.conversation_id:
-            self.ouvrir()
+            self.open()
         r = httpx.post(
             f"{self.base_url}/conversations/{self.conversation_id}/confirmation",
-            json={"confirme": confirme},
+            json={"confirmed": confirmed},
             timeout=10,
         )
         r.raise_for_status()
         return r.json()
 
-    def interrompre(self) -> dict:
+    def interrupt(self) -> dict:
         if not self.conversation_id:
-            self.ouvrir()
+            self.open()
         r = httpx.post(
             f"{self.base_url}/conversations/{self.conversation_id}/interruption",
             timeout=10,

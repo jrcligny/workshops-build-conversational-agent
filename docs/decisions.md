@@ -1,50 +1,57 @@
-# Décisions par défaut (provisoires)
+# Default decisions (provisional)
 
-Ces valeurs sont des **défauts de conception**, pas des choix définitifs. Elles
-peuvent être révisées en phase B (une fois Azure OpenAI disponible) ou si un
-retour d'atelier le justifie. Les seuils et grilles du juge sont également
-calibrés à ce moment-là : voir [validation-equipe.md](validation-equipe.md).
+These values are **design defaults**, not final choices. They may be revised
+in phase B (once Azure OpenAI is available) or when workshop feedback calls for
+it. The judge thresholds and rubrics are calibrated at that point too: see
+[team-validation.md](team-validation.md).
 
-## Seuil de compaction
+## Compaction threshold
 
-- **Valeur provisoire :** 8 messages (`SEUIL_COMPACTION_MESSAGES`,
-  `reglages.seuil_compaction_messages`).
-- **Sens :** au-delà de ce nombre de tours, le *harness* doit compactifier
-  l'historique (résumé des anciens échanges ; demande initiale, décisions et
-  identifiants conservés à l'identique).
-- **Statut :** amorce pour les tests simulés de l'atelier 07. La fidélité des
-  résumés produits par le modèle réel, et le seuil lui-même, seront calibrés
-  en phase B.
+- **Provisional value:** 8 messages (`COMPACTION_MESSAGE_THRESHOLD`,
+  `settings.compaction_message_threshold`).
+- **Meaning:** beyond this number of turns, the *harness* must compact the
+  history (summary of the old exchanges; initial request, decisions and ids
+  kept verbatim).
+- **Status:** starting point for the simulated tests of workshop 07. The
+  fidelity of the summaries produced by the real model, and the threshold
+  itself, will be calibrated in phase B.
 
-## Schéma de métadonnées du corpus
+## Corpus metadata schema
 
-- **Choix provisoire :** un fichier unique `corpus/metadonnees.yaml` à côté des
-  `.txt`, et non un front-matter dans chaque fichier ni un fichier `.meta` par
+- **Provisional choice:** a single `corpus/metadata.yaml` file next to the
+  `.txt` files, rather than a front matter in each file or a `.meta` file per
   document.
-- **Champs actuels :** `id`, `fichier`, `titre`, `version`, `organisation`,
-  `public_vise`, `adresse`, et le booléen optionnel `retire`.
-- **Alternatives écartées pour l'instant :**
-  - front-matter YAML en tête de chaque `.txt` (plus proche du fichier source,
-    mais mélange texte pédagogique et métadonnées) ;
-  - un fichier `nom.txt.meta` à côté de chaque source (plus local, mais plus
-    de fichiers à maintenir).
-- **Statut :** révisable tant que l'index reste reconstructible depuis le
-  corpus versionné. Changer de schéma exigera d'adapter `documentation/indexation.py`
-  et les tests de `tests/documentation/`.
+- **Current fields:** `id`, `file`, `title`, `version`, `organization`,
+  `audience`, `address`, and the optional boolean `retired`.
+- **Alternatives set aside for now:**
+  - a YAML front matter at the top of each `.txt` (closer to the source file,
+    but it mixes teaching text and metadata);
+  - a `name.txt.meta` file next to each source (more local, but more files to
+    maintain).
+- **Status:** revisable as long as the index stays rebuildable from the
+  versioned corpus. Changing the schema will require adapting
+  `workshop_kit/apps/docs_search/indexing.py` and `tests/kit/test_docs_search.py`.
 
-## Noms des déploiements Azure
+## Azure deployment names
 
-Aucun nom de déploiement n'est imposé dans le code. Ils sont **entièrement
-paramétrables** par variables d'environnement (voir `.env.example`) :
+No deployment name is hard-coded. They are **fully configurable** through
+environment variables (see `.env.example`):
 
-| Rôle | Variable |
+| Role | Variable |
 |---|---|
-| Agent (chat) | `AZURE_OPENAI_DEPLOIEMENT_CHAT` |
-| Juge | `AZURE_OPENAI_DEPLOIEMENT_JUGE` |
-| Embeddings | `AZURE_OPENAI_DEPLOIEMENT_EMBEDDINGS` |
-| Repli (atelier 18) | `AZURE_OPENAI_DEPLOIEMENT_REPLI` |
-| Reclassement (éventuel) | `AZURE_OPENAI_DEPLOIEMENT_RECLASSEMENT` |
+| Agent (chat) | `AZURE_OPENAI_CHAT_DEPLOYMENT` |
+| Judge | `AZURE_OPENAI_JUDGE_DEPLOYMENT` |
+| Embeddings | `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` |
+| Fallback (workshop 18) | `AZURE_OPENAI_FALLBACK_DEPLOYMENT` |
+| Reranking (optional) | `AZURE_OPENAI_RERANKING_DEPLOYMENT` |
 
-Les valeurs restent vides en conception : le proxy tourne en mode simulé. Les
-noms concrets des déploiements Azure seront arrêtés en phase B (décision D4 du
-plan). La clé `AZURE_OPENAI_API_KEY` reste côté serveur, jamais versionnée.
+The values stay empty during design: the proxy runs in simulated mode. The
+actual Azure deployment names will be set in phase B (decision D4 of the plan).
+The `AZURE_OPENAI_API_KEY` key stays on the server, never committed.
+
+## Language
+
+All code, documentation, test prompts and expected patterns are in English.
+The book itself is written in French; the workshop guides refer to it by
+chapter number. The workshop tests therefore expect an agent that answers in
+English; the patterns are calibrated again in phase B.

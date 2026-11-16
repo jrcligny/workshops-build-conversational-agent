@@ -1,206 +1,185 @@
-
-"""CLI : atelier verifier, verifier --non-regression, verifier-coquille, commencer."""
+"""CLI: `workshop check NN`, `workshop check NN --non-regression`, `workshop check-shell`, `workshop start NN`."""
 
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent
+WORKSHOPS_DIR = REPO_ROOT / "workshops"
+SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"
 
-ATELIERS = [
-    "03", "04", "05", "06", "07", "08", "09",
-    "10a", "10b", "10c", "10d",
-    "11", "12", "13", "14", "15", "16", "17", "18", "19",
-]
+# Workshop id -> folder under workshops/. Chapter 10 is split into 10a to 10d.
+WORKSHOPS = {
+    "03": "03-system-prompt",
+    "04": "04-first-tool",
+    "05": "05-read-tools",
+    "06": "06-agent-loop",
+    "07": "07-context-compaction",
+    "08": "08-working-memory",
+    "09": "09-mcp",
+    "10a": "10a-identity",
+    "10b": "10b-writes",
+    "10c": "10c-groupings",
+    "10d": "10d-sandboxing",
+    "11": "11-architecture",
+    "12": "12-long-term-memory",
+    "13": "13-document-search",
+    "14": "14-skills",
+    "15": "15-read-without-obeying",
+    "16": "16-controls",
+    "17": "17-evaluation",
+    "18": "18-failures",
+    "19": "19-specification",
+}
+WORKSHOP_IDS = list(WORKSHOPS)
 
 
-def ordre() -> list[str]:
-    return list(ATELIERS)
+def _check_id(workshop_id: str) -> None:
+    if workshop_id not in WORKSHOPS:
+        raise SystemExit(f"unknown workshop: {workshop_id} (expected one of {', '.join(WORKSHOP_IDS)})")
 
 
-def precedents(inclus: str) -> list[str]:
-    if inclus not in ATELIERS:
-        raise SystemExit(f"atelier inconnu : {inclus}")
-    return ATELIERS[: ATELIERS.index(inclus) + 1]
+def up_to(workshop_id: str) -> list[str]:
+    _check_id(workshop_id)
+    return WORKSHOP_IDS[: WORKSHOP_IDS.index(workshop_id) + 1]
 
 
-def dossier_tests(identifiant: str) -> Path:
-    return RACINE / "tests" / f"atelier-{identifiant}"
+def workshop_dir(workshop_id: str) -> Path:
+    return WORKSHOPS_DIR / WORKSHOPS[workshop_id]
 
 
-def _pytest(dossiers: list[Path], extra: list[str] | None = None) -> int:
-    args = [sys.executable, "-m", "pytest", *[str(d) for d in dossiers], *(extra or [])]
-    return subprocess.call(args, cwd=RACINE)
+def workshop_tests_dir(workshop_id: str) -> Path:
+    return workshop_dir(workshop_id) / "tests"
 
 
-def cmd_verifier(identifiant: str, non_regression: bool) -> int:
-    ids = precedents(identifiant) if non_regression else [identifiant]
-    manquants = [i for i in ids if not dossier_tests(i).is_dir()]
-    if manquants:
-        print(f"dossiers de tests manquants : {', '.join(manquants)}", file=sys.stderr)
+def _pytest(folders: list[Path], extra: list[str] | None = None) -> int:
+    args = [sys.executable, "-m", "pytest", *[str(d) for d in folders], *(extra or [])]
+    return subprocess.call(args, cwd=REPO_ROOT)
+
+
+def cmd_check(workshop_id: str, non_regression: bool) -> int:
+    _check_id(workshop_id)
+    ids = up_to(workshop_id) if non_regression else [workshop_id]
+    missing = [i for i in ids if not workshop_tests_dir(i).is_dir()]
+    if missing:
+        print(f"missing test folders: {', '.join(missing)}", file=sys.stderr)
         return 2
-    print(f"Vérification des ateliers : {', '.join(ids)}")
-    return _pytest([dossier_tests(i) for i in ids], ["-m", "atelier"])
+    print(f"Checking workshops: {', '.join(ids)}")
+    return _pytest([workshop_tests_dir(i) for i in ids], ["-m", "workshop"])
 
 
-def cmd_verifier_coquille() -> int:
-    """Succès (code 0) si tous les tests d'atelier échouent ou sont en erreur, et qu'aucun ne passe."""
-    dossiers = [dossier_tests(i) for i in ATELIERS if dossier_tests(i).is_dir()]
-    if not dossiers:
-        print("aucun dossier tests/atelier-* trouvé", file=sys.stderr)
+def cmd_check_shell() -> int:
+    """Succeeds (exit code 0) when every workshop test fails or errors, and none passes."""
+    folders = [workshop_tests_dir(i) for i in WORKSHOP_IDS if workshop_tests_dir(i).is_dir()]
+    if not folders:
+        print("no workshops/*/tests folder found", file=sys.stderr)
         return 2
-    rapport = RACINE / ".pytest_coquille.xml"
     proc = subprocess.run(
         [
             sys.executable, "-m", "pytest",
-            *[str(d) for d in dossiers],
-            "-m", "atelier",
+            *[str(d) for d in folders],
+            "-m", "workshop",
             "-q",
             "--tb=no",
             "--color=no",
-            f"--junitxml={rapport}",
+            f"--junitxml={SHELL_REPORT}",
         ],
-        cwd=RACINE,
+        cwd=REPO_ROOT,
         capture_output=True,
         text=True,
     )
     print(proc.stdout)
     if proc.stderr:
         print(proc.stderr, file=sys.stderr)
-    return _interpreter_coquille(proc.returncode, (proc.stdout or "") + (proc.stderr or ""), rapport)
+    return _interpret_shell_run((proc.stdout or "") + (proc.stderr or ""), SHELL_REPORT)
 
 
-def _interpreter_coquille(code: int, sortie: str, rapport: Path | None = None) -> int:
-    """0 si tout a échoué comme prévu, 1 sinon."""
-    import re
-    import xml.etree.ElementTree as ET
-
-    passed = failed = errors = collected = 0
-    if rapport and rapport.exists():
-        root = ET.parse(rapport).getroot()
+def _interpret_shell_run(output: str, report: Path | None = None) -> int:
+    """0 when everything failed as intended, 1 otherwise, 2 when nothing was collected."""
+    passed = failed = errors = collected = skipped = 0
+    if report and report.exists():
+        root = ET.parse(report).getroot()
         # pytest may emit a <testsuites> wrapper or a bare <testsuite>.
         suites = [root] if root.tag == "testsuite" else list(root.findall("testsuite"))
         for suite in suites:
             collected += int(suite.attrib.get("tests") or 0)
             failed += int(suite.attrib.get("failures") or 0)
             errors += int(suite.attrib.get("errors") or 0)
-            skipped = int(suite.attrib.get("skipped") or 0)
-            passed += max(collected - failed - errors - skipped, 0)
-            # If several suites, "passed" must be recomputed globally below.
-        if len(suites) > 1:
-            collected = failed = errors = skipped_total = 0
-            for suite in suites:
-                collected += int(suite.attrib.get("tests") or 0)
-                failed += int(suite.attrib.get("failures") or 0)
-                errors += int(suite.attrib.get("errors") or 0)
-                skipped_total += int(suite.attrib.get("skipped") or 0)
-            passed = max(collected - failed - errors - skipped_total, 0)
-        elif suites:
-            suite = suites[0]
-            skipped = int(suite.attrib.get("skipped") or 0)
-            collected = int(suite.attrib.get("tests") or 0)
-            failed = int(suite.attrib.get("failures") or 0)
-            errors = int(suite.attrib.get("errors") or 0)
-            passed = max(collected - failed - errors - skipped, 0)
+            skipped += int(suite.attrib.get("skipped") or 0)
+        passed = max(collected - failed - errors - skipped, 0)
     if collected == 0:
-        m = re.search(r"(\d+) passed", sortie)
-        if m:
-            passed = int(m.group(1))
-        m = re.search(r"(\d+) failed", sortie)
-        if m:
-            failed = int(m.group(1))
-        m = re.search(r"(\d+) error", sortie)
-        if m:
-            errors = int(m.group(1))
-        m = re.search(r"collected (\d+) item", sortie)
-        if m:
-            collected = int(m.group(1))
+        for pattern, name in ((r"(\d+) passed", "passed"), (r"(\d+) failed", "failed"), (r"(\d+) error", "errors"), (r"collected (\d+) item", "collected")):
+            m = re.search(pattern, output)
+            if m:
+                value = int(m.group(1))
+                if name == "passed":
+                    passed = value
+                elif name == "failed":
+                    failed = value
+                elif name == "errors":
+                    errors = value
+                else:
+                    collected = value
     if collected == 0 and (failed + passed + errors) == 0:
-        print("aucun test d'atelier collecté", file=sys.stderr)
+        print("no workshop test collected", file=sys.stderr)
         return 2
-    total_echec = failed + errors
     print(
-        f"Coquille vide : {passed} test(s) passé(s), {failed} échec(s), {errors} erreur(s) "
-        f"(collectés : {collected or failed + passed + errors})."
+        f"Empty shell: {passed} passed, {failed} failed, {errors} error(s) "
+        f"(collected: {collected or failed + passed + errors})."
     )
     if passed > 0:
         print(
-            "ERREUR : au moins un test d'atelier passe sur la coquille vide. "
-            "Tous doivent échouer tant que l'atelier n'est pas réalisé.",
+            "ERROR: at least one workshop test passes on the empty shell. "
+            "All of them must fail until the workshop is done.",
             file=sys.stderr,
         )
         return 1
-    if total_echec == 0:
-        print("ERREUR : aucun test d'atelier n'a échoué.", file=sys.stderr)
+    if failed + errors == 0:
+        print("ERROR: no workshop test failed.", file=sys.stderr)
         return 1
-    print("Comportement attendu : tous les tests d'atelier échouent sur la coquille vide.")
+    print("Expected behaviour: every workshop test fails on the empty shell.")
     return 0
 
 
-def cmd_commencer(identifiant: str) -> int:
-    if identifiant not in ATELIERS:
-        raise SystemExit(f"atelier inconnu : {identifiant}")
-    guide = RACINE / "ateliers" / _nom_guide(identifiant) / "GUIDE.md"
-    print(f"Atelier {identifiant}. Aucun corrigé n'est copié : vous travaillez dans mon-agent/.")
+def cmd_start(workshop_id: str) -> int:
+    _check_id(workshop_id)
+    guide = workshop_dir(workshop_id) / "README.md"
+    print(f"Workshop {workshop_id}. No solution is copied: you work in my-agent/.")
     if guide.exists():
-        print(f"Guide : {guide.relative_to(RACINE)}")
-    print("Lancez les applications (voir docs/installation.md), puis :")
-    print(f"  atelier verifier {identifiant}")
-    if not (RACINE / "mon-agent" / "harness.py").exists():
-        print("Attention : mon-agent/harness.py est absent.", file=sys.stderr)
+        print(f"Guide: {guide.relative_to(REPO_ROOT).as_posix()}")
+    print("Start the applications if you want to explore by hand (see docs/installation.md), then:")
+    print(f"  uv run workshop check {workshop_id}")
+    if not (REPO_ROOT / "my-agent" / "harness.py").exists():
+        print("Warning: my-agent/harness.py is missing.", file=sys.stderr)
         return 2
     return 0
 
 
-def _nom_guide(identifiant: str) -> str:
-    noms = {
-        "03": "03-system-prompt",
-        "04": "04-premier-outil",
-        "05": "05-outils-lecture",
-        "06": "06-boucle-agentique",
-        "07": "07-contexte-compaction",
-        "08": "08-memoire-travail",
-        "09": "09-mcp",
-        "10a": "10a-identite",
-        "10b": "10b-ecritures",
-        "10c": "10c-regroupements",
-        "10d": "10d-confinement",
-        "11": "11-architecture",
-        "12": "12-memoire-longue",
-        "13": "13-recherche-documentaire",
-        "14": "14-skills",
-        "15": "15-lire-sans-obeir",
-        "16": "16-controles",
-        "17": "17-evaluation",
-        "18": "18-pannes",
-        "19": "19-specification",
-    }
-    return noms.get(identifiant, identifiant)
-
-
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="atelier", description="Outils des ateliers du dépôt compagnon.")
-    sous = parser.add_subparsers(dest="commande", required=True)
+    parser = argparse.ArgumentParser(prog="workshop", description="Tools for the companion workshops.")
+    sub = parser.add_subparsers(dest="command", required=True)
 
-    v = sous.add_parser("verifier", help="Lancer les tests d'un atelier")
-    v.add_argument("identifiant")
-    v.add_argument("--non-regression", action="store_true", help="Inclure les ateliers précédents")
+    check = sub.add_parser("check", help="Run the tests of one workshop")
+    check.add_argument("workshop_id")
+    check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
 
-    sous.add_parser("verifier-coquille", help="Vérifier que tous les tests d'atelier échouent sur la coquille vide")
+    sub.add_parser("check-shell", help="Check that every workshop test fails on the empty shell")
 
-    c = sous.add_parser("commencer", help="Rappeler le guide, sans copier de code d'agent")
-    c.add_argument("identifiant")
+    start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")
+    start.add_argument("workshop_id")
 
     args = parser.parse_args(argv)
-    if args.commande == "verifier":
-        return cmd_verifier(args.identifiant, args.non_regression)
-    if args.commande == "verifier-coquille":
-        return cmd_verifier_coquille()
-    if args.commande == "commencer":
-        return cmd_commencer(args.identifiant)
+    if args.command == "check":
+        return cmd_check(args.workshop_id, args.non_regression)
+    if args.command == "check-shell":
+        return cmd_check_shell()
+    if args.command == "start":
+        return cmd_start(args.workshop_id)
     return 2
 
 

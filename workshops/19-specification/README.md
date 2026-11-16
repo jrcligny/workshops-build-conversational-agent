@@ -1,15 +1,21 @@
-# Atelier 19 — Spécifier un contrôle
+# Workshop 19 — Specify a control
 
-## Critère de réussite
+Chapter 19 of the book. No solution is provided: you work in `my-agent/`.
 
-Vous rédigez la spécification courte d'un contrôle du harness, puis son implémentation et ses essais, dont au moins un soumet au harness une sortie de modèle volontairement fausse. Le recours à un coding agent est facultatif. Le jeu de parcours n'est pas modifié et sa part réservée reste hors d'atteinte de l'outil.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-19/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Specify, implement and test one harness control, optionally with a coding agent.
 
-```bash
-atelier commencer 19
-atelier verifier 19
-atelier verifier 19 --non-regression
+## Success criterion
+
+You write the short specification of a harness control, then its implementation and its checks, at least one of which feeds the harness a deliberately wrong model output. Using a coding agent is optional. The route set is not modified and its reserved part stays out of reach of the tool.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 19
+uv run workshop check 19
+uv run workshop check 19 --non-regression   # workshops 03 to 19
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

@@ -1,4 +1,4 @@
-"""Indexation du corpus : FTS5 + sqlite-vec (table vec0), reconstructible depuis les .txt."""
+"""Corpus indexing: FTS5 + sqlite-vec (vec0 table), rebuildable from the .txt sources."""
 
 from __future__ import annotations
 
@@ -7,19 +7,20 @@ from pathlib import Path
 
 import yaml
 
-from documentation.sqlite_vec_ext import charger_sqlite_vec
-from documentation.vecteurs import DIM, packs, vecteur
-from socle.config import reglages
+from workshop_kit.apps.docs_search.sqlite_vec_ext import load_sqlite_vec
+from workshop_kit.apps.docs_search.vectors import DIM, pack, vector
+from workshop_kit.shell.config import settings
 
-RACINE_CORPUS = Path(__file__).resolve().parent.parent / "corpus"
+CORPUS_ROOT = Path(__file__).resolve().parents[3] / "corpus"
+METADATA_FILE = "metadata.yaml"
 
 
-def connecter(db_path: str | Path | None = None) -> sqlite3.Connection:
-    path = Path(db_path or reglages.documentation_db)
+def connect(db_path: str | Path | None = None) -> sqlite3.Connection:
+    path = Path(db_path or settings.docs_search_db)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
-    charger_sqlite_vec(conn)
+    load_sqlite_vec(conn)
     return conn
 
 
@@ -32,18 +33,18 @@ def _schema(conn: sqlite3.Connection) -> None:
         CREATE TABLE passages (
             id TEXT PRIMARY KEY,
             document_id TEXT NOT NULL,
-            titre TEXT NOT NULL,
+            title TEXT NOT NULL,
             section TEXT NOT NULL,
             version TEXT NOT NULL,
-            adresse TEXT NOT NULL,
-            organisation TEXT NOT NULL,
-            public_vise TEXT NOT NULL,
-            texte TEXT NOT NULL
+            address TEXT NOT NULL,
+            organization TEXT NOT NULL,
+            audience TEXT NOT NULL,
+            text TEXT NOT NULL
         );
         CREATE VIRTUAL TABLE passages_fts USING fts5(
             id UNINDEXED,
-            texte,
-            titre,
+            text,
+            title,
             section,
             content=''
         );
@@ -54,73 +55,72 @@ def _schema(conn: sqlite3.Connection) -> None:
     )
 
 
-def _decouper(texte: str) -> list[tuple[str, str]]:
-    """Découpe selon les titres de section (lignes commençant par #)."""
+def _split(text: str) -> list[tuple[str, str]]:
+    """Splits on section headings (lines starting with #)."""
     sections: list[tuple[str, list[str]]] = []
-    courante = "Préambule"
-    tampon: list[str] = []
-    for ligne in texte.splitlines():
-        if ligne.startswith("#"):
-            if tampon and any(s.strip() for s in tampon):
-                sections.append((courante, tampon))
-            courante = ligne.lstrip("#").strip()
-            tampon = []
+    current = "Preamble"
+    buffer: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("#"):
+            if buffer and any(s.strip() for s in buffer):
+                sections.append((current, buffer))
+            current = line.lstrip("#").strip()
+            buffer = []
         else:
-            tampon.append(ligne)
-    if tampon and any(s.strip() for s in tampon):
-        sections.append((courante, tampon))
+            buffer.append(line)
+    if buffer and any(s.strip() for s in buffer):
+        sections.append((current, buffer))
     if not sections:
-        return [("Document", texte.strip())]
-    return [(titre, "\n".join(lignes).strip()) for titre, lignes in sections if "".join(lignes).strip()]
+        return [("Document", text.strip())]
+    return [(title, "\n".join(lines).strip()) for title, lines in sections if "".join(lines).strip()]
 
 
-def charger_metadonnees(corpus: Path | None = None) -> list[dict]:
-    racine = corpus or RACINE_CORPUS
-    data = yaml.safe_load((racine / "metadonnees.yaml").read_text(encoding="utf-8"))
+def load_metadata(corpus: Path | None = None) -> list[dict]:
+    root = corpus or CORPUS_ROOT
+    data = yaml.safe_load((root / METADATA_FILE).read_text(encoding="utf-8"))
     return data["documents"]
 
 
-def reconstruire(db_path: str | Path | None = None, inclure_retires: bool = False, corpus: Path | None = None) -> dict:
-    racine = corpus or RACINE_CORPUS
-    docs = charger_metadonnees(racine)
-    conn = connecter(db_path)
+def rebuild(db_path: str | Path | None = None, include_retired: bool = False, corpus: Path | None = None) -> dict:
+    root = corpus or CORPUS_ROOT
+    docs = load_metadata(root)
+    conn = connect(db_path)
     _schema(conn)
     n_docs = 0
     n_passages = 0
     for meta in docs:
-        if meta.get("retire") and not inclure_retires:
+        if meta.get("retired") and not include_retired:
             continue
-        chemin = racine / Path(meta["fichier"])
-        texte = chemin.read_text(encoding="utf-8")
+        text = (root / Path(meta["file"])).read_text(encoding="utf-8")
         n_docs += 1
-        for index, (section, contenu) in enumerate(_decouper(texte), start=1):
+        for index, (section, content) in enumerate(_split(text), start=1):
             pid = f"{meta['id']}::p{index}"
             cur = conn.execute(
                 """INSERT INTO passages(
-                    id, document_id, titre, section, version, adresse,
-                    organisation, public_vise, texte
+                    id, document_id, title, section, version, address,
+                    organization, audience, text
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     pid,
                     meta["id"],
-                    meta["titre"],
+                    meta["title"],
                     section,
                     meta["version"],
-                    meta["adresse"],
-                    meta["organisation"],
-                    meta["public_vise"],
-                    contenu,
+                    meta["address"],
+                    meta["organization"],
+                    meta["audience"],
+                    content,
                 ),
             )
             conn.execute(
-                "INSERT INTO passages_fts(id, texte, titre, section) VALUES (?, ?, ?, ?)",
-                (pid, contenu, meta["titre"], section),
+                "INSERT INTO passages_fts(id, text, title, section) VALUES (?, ?, ?, ?)",
+                (pid, content, meta["title"], section),
             )
             conn.execute(
                 "INSERT INTO passages_vec(rowid, embedding) VALUES (?, ?)",
-                (cur.lastrowid, packs(vecteur(f"{meta['titre']} {section} {contenu}"))),
+                (cur.lastrowid, pack(vector(f"{meta['title']} {section} {content}"))),
             )
             n_passages += 1
     conn.commit()
     conn.close()
-    return {"documents": n_docs, "passages": n_passages, "inclure_retires": inclure_retires}
+    return {"documents": n_docs, "passages": n_passages, "include_retired": include_retired}

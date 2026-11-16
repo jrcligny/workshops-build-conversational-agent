@@ -1,5 +1,4 @@
-
-"""Contrat que le harness de l'étudiant doit implémenter. La coquille ne l'implémente pas."""
+"""Contract the student's harness must implement. The shell does not implement it."""
 
 from __future__ import annotations
 
@@ -10,44 +9,48 @@ from typing import Iterator, Protocol
 @dataclass
 class Message:
     role: str
-    contenu: str
+    content: str
 
 
 @dataclass
-class UtilisateurEssai:
+class TestUser:
+    __test__ = False  # not a pytest test class
+
     id: str
     role: str
-    organisation: str
-    jeton_application: str | None = None
+    organization: str
+    app_token: str | None = None
 
 
 @dataclass
-class Evenement:
-    type: str  # texte, fin, etape, erreur, sources, mention, confirmation_demandee, piece_jointe, compaction, interruption
+class Event:
+    # text, end, step, error, sources, mention, confirmation_requested, attachment, compaction, interruption
+    type: str
     data: dict = field(default_factory=dict)
 
 
-class ContratHarness(Protocol):
-    def tour(
+class HarnessContract(Protocol):
+    def turn(
         self,
         conversation_id: str,
         message: str,
-        utilisateur: UtilisateurEssai,
-        historique: list[Message],
-        pieces_jointes: list[str] | None = None,
-        interruption_demandee: bool = False,
+        user: TestUser,
+        history: list[Message],
+        attachments: list[str] | None = None,
+        interrupt_requested: bool = False,
         confirmation: bool = False,
-        limites: dict | None = None,
-    ) -> Iterator[Evenement]:
-        """Conduit un tour : assemble le system prompt et l'historique, appelle le modèle, émet des événements et une trace.
+        limits: dict | None = None,
+    ) -> Iterator[Event]:
+        """Runs one turn: assembles the system prompt and the history, calls the model,
+        yields events and writes a trace.
 
-        `pieces_jointes` est réservé à l'atelier 15.
-        `interruption_demandee` (atelier 06) demande l'arrêt propre du tour, sans nouvel appel.
-        `confirmation` (atelier 10b) signale le geste de confirmation dans l'interface.
-        `limites` (atelier 10d) porte éventuellement durée et budget.
+        `attachments` is reserved for workshop 15.
+        `interrupt_requested` (workshop 06) asks for a clean stop of the turn, with no new call.
+        `confirmation` (workshop 10b) carries the user's confirmation gesture in the interface.
+        `limits` (workshop 10d) may carry a duration and a budget.
         """
         ...
 
 
-class HarnessNonImplemente(Exception):
-    """Levée par la coquille vide, avec un message qui dit ce qui manque."""
+class HarnessNotImplemented(Exception):
+    """Raised by the empty shell, with a message saying what is missing."""

@@ -1,2 +1,3 @@
-atelier: '16'
-titre: 'De la consigne au contrôle'
+workshop: '16'
+title: 'From instruction to control'
+tests: tests/

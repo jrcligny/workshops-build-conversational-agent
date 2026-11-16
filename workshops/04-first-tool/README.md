@@ -1,15 +1,21 @@
-# Atelier 04 — Premier outil
+# Workshop 04 — First tool
 
-## Critère de réussite
+Chapter 4 of the book. No solution is provided: you work in `my-agent/`.
 
-Votre agent consulte une commande au moyen de son premier outil. Une référence exacte est trouvée directement ; une référence approximative donne la commande la plus proche, et la réponse signale l'écart. Une commande exclue n'apparaît ni en consultation directe ni parmi les suggestions. Le résultat distingue réussite, absence de donnée et erreur, et l'agent fait au plus un appel d'outil par message.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-04/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Give your agent its first tool: looking up one order.
 
-```bash
-atelier commencer 04
-atelier verifier 04
-atelier verifier 04 --non-regression
+## Success criterion
+
+Your agent looks up an order with its first tool. An exact reference is found directly; an approximate reference gives the closest order, and the answer reports the difference. An excluded order appears neither in a direct lookup nor among the suggestions. The result distinguishes success, missing data and error, and the agent makes at most one tool call per message.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 04
+uv run workshop check 04
+uv run workshop check 04 --non-regression   # workshops 03 to 04
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

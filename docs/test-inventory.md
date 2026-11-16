@@ -1,44 +1,43 @@
-# Inventaire des tests d'atelier
+# Workshop test inventory
 
-Aligné sur les sous-sections « Le critère de réussite » du manuscrit
-(`jrcligny/ai-generated-books`, branche `relecture/alignement-ateliers`).
-Tous ces tests **échouent sur la coquille vide**. Les tests de
-`tests/application`, `tests/documentation`, `tests/proxy` et `tests/socle`
-doivent, eux, passer.
+Aligned with the "success criterion" subsections of the book
+(`jrcligny/ai-generated-books`, branch `relecture/alignement-ateliers`).
+All these tests **fail on the empty shell** (68 tests in total). The
+infrastructure tests in `tests/kit/` (39 tests) must pass.
 
-Les vérifications déterministes (état de l'application, traces, droits,
-événements d'interface) passent en premier. Le juge, avec une grille écrite,
-n'intervient que lorsque les traces ne suffisent pas à établir la qualité d'une
-réponse. En conception, la grille s'applique par des exigences structurelles ;
-l'appréciation de sens se calibre en phase B.
+Deterministic checks (application state, traces, permissions, interface
+events) come first. The judge, with a written rubric, only steps in when the
+traces are not enough to establish the quality of an answer. During design, the
+rubric is applied through structural requirements; the meaning assessment is
+calibrated in phase B.
 
-| Atelier | Tests (déterministes sauf mention) | Juge (grille) |
-|---|---|---|
-| 03 | Prompt court, sans outil ni documentation ; aucun appel métier ; historique rejoué ; contrat texte+fin+trace | Refus d'informer sur une commande, y compris sous insistance (répété) |
-| 04 | Référence exacte ; écart signalé sur référence approximative ; commande exclue jamais suggérée ; au plus un appel ; statut réussite / absence / erreur dans le résultat d'outil | — |
-| 05 | Homonymes tous renvoyés, sans choix à la place de l'utilisateur ; filtre retard appliqué par l'outil | — |
-| 06 | Plusieurs cycles ; appels indépendants groupés ; étapes signalées (`etape`) ; interruption sans nouvel appel | Réponse déclarée partielle à la limite de cycles |
-| 07 | Liste bornée et total déclaré ; mode décompte ; total minimum au plafond ; taille du contexte dans la trace ; pas de compaction en deçà du seuil ; au-delà : événement de compaction, messages utilisateur et demande initiale à l'identique, résumé des seules réponses et résultats d'outils ; signalement dans l'interface | Annonce du caractère partiel |
-| 08 | État de conversation dans la trace après compaction, distinct du résumé ; choix entre homonymes conservé ; changement de client sans ambiguïté | — |
-| 09 | Outils servis par MCP, plus d'appel HTTP direct du harness ; deux clients, même catalogue non vide, outils du ch. 5 retirés ; filtre mal formé ; question comptable via l'interrogation générique | — |
-| 10a | Échange de jeton : l'application voit l'utilisateur, pas un compte de service ; jeton `typ=entree` refusé ou échangé | — |
-| 10b | Confirmation demandée, brouillon sans effet ; préparation refusée sans droit ; soumission attribuée après le geste de confirmation | Aucune annonce d'action effectuée avant la soumission |
-| 10c | Regroupement calculé par l'outil ; aucun `exec`/`eval` dans la trace | Médiane refusée, agrégats proposés |
-| 10d | Politique de confinement active et liste non vide ; destination hors liste refusée ; pas d'accès fichier dans la trace ; tour arrêté à la limite durée/budget ; secrets absents de l'entrée et de la trace | — |
-| 11 | Livrable `mon-agent/requetes_trace.py` : `part_lectures_intermediaires` et `domaines_incompatibles`, exécutées sur `tests/atelier-11/traces-exemple.jsonl` | — |
-| 12 | Annonce à l'ouverture ; pas de persistance entre conversations ; relecture de l'application plutôt qu'une supposition | Pas de promesse de souvenir |
-| 13 | Événement `sources` ; résultat vide déclaré ; filtrage des droits ; version retirée absente ; distinction documentation / données | — |
-| 14 | Catalogue de trois *skills* ; chargement avant écriture ; *skill* hors catalogue refusé ; écriture selon les droits ; *skill* encore présent après compaction | — |
-| 15 | Écritures retirées après lecture d'un devis (fixture de test) ; lecture par identifiant ; aucun outil d'envoi ; caches non partagés entre organisations | — |
-| 16 | Mention de résultat partiel émise par le *harness* ; client enregistré seulement après le choix ; enregistrement non consulté marqué non vérifié ; conversations simultanées isolées | — |
-| 17 | Traces masquées (pas de secret ni d'en-tête d'autorisation) ; rapport de parcours couvrant les cas limites du ch. 17, avec répétition et jugement en couches | Sens des parcours : à calibrer en phase B |
-| 18 | Soumission jamais rejouée (panne `issue_inconnue`) ; versions (consignes, *skills*, outils, index) dans la trace ; bascule unique vers le repli (panne proxy `modele_principal`) | Qualité de la fin après échec du repli |
-| 19 | Spécification et essais dans `mon-agent/mode-local/`, dont un essai à sortie volontairement fausse ; somme de contrôle de `tests/evaluation/` inchangée ; part réservée hors d'atteinte du mode local. Le *coding agent* n'est pas exigé. | — |
+| Workshop | Tests folder | Tests (deterministic unless stated) | Judge (rubric) |
+|---|---|---|---|
+| 03 | `workshops/03-system-prompt/tests/` | Short prompt, no tool nor documentation; no business call; history replayed; text+end+trace contract | Refusal to report on an order, including under insistence (repeated) |
+| 04 | `workshops/04-first-tool/tests/` | Exact reference; difference reported for an approximate reference; excluded order never suggested; at most one call; success / missing / error status in the tool result | — |
+| 05 | `workshops/05-read-tools/tests/` | All namesakes returned, without choosing for the user; late filter applied by the tool | — |
+| 06 | `workshops/06-agent-loop/tests/` | Several cycles; independent calls grouped; steps reported (`step`); interruption without a new call | Answer declared partial at the cycle limit |
+| 07 | `workshops/07-context-compaction/tests/` | Bounded list and declared total; count mode; total is a minimum at the cap; context size in the trace; no compaction below the threshold; above it: compaction event, user messages and initial request verbatim, summary of answers and tool results only; reported in the interface | Partial result announced |
+| 08 | `workshops/08-working-memory/tests/` | Conversation state in the trace after compaction, distinct from the summary; choice between namesakes kept; unambiguous customer change | — |
+| 09 | `workshops/09-mcp/tests/` | Tools served by MCP, no more direct HTTP call from the harness; two clients, same non-empty catalog, chapter 5 tools removed; malformed filter; accountant question through the generic query | — |
+| 10a | `workshops/10a-identity/tests/` | Token exchange: the application sees the user, not a service account; `typ=entry` token refused or exchanged | — |
+| 10b | `workshops/10b-writes/tests/` | Confirmation requested, draft without effect; preparation refused without permission; submission attributed after the confirmation gesture | No action announced before the submission |
+| 10c | `workshops/10c-groupings/tests/` | Grouping computed by the tool; no `exec`/`eval` in the trace | Median refused, aggregates offered |
+| 10d | `workshops/10d-sandboxing/tests/` | Sandbox policy active and non-empty allowlist; destination outside the list refused; no file access in the trace; turn stopped at the duration/budget limit; secrets absent from the input and the trace | — |
+| 11 | `workshops/11-architecture/tests/` | Deliverable `my-agent/trace_queries.py`: `intermediate_reads_share` and `incompatible_domains`, run on `tests/fixtures/example-traces.jsonl` | — |
+| 12 | `workshops/12-long-term-memory/tests/` | Announcement on opening; no persistence between conversations; rereads the application rather than assuming | No memory promise |
+| 13 | `workshops/13-document-search/tests/` | `sources` event; empty result declared; permission filtering; retired version absent; documentation / data distinction | — |
+| 14 | `workshops/14-skills/tests/` | Catalog of three *skills*; loaded before writing; *skill* outside the catalog refused; writes according to permissions; *skill* still present after compaction | — |
+| 15 | `workshops/15-read-without-obeying/tests/` | Writes removed after reading a quote (test fixture `tests/fixtures/sample-quote.txt`); read by id; no sending tool; caches not shared between organizations | — |
+| 16 | `workshops/16-controls/tests/` | Partial-result mention emitted by the harness; customer recorded only after the choice; unconsulted record marked unverified; simultaneous conversations isolated | — |
+| 17 | `workshops/17-evaluation/tests/` | Masked traces (no secret nor authorization header); route report (`my-agent/route-report.md`) covering the edge cases of ch. 17, with repetition and layered judgement | Meaning of the routes: to calibrate in phase B |
+| 18 | `workshops/18-failures/tests/` | Submission never replayed (`unknown_outcome` failure); versions (instructions, *skills*, tools, index) in the trace; single switch to the fallback (proxy failure `primary_model`) | Quality of the ending after the fallback fails |
+| 19 | `workshops/19-specification/tests/` | Specification and checks in `my-agent/local-mode/`, including a check with a deliberately wrong output; checksum of `workshops/17-evaluation/routes/` unchanged; reserved part out of reach of the local mode. The *coding agent* is not required. | — |
 
-## Commandes
+## Commands
 
-```bash
-uv run atelier verifier 07
-uv run atelier verifier 07 --non-regression
-uv run atelier verifier-coquille
+```powershell
+uv run workshop check 07
+uv run workshop check 07 --non-regression
+uv run workshop check-shell
 ```

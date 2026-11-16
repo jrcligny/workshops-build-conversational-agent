@@ -1,1 +1,1 @@
-"""Application métier simulée du fil rouge."""
+"""Simulated business application of the running example (test app exposing the business APIs)."""

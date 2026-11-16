@@ -1,45 +1,49 @@
-"""Tests de bout en bout de l'atelier 04. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 04. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.testing.turns import successful_turn, tools
 
-pytestmark = pytest.mark.atelier
-
-
-def _statuts_outils(trace) -> list[str]:
-    valeurs = []
-    for appel in outils(trace):
-        resultat = appel.get("resultat") or appel.get("sortie") or appel
-        valeurs.append(str(resultat.get("statut") or resultat.get("status") or resultat).lower())
-    return valeurs
+pytestmark = pytest.mark.workshop
 
 
-def test_consultation_commande_exacte(client_chat):
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-1042 de Martin Durand ?")
-    assert any("commande" in str(o).lower() for o in outils(trace))
-    assert "livr" in tour.texte.lower()
-    assert len(outils(trace)) <= 1, "au plus un appel d'outil par message"
-    statuts = _statuts_outils(trace)
-    assert any(s for s in statuts if "ok" in s or "reussi" in s or "succ" in s or "trouve" in s or "trouv" in s)
+def _tool_statuses(trace) -> list[str]:
+    values = []
+    for call in tools(trace):
+        result = call.get("result") or call.get("output") or call
+        values.append(str(result.get("status") or result).lower())
+    return values
 
 
-def test_reference_inversee_signalee(client_chat):
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-1402 ?")
-    assert "1042" in tour.texte
-    assert "1402" in tour.texte or "écart" in tour.texte.lower() or "ecart" in tour.texte.lower() or "proche" in tour.texte.lower() or "approxim" in tour.texte.lower()
-    assert outils(trace)
-    assert len(outils(trace)) <= 1
+def test_exact_order_lookup(chat_client):
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
+    assert any("order" in str(t).lower() for t in tools(trace))
+    assert "deliver" in turn.text.lower()
+    assert len(tools(trace)) <= 1, "at most one tool call per message"
+    statuses = _tool_statuses(trace)
+    assert any("ok" in s or "success" in s or "found" in s for s in statuses)
 
 
-def test_commande_supprimee_jamais_suggeree(client_chat):
-    tour, trace = tour_reussi(client_chat, "Où en est la commande CMD-0881 ?")
-    texte = tour.texte.lower()
-    assert "0881" not in texte or all(mot in texte for mot in ("pas",)) and "sugg" not in texte
-    # ni suggestion d'une commande exclue, ni présentation comme trouvée
-    for appel in outils(trace):
-        plat_appel = str(appel).lower()
-        if "0881" in plat_appel:
-            assert "exclu" in plat_appel or "absent" in plat_appel or "introuv" in plat_appel or "supprim" in plat_appel
-    statuts = _statuts_outils(trace)
-    assert any("absent" in s or "erreur" in s or "exclu" in s or "introuv" in s or "none" in s or "vide" in s for s in statuts) or "pas" in texte
+def test_swapped_reference_reported(chat_client):
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1402?")
+    assert "1042" in turn.text
+    text = turn.text.lower()
+    assert "1402" in text or "differ" in text or "closest" in text or "nearest" in text or "approxim" in text
+    assert tools(trace)
+    assert len(tools(trace)) <= 1
+
+
+def test_deleted_order_never_suggested(chat_client):
+    turn, trace = successful_turn(chat_client, "What is the status of order CMD-0881?")
+    text = turn.text.lower()
+    assert "0881" not in text or ("not" in text and "suggest" not in text)
+    # neither a suggestion of an excluded order nor a presentation as found
+    for call in tools(trace):
+        flat_call = str(call).lower()
+        if "0881" in flat_call:
+            assert "exclu" in flat_call or "absent" in flat_call or "not found" in flat_call or "deleted" in flat_call
+    statuses = _tool_statuses(trace)
+    assert any(
+        "absent" in s or "error" in s or "exclu" in s or "not_found" in s or "not found" in s or "none" in s or "empty" in s
+        for s in statuses
+    ) or "not" in text

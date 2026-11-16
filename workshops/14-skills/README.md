@@ -1,15 +1,21 @@
-# Atelier 14 — Skills
+# Workshop 14 — Skills
 
-## Critère de réussite
+Chapter 14 of the book. No solution is provided: you work in `my-agent/`.
 
-Seuls les trois skills du catalogue versionné se chargent ; une demande de skill étranger au catalogue est refusée. Un outil d'écriture n'est proposé qu'après le chargement de son skill, et toujours selon les droits de l'utilisateur. Un skill chargé est encore présent dans l'entrée du modèle après une compaction.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-14/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Package the business procedures as versioned skills, loaded on demand.
 
-```bash
-atelier commencer 14
-atelier verifier 14
-atelier verifier 14 --non-regression
+## Success criterion
+
+Only the three skills of the versioned catalog load; a request for a skill foreign to the catalog is refused. A write tool is offered only after its skill is loaded, and always according to the user's permissions. A loaded skill is still present in the model input after a compaction.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 14
+uv run workshop check 14
+uv run workshop check 14 --non-regression   # workshops 03 to 14
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

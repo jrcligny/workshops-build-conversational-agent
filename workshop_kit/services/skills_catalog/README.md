@@ -1,20 +1,20 @@
-# Catalogue de skills (coquille)
+# Skills catalog (empty base)
 
-Stockage versionné prévu pour l'atelier 14. Format attendu :
+Versioned storage for workshop 14. Expected format:
 
-- `manifeste.yaml` à la racine, avec une liste `skills` ;
-- un dossier par *skill* sous `skills/<identifiant>/`, contenant au minimum un
-  fichier `SKILL.md` (consigne) et, le cas échéant, des ressources associées.
+- `manifest.yaml` at the root, with a `skills` list;
+- one folder per *skill* under `skills/<id>/`, containing at least a
+  `SKILL.md` file (instructions) and, if needed, related resources.
 
-Exemple d'entrée, à ajouter seulement quand vous rédigerez le *skill* :
+Example entry, to add only when you write the *skill*:
 
 ```yaml
 version: "1"
 skills:
-  - id: controle-facture
-    titre: Contrôle de facture
+  - id: invoice-check
+    title: Invoice check
     version: "1.0"
-    chemin: skills/controle-facture
+    path: skills/invoice-check
 ```
 
-Le catalogue livré avec la coquille est **vide** : aucun *skill* n'est fourni.
+The catalog shipped with the shell is **empty**: no *skill* is provided.

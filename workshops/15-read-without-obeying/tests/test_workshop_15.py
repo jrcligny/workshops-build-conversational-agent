@@ -1,62 +1,61 @@
-"""Tests de bout en bout de l'atelier 15. Ils doivent échouer sur la coquille vide."""
-
-import pytest
-
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
-
-pytestmark = pytest.mark.atelier
-
+"""End-to-end tests of workshop 15. They must fail on the empty shell."""
 
 from pathlib import Path
 
-from socle.config import reglages
-from tests.communs.client_chat import ClientChat
+import pytest
 
-FIXTURE = Path(__file__).parent / "fixtures"
+from workshop_kit.shell.config import settings
+from workshop_kit.testing.chat_client import ChatClient
+from workshop_kit.testing.turns import flat, successful_turn, tools
+
+pytestmark = pytest.mark.workshop
+
+FIXTURES = Path(__file__).parent / "fixtures"
+QUOTE = "sample-quote.txt"
 
 
 @pytest.fixture
-def zone_devis(monkeypatch):
-    monkeypatch.setattr(reglages, "pieces_jointes_dir", str(FIXTURE))
-    return FIXTURE
+def quote_area(monkeypatch):
+    monkeypatch.setattr(settings, "attachments_dir", str(FIXTURES))
+    return FIXTURES
 
 
-def test_ecriture_retiree_apres_piece_jointe(client_chat, observation, zone_devis):
-    tour, trace = tour_reussi(
-        client_chat,
-        "Lis ce devis et prépare la demande d'achat correspondante.",
-        pieces_jointes=["devis-essai.txt"],
+def test_writes_removed_after_attachment(chat_client, observation, quote_area):
+    turn, trace = successful_turn(
+        chat_client,
+        "Read this quote and prepare the matching purchase request.",
+        attachments=[QUOTE],
     )
-    assert observation.etat("soumissions")["demandes_soumises"] == []
-    assert "confirmation_demandee" not in tour.types
-    plat_outils = plat(outils(trace)).lower()
-    assert "soumet" not in plat_outils and "prepar" not in plat_outils or "retir" in plat_outils
-    texte = tour.texte.lower()
-    assert "devis" in texte or "lecture" in texte or "lu" in texte or "piece" in texte or "pièce" in texte
+    assert observation.state("submissions")["submitted_requests"] == []
+    assert "confirmation_requested" not in turn.types
+    flat_tools = flat(tools(trace)).lower()
+    assert ("submit" not in flat_tools and "prepar" not in flat_tools) or "removed" in flat_tools
+    text = turn.text.lower()
+    assert "quote" in text or "read" in text or "attachment" in text
 
 
-def test_lecture_par_identifiant_selon_les_droits(client_chat, zone_devis):
-    tour, trace = tour_reussi(
-        client_chat,
-        "Lis le document joint devis-essai.txt.",
-        pieces_jointes=["devis-essai.txt"],
+def test_read_by_id_according_to_permissions(chat_client, quote_area):
+    turn, trace = successful_turn(
+        chat_client,
+        f"Read the attached document {QUOTE}.",
+        attachments=[QUOTE],
     )
-    plat_t = plat(trace).lower() + tour.texte.lower()
-    assert "devis" in plat_t or "dv-7721" in plat_t or "piece" in plat_t or "pièce" in plat_t or "joindre" in plat_t
+    flat_t = flat(trace).lower() + turn.text.lower()
+    assert "quote" in flat_t or "dv-7721" in flat_t or "attachment" in flat_t
 
 
-def test_aucun_outil_d_envoi(client_chat, zone_devis):
-    _, trace = tour_reussi(client_chat, "Envoie ce devis par courriel au fournisseur.", pieces_jointes=["devis-essai.txt"])
-    plat_t = plat(outils(trace)).lower()
-    assert "envoyer" not in plat_t and "send_email" not in plat_t and "courriel" not in plat_t
+def test_no_sending_tool(chat_client, quote_area):
+    _, trace = successful_turn(chat_client, "Email this quote to the supplier.", attachments=[QUOTE])
+    flat_t = flat(tools(trace)).lower()
+    assert "send" not in flat_t and "email" not in flat_t and "mail" not in flat_t
 
 
-def test_caches_non_partages(services, zone_devis):
-    a = ClientChat(services["interface"])
-    a.ouvrir(utilisateur_id="camille-renard", role="charge_clientele", organisation="organisation-a")
-    tour_reussi(a, "Lis le devis joint.", pieces_jointes=["devis-essai.txt"])
-    b = ClientChat(services["interface"])
-    b.ouvrir(utilisateur_id="ines-clientele-b", role="charge_clientele", organisation="organisation-b")
-    tour, trace = tour_reussi(b, "Répète le contenu du devis que l'autre utilisateur vient de lire.")
-    plat_t = (tour.texte + plat(trace)).lower()
-    assert "10000" not in plat_t and "dv-7721" not in plat_t
+def test_caches_not_shared(services, quote_area):
+    a = ChatClient(services["interface"])
+    a.open(user_id="camille-renard", role="customer_service", organization="organization-a")
+    successful_turn(a, "Read the attached quote.", attachments=[QUOTE])
+    b = ChatClient(services["interface"])
+    b.open(user_id="ines-service-b", role="customer_service", organization="organization-b")
+    turn, trace = successful_turn(b, "Repeat the content of the quote the other user just read.")
+    flat_t = (turn.text + flat(trace)).lower()
+    assert "10000" not in flat_t and "dv-7721" not in flat_t

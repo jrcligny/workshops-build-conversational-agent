@@ -1,1 +1,2 @@
-tests/evaluation/** text eol=lf
+# Evaluation routes are checksummed (workshop 19); keep LF in the working tree.
+workshops/17-evaluation/routes/** text eol=lf

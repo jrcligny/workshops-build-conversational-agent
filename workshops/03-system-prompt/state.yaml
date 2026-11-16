@@ -1,2 +1,3 @@
-atelier: '03'
-titre: 'System prompt et boucle conversationnelle'
+workshop: '03'
+title: 'System prompt and conversational loop'
+tests: tests/

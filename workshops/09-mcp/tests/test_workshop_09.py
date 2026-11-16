@@ -1,71 +1,69 @@
-"""Tests de bout en bout de l'atelier 09. Ils doivent échouer sur la coquille vide."""
-
-import pytest
-
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
-
-pytestmark = pytest.mark.atelier
-
+"""End-to-end tests of workshop 09. They must fail on the empty shell."""
 
 import asyncio
 
+import pytest
 from mcp import Client
 
-from socle.interface.chargeur import charger_serveur_mcp
-from tests.communs.serveurs import attendre_port, lancer_uvicorn, port_libre
+from workshop_kit.shell.loader import load_mcp_server
+from workshop_kit.testing.chat_client import ChatClient
+from workshop_kit.testing.servers import free_port, start_uvicorn, wait_for_port
+from workshop_kit.testing.turns import business_log, flat, successful_turn, tools
 
-OUTILS_REMPLACES = {"rechercher_client", "lister_commandes", "lister_commandes_client", "rechercher_clients"}
+pytestmark = pytest.mark.workshop
+
+# The two specialised read tools of chapter 5, replaced by the generic query tool.
+REPLACED_TOOLS = {"search_customer", "search_customers", "list_orders", "list_customer_orders"}
 
 
 @pytest.fixture(scope="module")
-def serveur_mcp_url():
-    module = charger_serveur_mcp()
-    port = port_libre()
-    serveur = lancer_uvicorn(module.application(), port)
-    attendre_port("127.0.0.1", port)
-    yield f"http://127.0.0.1:{port}{module.CHEMIN_MCP}"
-    serveur.should_exit = True
+def mcp_server_url():
+    module = load_mcp_server()
+    port = free_port()
+    server = start_uvicorn(module.application(), port)
+    wait_for_port("127.0.0.1", port)
+    yield f"http://127.0.0.1:{port}{module.MCP_PATH}"
+    server.should_exit = True
 
 
-def _catalogue(url: str) -> list:
-    async def _liste():
+def _catalog(url: str) -> list:
+    async def _list():
         async with Client(url) as client:
-            resultat = await client.list_tools()
-            return list(resultat.tools)
+            result = await client.list_tools()
+            return list(result.tools)
 
-    return asyncio.run(_liste())
-
-
-def test_outils_servis_par_mcp(client_chat, observation):
-    tour, trace = tour_reussi(client_chat, "Quel est le total des commandes de Martin Durand ?")
-    assert "mcp" in plat(trace).lower() or trace.get("transport") == "mcp"
-    journal = journal_metier(observation)
-    assert journal, "l'application doit être appelée, via le serveur MCP, pas depuis un outil local silencieux"
-    # plus d'appel HTTP direct depuis le harness : l'origine doit être le serveur d'outils
-    assert any("mcp" in str(e).lower() or e.get("origine") == "mcp" or e.get("via") == "mcp" for e in journal) or "mcp" in plat(trace).lower()
+    return asyncio.run(_list())
 
 
-def test_deux_clients_obtiennent_le_meme_catalogue(serveur_mcp_url):
-    a = _catalogue(serveur_mcp_url)
-    b = _catalogue(serveur_mcp_url)
-    noms = [getattr(t, "name", None) or str(t) for t in a]
-    assert noms, "le catalogue MCP de l'atelier 09 ne doit plus être vide"
-    assert [getattr(t, "name", None) or str(t) for t in b] == noms
-    assert not (OUTILS_REMPLACES & set(noms)), "les deux outils spécialisés du chapitre 5 doivent avoir disparu"
+def test_tools_served_by_mcp(chat_client, observation):
+    turn, trace = successful_turn(chat_client, "What is the total of the orders of Martin Durand?")
+    assert "mcp" in flat(trace).lower() or trace.get("transport") == "mcp"
+    log = business_log(observation)
+    assert log, "the application must be called, through the MCP server, not from a silent local tool"
+    # no more direct HTTP call from the harness: the caller must be the tool server
+    assert any("mcp" in str(e).lower() or e.get("origin") == "mcp" or e.get("via") == "mcp" for e in log) or "mcp" in flat(trace).lower()
 
 
-def test_filtre_mal_forme_erreur_exploitable(client_chat):
-    tour, trace = tour_reussi(client_chat, "Interroge les commandes avec le filtre statut==LIVR (ce n'est pas un statut valide).")
-    texte = (tour.texte + plat(outils(trace))).lower()
-    assert "erreur" in texte or "invalide" in texte or "corriger" in texte or "statut" in texte
-    assert "livr" in texte or "livree" in texte or "livrée" in texte or "libellé" in texte or "libelle" in texte or "valeurs" in texte
+def test_two_clients_get_the_same_catalog(mcp_server_url):
+    a = _catalog(mcp_server_url)
+    b = _catalog(mcp_server_url)
+    names = [getattr(t, "name", None) or str(t) for t in a]
+    assert names, "the MCP catalog of workshop 09 must no longer be empty"
+    assert [getattr(t, "name", None) or str(t) for t in b] == names
+    assert not (REPLACED_TOOLS & set(names)), "the two specialised tools of chapter 5 must be gone"
 
 
-def test_question_comptable_via_interrogation_generique(client_chat, observation):
-    from tests.communs.client_chat import ClientChat
-    comptable = ClientChat(client_chat.base_url)
-    comptable.ouvrir(utilisateur_id="nina-comptable", role="comptable", organisation="organisation-a")
-    tour, trace = tour_reussi(comptable, "Quel est le total des factures en attente ?")
-    assert outils(trace)
-    plat_outils = plat(outils(trace)).lower()
-    assert "interr" in plat_outils or "generique" in plat_outils or "générique" in plat_outils or "agreger" in plat_outils or "agrég" in plat_outils or "total" in plat_outils
+def test_malformed_filter_actionable_error(chat_client):
+    turn, trace = successful_turn(chat_client, "Query the orders with the filter status==DELIV (this is not a valid status).")
+    text = (turn.text + flat(tools(trace))).lower()
+    assert "error" in text or "invalid" in text or "fix" in text or "status" in text
+    assert "deliver" in text or "label" in text or "values" in text
+
+
+def test_accountant_question_through_the_generic_query(chat_client, observation):
+    accountant = ChatClient(chat_client.base_url)
+    accountant.open(user_id="nina-accountant", role="accountant", organization="organization-a")
+    turn, trace = successful_turn(accountant, "What is the total of the pending invoices?")
+    assert tools(trace)
+    flat_tools = flat(tools(trace)).lower()
+    assert "query" in flat_tools or "generic" in flat_tools or "aggregat" in flat_tools or "total" in flat_tools

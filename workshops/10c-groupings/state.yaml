@@ -1,2 +1,3 @@
-atelier: '10c'
-titre: 'Regroupements'
+workshop: '10c'
+title: 'Groupings'
+tests: tests/

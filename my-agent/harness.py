@@ -1,36 +1,34 @@
+"""Empty shell.
 
-"""Coquille vide.
+This file is the entry point of your agent. The repository provides neither
+the conversational loop nor the system prompt: that is the work of workshop 03.
 
-Ce fichier est le point d'entrée de votre agent. Le dépôt ne fournit ni la
-boucle conversationnelle, ni le system prompt : c'est le travail de l'atelier 03.
-
-Le contrat à implémenter : la classe Harness expose une méthode tour(...) qui
-reçoit l'identifiant de conversation, le message de l'utilisateur, l'utilisateur
-d'essai et l'historique, puis cède des événements (texte, puis fin) et écrit une
-trace. Utilisez le client de modèle du socle (branché sur le proxy) et les aides
-d'émission de traces.
+The contract to implement: the Harness class exposes a turn(...) method that
+receives the conversation id, the user's message, the test user and the
+history, then yields events (text, then end) and writes a trace. Use the
+kit's model client (wired to the proxy) and the trace helpers.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterator
 
-from socle.harness_base.contrat import Evenement, Message, UtilisateurEssai
+from workshop_kit.shell.harness_contract import Event, Message, TestUser
 
 
 class Harness:
-    def tour(
+    def turn(
         self,
         conversation_id: str,
         message: str,
-        utilisateur: UtilisateurEssai,
-        historique: list[Message],
-        pieces_jointes: list[str] | None = None,
-        interruption_demandee: bool = False,
+        user: TestUser,
+        history: list[Message],
+        attachments: list[str] | None = None,
+        interrupt_requested: bool = False,
         confirmation: bool = False,
-        limites: dict | None = None,
-    ) -> Iterator[Evenement]:
+        limits: dict | None = None,
+    ) -> Iterator[Event]:
         raise NotImplementedError(
-            "À vous : implémentez le system prompt et la boucle conversationnelle "
-            "(atelier 03). La coquille ne fournit ni l'un ni l'autre."
+            "Your turn: implement the system prompt and the conversational loop "
+            "(workshop 03). The shell provides neither."
         )

@@ -1,10 +1,12 @@
-# Pièces jointes (coquille)
+# Attachments (empty base)
 
-Zone prévue, en lecture seule, pour les documents joints à un tour de
-conversation (atelier 15). Le point d'entrée du contrat d'interface est :
+Read-only area for the documents attached to a conversation turn
+(workshop 15). The interface-contract entry points are:
 
-- le champ optionnel `pieces_jointes` de `POST /conversations/{id}/messages` ;
-- `GET /pieces-jointes`, qui liste les fichiers déposés ici.
+- the optional `attachments` field of `POST /conversations/{id}/messages`;
+- `GET /attachments`, which lists the files dropped here.
 
-Aucun devis d'essai n'est fourni dans la coquille. Vous déposerez les fichiers
-(dont, le moment venu, le devis piégé de l'atelier 15) dans ce dossier.
+No sample quote is provided in the shell. You will drop the files here
+(including, when the time comes, the booby-trapped quote of workshop 15).
+The workshop 15 tests use their own fixture
+(`workshops/15-read-without-obeying/tests/fixtures/`).

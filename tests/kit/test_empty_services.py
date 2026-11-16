@@ -1,4 +1,4 @@
-"""Bases vides de la coquille : emplacements et contrats présents, contenus vides."""
+"""Empty bases of the shell: locations and contracts exist, contents are empty."""
 
 from __future__ import annotations
 
@@ -8,67 +8,54 @@ import httpx
 import pytest
 import yaml
 
-from services.confinement.interface import autorise_sortie, politique, politique_appliquee
-from services.pieces_jointes.registre import lister as lister_pieces
+from workshop_kit.evaluation.routes import expected_digest, routes_digest
+from workshop_kit.services.attachments.registry import list_attachments
+from workshop_kit.services.sandbox.interface import is_egress_allowed, is_policy_enforced, policy
 
-pytestmark = pytest.mark.socle
+pytestmark = pytest.mark.shell
 
-RACINE = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SERVICES = REPO_ROOT / "workshop_kit" / "services"
 
 
-def test_confinement_interface_sans_politique():
-    pol = politique()
+def test_sandbox_interface_without_policy():
+    pol = policy()
     assert pol["active"] is False
-    assert pol["liste_autorisation"] == []
-    assert politique_appliquee() is False
-    assert autorise_sortie("https://exemple.invalid") is None
-    assert (RACINE / "services" / "confinement" / "politique.yaml").is_file()
+    assert pol["allowlist"] == []
+    assert is_policy_enforced() is False
+    assert is_egress_allowed("https://example.invalid") is None
+    assert (SERVICES / "sandbox" / "policy.yaml").is_file()
 
 
-def test_catalogue_skills_vide():
-    manifeste = yaml.safe_load(
-        (RACINE / "services" / "catalogue" / "manifeste.yaml").read_text(encoding="utf-8")
-    )
-    assert "skills" in manifeste
-    assert manifeste["skills"] == []
-    dossier = RACINE / "services" / "catalogue" / "skills"
-    assert dossier.is_dir()
-    skills = [p for p in dossier.iterdir() if p.name != ".gitkeep"]
-    assert skills == []
+def test_skills_catalog_empty():
+    manifest = yaml.safe_load((SERVICES / "skills_catalog" / "manifest.yaml").read_text(encoding="utf-8"))
+    assert "skills" in manifest
+    assert manifest["skills"] == []
+    folder = SERVICES / "skills_catalog" / "skills"
+    assert folder.is_dir()
+    assert [p for p in folder.iterdir() if p.name != ".gitkeep"] == []
 
 
-def test_pieces_jointes_zone_vide_et_point_d_entree(services):
-    assert lister_pieces() == []
-    r = httpx.get(f"{services['interface']}/pieces-jointes", timeout=5)
+def test_attachments_area_empty_and_entry_point(services):
+    assert list_attachments() == []
+    r = httpx.get(f"{services['interface']}/attachments", timeout=5)
     assert r.status_code == 200
-    assert r.json()["pieces_jointes"] == []
+    assert r.json()["attachments"] == []
 
 
-def test_mode_local_coding_agent_accueil_vide():
-    racine = RACINE / "mon-agent" / "mode-local"
-    assert (racine / "README.md").is_file()
-    assert (racine / "specifications").is_dir()
-    assert (racine / "controles").is_dir()
-    livrables = [
+def test_local_mode_coding_agent_landing_empty():
+    root = REPO_ROOT / "my-agent" / "local-mode"
+    assert (root / "README.md").is_file()
+    assert (root / "specifications").is_dir()
+    assert (root / "controls").is_dir()
+    deliverables = [
         p
-        for sous in (racine / "specifications", racine / "controles")
-        for p in sous.iterdir()
+        for sub in (root / "specifications", root / "controls")
+        for p in sub.iterdir()
         if p.name != ".gitkeep"
     ]
-    assert livrables == []
+    assert deliverables == []
 
 
-def test_somme_des_parcours_d_evaluation():
-    import hashlib
-    racine = RACINE / "tests" / "evaluation"
-    attendu = (racine / "somme-parcours.sha256").read_text(encoding="utf-8").strip()
-    h = hashlib.sha256()
-    fichiers = [
-        c
-        for c in racine.rglob("*")
-        if c.is_file() and c.name != "somme-parcours.sha256"
-    ]
-    for chemin in sorted(fichiers, key=lambda c: c.relative_to(racine).as_posix()):
-        h.update(chemin.relative_to(racine).as_posix().encode())
-        h.update(chemin.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n"))
-    assert h.hexdigest() == attendu
+def test_evaluation_routes_checksum():
+    assert routes_digest() == expected_digest()

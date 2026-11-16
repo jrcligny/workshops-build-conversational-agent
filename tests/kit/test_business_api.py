@@ -1,134 +1,129 @@
+"""Business API test app: orders, customers, drafts, roles, two organizations, observation endpoint."""
 
+import httpx
 import pytest
 
-pytestmark = pytest.mark.application
+pytestmark = pytest.mark.business_api
 
 
-def test_sante(services):
-    import httpx
-    r = httpx.get(f"{services['metier']}/sante", timeout=5)
+def test_health(services):
+    r = httpx.get(f"{services['business_api']}/health", timeout=5)
     assert r.status_code == 200
-    assert r.json()["statut"] == "ok"
+    assert r.json()["status"] == "ok"
 
 
-def test_commande_typée(client_metier):
-    r = client_metier.get("/commandes/CMD-1042")
+def test_typical_order(business_client):
+    r = business_client.get("/orders/CMD-1042")
     assert r.status_code == 200
     data = r.json()
-    assert data["statut"] == "livree"
+    assert data["status"] == "delivered"
     assert data["reference"] == "CMD-1042"
 
 
-def test_commande_inexistante(client_metier):
-    r = client_metier.get("/commandes/CMD-1402")
+def test_missing_order(business_client):
+    r = business_client.get("/orders/CMD-1402")
     assert r.status_code == 404
 
 
-def test_commande_supprimee_invisible_au_charge_de_clientele(client_metier):
-    r = client_metier.get("/commandes/CMD-0881")
+def test_deleted_order_hidden_from_customer_service(business_client):
+    r = business_client.get("/orders/CMD-0881")
     assert r.status_code == 404
 
 
-def test_homonymes(client_metier):
-    r = client_metier.get("/clients", params={"nom": "Léa Martin"})
+def test_namesakes(business_client):
+    r = business_client.get("/customers", params={"name": "Léa Martin"})
     assert r.status_code == 200
-    noms = r.json()
-    assert len(noms) == 2
-    assert {c["id"] for c in noms} == {"C-MARTIN-LILLE", "C-MARTIN-LYON"}
+    customers = r.json()
+    assert len(customers) == 2
+    assert {c["id"] for c in customers} == {"C-MARTIN-LILLE", "C-MARTIN-LYON"}
 
 
-def test_filtre_retard_horloge_figee(observation, client_metier):
-    observation.reinitialiser("volume")
-    r = client_metier.get("/clients/C-VOLUMEX/commandes", params={"filtre": "en_retard"})
+def test_late_filter_with_frozen_clock(observation, business_client):
+    observation.reset("volume")
+    r = business_client.get("/customers/C-VOLUMEX/orders", params={"filter": "late"})
     assert r.status_code == 200
     data = r.json()
     assert data["total"] > 0
-    assert all(c["en_retard"] for c in data["commandes"])
-    # Reproductible grâce à la graine et à l'horloge figée.
-    second = client_metier.get("/clients/C-VOLUMEX/commandes", params={"filtre": "en_retard"}).json()
+    assert all(o["late"] for o in data["orders"])
+    # Reproducible thanks to the fixed seed and the frozen clock.
+    second = business_client.get("/customers/C-VOLUMEX/orders", params={"filter": "late"}).json()
     assert second["total"] == data["total"]
 
 
-def test_cloisonnement_organisation(observation, services):
-    import httpx
-    jeton_b = observation.jeton("inès-clientele-b")["jeton_application"]
+def test_organization_isolation(observation, services):
+    token_b = observation.token("ines-service-b")["app_token"]
     r = httpx.get(
-        f"{services['metier']}/commandes/CMD-1042",
-        headers={"Authorization": f"Bearer {jeton_b}"},
+        f"{services['business_api']}/orders/CMD-1042",
+        headers={"Authorization": f"Bearer {token_b}"},
         timeout=10,
     )
     assert r.status_code == 404
 
 
-def test_sans_identite(services, reset_etat):
-    import httpx
-    r = httpx.get(f"{services['metier']}/commandes/CMD-1042", timeout=5)
+def test_no_identity(services, reset_state):
+    r = httpx.get(f"{services['business_api']}/orders/CMD-1042", timeout=5)
     assert r.status_code == 401
 
 
-def test_jeton_entree_refuse(observation, services):
-    import httpx
-    jeton = observation.jeton()["jeton_entree"]
+def test_entry_token_refused(observation, services):
+    token = observation.token()["entry_token"]
     r = httpx.get(
-        f"{services['metier']}/commandes/CMD-1042",
-        headers={"Authorization": f"Bearer {jeton}"},
+        f"{services['business_api']}/orders/CMD-1042",
+        headers={"Authorization": f"Bearer {token}"},
         timeout=10,
     )
     assert r.status_code == 401
 
 
-def test_preparer_sans_effet_puis_soumettre(observation, services):
-    import httpx
-    jeton = observation.jeton("paul-acheteur")["jeton_application"]
-    client = httpx.Client(base_url=services["metier"], headers={"Authorization": f"Bearer {jeton}"}, timeout=10)
-    avant = observation.etat("soumissions")
-    r = client.post("/demandes-achat/brouillons", json={"objet": "Ramettes", "montant": 120})
+def test_prepare_has_no_effect_then_submit(observation, services):
+    token = observation.token("paul-buyer")["app_token"]
+    client = httpx.Client(base_url=services["business_api"], headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    before = observation.state("submissions")
+    r = client.post("/purchase-requests/drafts", json={"subject": "Paper reams", "amount": 120})
     assert r.status_code == 200
-    brouillon_id = r.json()["id"]
-    # Le brouillon n'a pas créé de demande soumise.
-    assert len(observation.etat("soumissions")["demandes_soumises"]) == len(avant["demandes_soumises"])
-    s = client.post(f"/brouillons/{brouillon_id}/soumettre")
+    draft_id = r.json()["id"]
+    # The draft did not create a submitted request.
+    assert len(observation.state("submissions")["submitted_requests"]) == len(before["submitted_requests"])
+    s = client.post(f"/drafts/{draft_id}/submit")
     assert s.status_code == 200
     data = s.json()
-    assert data["statut"] == "soumise"
-    assert data["attribue_a"] == "agent"
-    assert data["pour_le_compte_de"] == "paul-acheteur"
-    assert observation.etat(data["demande_id"])["demande_achat"]["statut"] == "soumise"
+    assert data["status"] == "submitted"
+    assert data["assigned_to"] == "agent"
+    assert data["on_behalf_of"] == "paul-buyer"
+    assert observation.state(data["request_id"])["purchase_request"]["status"] == "submitted"
 
 
-def test_acheteur_seul_peut_preparer(observation, services):
-    import httpx
-    jeton = observation.jeton("camille-renard")["jeton_application"]
+def test_only_buyer_can_prepare(observation, services):
+    token = observation.token("camille-renard")["app_token"]
     r = httpx.post(
-        f"{services['metier']}/demandes-achat/brouillons",
-        headers={"Authorization": f"Bearer {jeton}"},
-        json={"objet": "Interdit", "montant": 10},
+        f"{services['business_api']}/purchase-requests/drafts",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"subject": "Forbidden", "amount": 10},
         timeout=10,
     )
     assert r.status_code == 403
 
 
-def test_soumission_issue_inconnue_une_seule_tentative(observation, services):
-    import httpx
-    jeton = observation.jeton("paul-acheteur")["jeton_application"]
-    client = httpx.Client(base_url=services["metier"], headers={"Authorization": f"Bearer {jeton}"}, timeout=10)
-    brouillon_id = client.post("/demandes-achat/brouillons", json={"objet": "Test panne", "montant": 15}).json()["id"]
-    observation.armer_panne("issue_inconnue", True)
-    r = client.post(f"/brouillons/{brouillon_id}/soumettre")
+def test_unknown_outcome_submission_single_attempt(observation, services):
+    token = observation.token("paul-buyer")["app_token"]
+    client = httpx.Client(base_url=services["business_api"], headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    draft_id = client.post("/purchase-requests/drafts", json={"subject": "Failure test", "amount": 15}).json()["id"]
+    observation.arm_failure("unknown_outcome", True)
+    r = client.post(f"/drafts/{draft_id}/submit")
     assert r.status_code == 504
-    # Aucune demande soumise.
-    assert observation.etat(brouillon_id)["brouillon"]["soumis"] == 0
-    observation.armer_panne("issue_inconnue", False)
+    # No submitted request.
+    assert observation.state(draft_id)["draft"]["submitted"] == 0
+    observation.arm_failure("unknown_outcome", False)
 
 
-def test_mediane_refusee(client_metier):
-    r = client_metier.post("/sources/commandes/interroger", json={"agregat": "mediane"})
+def test_median_refused(business_client):
+    r = business_client.post("/sources/orders/query", json={"aggregate": "median"})
     assert r.status_code == 200
     data = r.json()
-    assert data["refuse"] is True
-    assert "total" in data["agregats_disponibles"]
+    assert data["refused"] is True
+    assert "total" in data["available_aggregates"]
 
 
-def test_observation_catalogue(observation):
-    cat = observation.reinitialiser("standard")
-    assert "CMD-1042" in cat["cas"]
+def test_observation_catalog(observation):
+    catalog = observation.reset("standard")
+    assert "CMD-1042" in catalog["cases"]

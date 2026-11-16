@@ -1,288 +1,281 @@
-
-"""API HTTP de l'application métier (FastAPI + OpenAPI)."""
+"""HTTP API of the business application (FastAPI + OpenAPI)."""
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from application.auth import emettre_jeton, utilisateur_depuis_entete
-from application.jeux import JEUX, catalogue_cas, charger_jeu, utilisateur as fiche_utilisateur
-from application.services import (
+from workshop_kit.apps.business_api.auth import decode_token, issue_token, user_from_header
+from workshop_kit.apps.business_api.seed_data import DATASETS, case_catalog, load_dataset, user as user_record
+from workshop_kit.apps.business_api.services import (
     SOURCES,
-    armer_panne,
-    etat_cas,
-    get_brouillon,
-    get_client,
-    get_commande,
-    get_facture,
-    get_reglages,
-    interroger_source,
-    journaliser,
-    lire_journal,
-    lister_commandes,
-    panne_active,
-    preparer_brouillon,
-    rechercher_clients,
-    resoudre_nom,
-    set_reglages,
-    soumettre_brouillon,
+    active_failure,
+    arm_failure,
+    case_state,
+    get_customer,
+    get_draft,
+    get_invoice,
+    get_order,
+    get_user_settings,
+    list_orders,
+    log_call,
+    prepare_draft,
+    query_source,
+    read_call_log,
+    resolve_name,
+    search_customers,
+    set_user_settings,
+    submit_draft,
 )
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
-app = FastAPI(title="Application métier du fil rouge", version="0.1.0")
+app = FastAPI(title="Business application of the running example", version="0.1.0")
 
-ROLES_ECRITURE = {
-    "demande_achat": {"acheteur"},
-    "approbation_facture": {"comptable"},
+WRITE_ROLES = {
+    "purchase_request": {"buyer"},
+    "invoice_approval": {"accountant"},
 }
 
 
-class ReinitialiserIn(BaseModel):
-    jeu: str = "standard"
+class ResetIn(BaseModel):
+    dataset: str = "standard"
 
 
-class JetonIn(BaseModel):
-    utilisateur_id: str
+class TokenIn(BaseModel):
+    user_id: str
 
 
-class PanneIn(BaseModel):
+class FailureIn(BaseModel):
     type: str | None = None
     active: bool = True
 
 
-class InterrogerIn(BaseModel):
-    filtres: dict[str, Any] = Field(default_factory=dict)
-    limite: int | None = None
-    agregat: str | None = None
-    regroupement: str | None = None
+class QueryIn(BaseModel):
+    filters: dict[str, Any] = Field(default_factory=dict)
+    limit: int | None = None
+    aggregate: str | None = None
+    group_by: str | None = None
 
 
-class BrouillonDemandeIn(BaseModel):
-    objet: str
-    montant: float | None = None
-    fournisseur_id: str | None = None
+class PurchaseRequestDraftIn(BaseModel):
+    subject: str
+    amount: float | None = None
+    supplier_id: str | None = None
 
 
-class BrouillonFactureIn(BaseModel):
-    facture_id: str
+class UserSettingsIn(BaseModel):
+    prefer_excl_tax: bool
 
 
-class ReglagesIn(BaseModel):
-    preferer_hors_taxes: bool
-
-
-def _observation(authorization: str | None) -> None:
+def _require_observation(authorization: str | None) -> None:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="jeton d'observation manquant")
-    jeton = authorization.split(" ", 1)[1].strip()
-    if jeton != reglages.jeton_observation:
-        raise HTTPException(status_code=401, detail="jeton d'observation invalide")
+        raise HTTPException(status_code=401, detail="missing observation token")
+    token = authorization.split(" ", 1)[1].strip()
+    if token != settings.observation_token:
+        raise HTTPException(status_code=401, detail="invalid observation token")
 
 
 @app.middleware("http")
-async def journal_et_pannes(request: Request, call_next):
-    identite = None
+async def call_log_and_failures(request: Request, call_next):
+    identity = None
     auth = request.headers.get("authorization")
     if auth and auth.lower().startswith("bearer "):
-        # On n'essaie pas de décoder ici le jeton d'observation.
-        from application.auth import decoder_jeton
+        # The observation token is not a JWT; decoding errors are ignored here.
         try:
-            identite = decoder_jeton(auth.split(" ", 1)[1].strip())
-        except Exception:
-            identite = None
+            identity = decode_token(auth.split(" ", 1)[1].strip())
+        except Exception:  # noqa: BLE001
+            identity = None
     if request.url.path.startswith("/observation"):
         return await call_next(request)
-    panne = panne_active()
-    if panne == "indisponible" and request.method in {"GET", "POST"}:
-        journaliser(request.method, request.url.path, identite, 503)
-        return JSONResponse({"detail": "application indisponible"}, status_code=503)
-    if panne == "latence":
-        import time
+    failure = active_failure()
+    if failure == "unavailable" and request.method in {"GET", "POST"}:
+        log_call(request.method, request.url.path, identity, 503)
+        return JSONResponse({"detail": "application unavailable"}, status_code=503)
+    if failure == "latency":
         time.sleep(0.05)
     response = await call_next(request)
-    journaliser(request.method, request.url.path, identite, response.status_code)
+    log_call(request.method, request.url.path, identity, response.status_code)
     return response
 
 
-@app.get("/sante")
-def sante():
-    return {"statut": "ok"}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
-@app.get("/clients")
-def api_clients(nom: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    return rechercher_clients(nom, identite)
+@app.get("/customers")
+def api_customers(name: str, identity: dict = Depends(user_from_header)):
+    return search_customers(name, identity)
 
 
-@app.get("/clients/{client_id}")
-def api_client(client_id: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    client = get_client(client_id, identite)
-    if not client:
-        raise HTTPException(status_code=404, detail="client introuvable")
-    return client
+@app.get("/customers/{customer_id}")
+def api_customer(customer_id: str, identity: dict = Depends(user_from_header)):
+    customer = get_customer(customer_id, identity)
+    if not customer:
+        raise HTTPException(status_code=404, detail="customer not found")
+    return customer
 
 
-@app.get("/clients/{client_id}/commandes")
-def api_commandes_client(
-    client_id: str,
-    filtre: str | None = None,
-    limite: int | None = None,
-    identite: dict = Depends(utilisateur_depuis_entete),
+@app.get("/customers/{customer_id}/orders")
+def api_customer_orders(
+    customer_id: str,
+    filter: str | None = None,
+    limit: int | None = None,
+    identity: dict = Depends(user_from_header),
 ):
-    if not get_client(client_id, identite):
-        raise HTTPException(status_code=404, detail="client introuvable")
-    return lister_commandes(client_id, identite, filtre=filtre, limite=limite)
+    if not get_customer(customer_id, identity):
+        raise HTTPException(status_code=404, detail="customer not found")
+    return list_orders(customer_id, identity, filter=filter, limit=limit)
 
 
-@app.get("/commandes/{reference}")
-def api_commande(reference: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    commande = get_commande(reference, identite)
-    if not commande:
-        raise HTTPException(status_code=404, detail="commande introuvable")
-    return commande
+@app.get("/orders/{reference}")
+def api_order(reference: str, identity: dict = Depends(user_from_header)):
+    order = get_order(reference, identity)
+    if not order:
+        raise HTTPException(status_code=404, detail="order not found")
+    return order
 
 
 @app.get("/resolution")
-def api_resolution(type: str, nom: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    return resoudre_nom(type, nom, identite)
+def api_resolution(type: str, name: str, identity: dict = Depends(user_from_header)):
+    return resolve_name(type, name, identity)
 
 
 @app.get("/sources")
-def api_sources(identite: dict = Depends(utilisateur_depuis_entete)):
-    return [{"nom": nom, "description": meta["description"]} for nom, meta in SOURCES.items()]
+def api_sources(identity: dict = Depends(user_from_header)):
+    return [{"name": name, "description": meta["description"]} for name, meta in SOURCES.items()]
 
 
-@app.get("/sources/{nom}")
-def api_source(nom: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    if nom not in SOURCES:
-        raise HTTPException(status_code=404, detail="source inconnue")
-    return {"nom": nom, **SOURCES[nom]}
+@app.get("/sources/{name}")
+def api_source(name: str, identity: dict = Depends(user_from_header)):
+    if name not in SOURCES:
+        raise HTTPException(status_code=404, detail="unknown source")
+    return {"name": name, **SOURCES[name]}
 
 
-@app.post("/sources/{nom}/interroger")
-def api_interroger(nom: str, corps: InterrogerIn, identite: dict = Depends(utilisateur_depuis_entete)):
+@app.post("/sources/{name}/query")
+def api_query(name: str, body: QueryIn, identity: dict = Depends(user_from_header)):
     try:
-        return interroger_source(nom, identite, corps.filtres, corps.limite, corps.agregat, corps.regroupement)
+        return query_source(name, identity, body.filters, body.limit, body.aggregate, body.group_by)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-def _exiger_role(identite: dict, typ: str) -> None:
-    if identite.get("role") not in ROLES_ECRITURE[typ]:
-        raise HTTPException(status_code=403, detail="droit d'écriture insuffisant")
+def _require_role(identity: dict, typ: str) -> None:
+    if identity.get("role") not in WRITE_ROLES[typ]:
+        raise HTTPException(status_code=403, detail="insufficient write permission")
 
 
-@app.post("/demandes-achat/brouillons")
-def api_preparer_demande(corps: BrouillonDemandeIn, identite: dict = Depends(utilisateur_depuis_entete)):
-    _exiger_role(identite, "demande_achat")
-    return preparer_brouillon("demande_achat", corps.model_dump(), identite)
+@app.post("/purchase-requests/drafts")
+def api_prepare_purchase_request(body: PurchaseRequestDraftIn, identity: dict = Depends(user_from_header)):
+    _require_role(identity, "purchase_request")
+    return prepare_draft("purchase_request", body.model_dump(), identity)
 
 
-@app.post("/factures/{facture_id}/approbation/brouillons")
-def api_preparer_facture(facture_id: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    _exiger_role(identite, "approbation_facture")
-    if not get_facture(facture_id, identite):
-        raise HTTPException(status_code=404, detail="facture introuvable")
-    return preparer_brouillon("approbation_facture", {"facture_id": facture_id}, identite)
+@app.post("/invoices/{invoice_id}/approval/drafts")
+def api_prepare_invoice_approval(invoice_id: str, identity: dict = Depends(user_from_header)):
+    _require_role(identity, "invoice_approval")
+    if not get_invoice(invoice_id, identity):
+        raise HTTPException(status_code=404, detail="invoice not found")
+    return prepare_draft("invoice_approval", {"invoice_id": invoice_id}, identity)
 
 
-@app.get("/brouillons/{brouillon_id}")
-def api_brouillon(brouillon_id: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    brouillon = get_brouillon(brouillon_id, identite)
-    if not brouillon:
-        raise HTTPException(status_code=404, detail="brouillon introuvable")
-    return brouillon
+@app.get("/drafts/{draft_id}")
+def api_draft(draft_id: str, identity: dict = Depends(user_from_header)):
+    draft = get_draft(draft_id, identity)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft not found")
+    return draft
 
 
-@app.post("/brouillons/{brouillon_id}/soumettre")
-def api_soumettre(brouillon_id: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    brouillon = get_brouillon(brouillon_id, identite)
-    if not brouillon:
-        raise HTTPException(status_code=404, detail="brouillon introuvable")
-    typ = brouillon["type"]
-    _exiger_role(identite, typ)
+@app.post("/drafts/{draft_id}/submit")
+def api_submit(draft_id: str, identity: dict = Depends(user_from_header)):
+    draft = get_draft(draft_id, identity)
+    if not draft:
+        raise HTTPException(status_code=404, detail="draft not found")
+    _require_role(identity, draft["type"])
     try:
-        return soumettre_brouillon(brouillon_id, identite)
+        return submit_draft(draft_id, identity)
     except RuntimeError as exc:
-        if str(exc) == "issue_inconnue":
-            raise HTTPException(status_code=504, detail="issue inconnue") from exc
+        if str(exc) == "unknown_outcome":
+            raise HTTPException(status_code=504, detail="unknown outcome") from exc
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
-@app.get("/factures/{facture_id}")
-def api_facture(facture_id: str, identite: dict = Depends(utilisateur_depuis_entete)):
-    facture = get_facture(facture_id, identite)
-    if not facture:
-        raise HTTPException(status_code=404, detail="facture introuvable")
-    return facture
+@app.get("/invoices/{invoice_id}")
+def api_invoice(invoice_id: str, identity: dict = Depends(user_from_header)):
+    invoice = get_invoice(invoice_id, identity)
+    if not invoice:
+        raise HTTPException(status_code=404, detail="invoice not found")
+    return invoice
 
 
-@app.get("/reglages")
-def api_get_reglages(identite: dict = Depends(utilisateur_depuis_entete)):
-    return get_reglages(identite)
+@app.get("/settings")
+def api_get_settings(identity: dict = Depends(user_from_header)):
+    return get_user_settings(identity)
 
 
-@app.post("/reglages")
-def api_set_reglages(corps: ReglagesIn, identite: dict = Depends(utilisateur_depuis_entete)):
-    return set_reglages(identite, corps.preferer_hors_taxes)
+@app.post("/settings")
+def api_set_settings(body: UserSettingsIn, identity: dict = Depends(user_from_header)):
+    return set_user_settings(identity, body.prefer_excl_tax)
 
 
-# --- Observation (jeton pédagogique, jamais un outil) ---
+# --- Observation (teaching token, never a tool) ---
 
 
-@app.post("/observation/reinitialiser")
-def obs_reset(corps: ReinitialiserIn, request: Request):
-    _observation(request.headers.get("authorization"))
-    if corps.jeu not in JEUX:
-        raise HTTPException(status_code=400, detail=f"jeu inconnu : {corps.jeu}")
-    charger_jeu(corps.jeu)
-    return {"jeu": corps.jeu, "cas": catalogue_cas()}
+@app.post("/observation/reset")
+def obs_reset(body: ResetIn, request: Request):
+    _require_observation(request.headers.get("authorization"))
+    if body.dataset not in DATASETS:
+        raise HTTPException(status_code=400, detail=f"unknown dataset: {body.dataset}")
+    load_dataset(body.dataset)
+    return {"dataset": body.dataset, "cases": case_catalog()}
 
 
-@app.get("/observation/etat")
-def obs_etat(cas: str, request: Request):
-    _observation(request.headers.get("authorization"))
-    return etat_cas(cas)
+@app.get("/observation/state")
+def obs_state(case: str, request: Request):
+    _require_observation(request.headers.get("authorization"))
+    return case_state(case)
 
 
-@app.get("/observation/journal")
-def obs_journal(request: Request):
-    _observation(request.headers.get("authorization"))
-    return lire_journal()
+@app.get("/observation/log")
+def obs_log(request: Request):
+    _require_observation(request.headers.get("authorization"))
+    return read_call_log()
 
 
-@app.post("/observation/pannes")
-def obs_pannes(corps: PanneIn, request: Request):
-    _observation(request.headers.get("authorization"))
-    armer_panne(corps.type, corps.active)
-    return {"type": corps.type, "active": corps.active}
+@app.post("/observation/failures")
+def obs_failures(body: FailureIn, request: Request):
+    _require_observation(request.headers.get("authorization"))
+    arm_failure(body.type, body.active)
+    return {"type": body.type, "active": body.active}
 
 
-@app.post("/observation/jeton-essai")
-def obs_jeton(corps: JetonIn, request: Request):
-    _observation(request.headers.get("authorization"))
-    fiche = fiche_utilisateur(corps.utilisateur_id)
-    if not fiche:
-        raise HTTPException(status_code=404, detail="utilisateur d'essai inconnu")
-    jeton = emettre_jeton(fiche["id"], fiche["role"], fiche["organisation_id"], typ="application")
-    jeton_entree = emettre_jeton(fiche["id"], fiche["role"], fiche["organisation_id"], typ="entree")
+@app.post("/observation/test-token")
+def obs_test_token(body: TokenIn, request: Request):
+    _require_observation(request.headers.get("authorization"))
+    record = user_record(body.user_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="unknown test user")
+    app_token = issue_token(record["id"], record["role"], record["organization_id"], typ="application")
+    entry_token = issue_token(record["id"], record["role"], record["organization_id"], typ="entry")
     return {
-        "utilisateur": fiche,
-        "jeton_application": jeton,
-        "jeton_entree": jeton_entree,
-        "commentaire": "Le jeton d'entrée simule celui reçu par le serveur d'outils ; l'API métier n'accepte que le jeton application.",
+        "user": record,
+        "app_token": app_token,
+        "entry_token": entry_token,
+        "comment": "The entry token simulates the one received by the tool server; the business API only accepts the application token.",
     }
 
 
-@app.get("/observation/catalogue")
-def obs_catalogue(request: Request):
-    _observation(request.headers.get("authorization"))
-    return catalogue_cas()
+@app.get("/observation/catalog")
+def obs_catalog(request: Request):
+    _require_observation(request.headers.get("authorization"))
+    return case_catalog()
 
 
-def creer_application() -> FastAPI:
+def create_app() -> FastAPI:
     return app

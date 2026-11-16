@@ -1,2 +1,3 @@
-atelier: '06'
-titre: 'Boucle agentique'
+workshop: '06'
+title: 'Agent loop'
+tests: tests/

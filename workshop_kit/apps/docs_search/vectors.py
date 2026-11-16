@@ -1,4 +1,4 @@
-"""Embeddings simulés déterministes. Aucun modèle réel n'est appelé en conception."""
+"""Deterministic simulated embeddings. No real model is called during design."""
 
 from __future__ import annotations
 
@@ -10,8 +10,8 @@ import struct
 DIM = 64
 
 
-def vecteur(texte: str, dim: int = DIM) -> list[float]:
-    tokens = re.findall(r"\w+", texte.lower(), flags=re.UNICODE)
+def vector(text: str, dim: int = DIM) -> list[float]:
+    tokens = re.findall(r"\w+", text.lower(), flags=re.UNICODE)
     acc = [0.0] * dim
     if not tokens:
         acc[0] = 1.0
@@ -20,9 +20,9 @@ def vecteur(texte: str, dim: int = DIM) -> list[float]:
         digest = hashlib.sha256(tok.encode("utf-8")).digest()
         for i in range(dim):
             acc[i] += digest[i % len(digest)] - 127.5
-    norme = math.sqrt(sum(x * x for x in acc)) or 1.0
-    return [x / norme for x in acc]
+    norm = math.sqrt(sum(x * x for x in acc)) or 1.0
+    return [x / norm for x in acc]
 
 
-def packs(v: list[float]) -> bytes:
+def pack(v: list[float]) -> bytes:
     return struct.pack(f"{len(v)}f", *v)

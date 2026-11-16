@@ -1,58 +1,61 @@
+"""LLM proxy: course tokens, simulated chat, deterministic embeddings, no Azure key leak."""
 
 import httpx
 import pytest
 
-pytestmark = pytest.mark.proxy
+pytestmark = pytest.mark.llm_proxy
+
+STUDENT = {"Authorization": "Bearer test-student"}
 
 
-def test_sante_mode_simule(services):
-    r = httpx.get(f"{services['proxy']}/sante", timeout=5)
+def test_health_simulated_mode(services):
+    r = httpx.get(f"{services['proxy']}/health", timeout=5)
     assert r.status_code == 200
-    assert r.json()["mode"] == "simule"
+    assert r.json()["mode"] == "simulated"
 
 
-def test_sans_jeton_refuse(services):
+def test_no_token_refused(services):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
-        json={"messages": [{"role": "user", "content": "bonjour"}]},
+        json={"messages": [{"role": "user", "content": "hello"}]},
         timeout=5,
     )
     assert r.status_code == 401
 
 
-def test_jeton_invente_refuse(services, reset_etat):
+def test_made_up_token_refused(services, reset_state):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
-        headers={"Authorization": "Bearer jeton-invente"},
-        json={"messages": [{"role": "user", "content": "bonjour"}]},
+        headers={"Authorization": "Bearer made-up-token"},
+        json={"messages": [{"role": "user", "content": "hello"}]},
         timeout=5,
     )
     assert r.status_code == 401
 
 
-def test_chat_simule(services, reset_etat):
+def test_simulated_chat(services, reset_state):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
-        headers={"Authorization": "Bearer etudiant-essai"},
-        json={"messages": [{"role": "user", "content": "Où en est la commande CMD-1042 ?"}]},
+        headers=STUDENT,
+        json={"messages": [{"role": "user", "content": "What is the status of order CMD-1042?"}]},
         timeout=5,
     )
     assert r.status_code == 200
-    texte = r.json()["choices"][0]["message"]["content"]
-    assert texte
-    # La clé Azure n'apparaît nulle part.
-    assert "AZURE" not in texte
-    journal = httpx.get(f"{services['proxy']}/journal", headers={"Authorization": "Bearer etudiant-essai"}).json()
-    assert journal
-    assert all("api_key" not in str(e).lower() and "azure_openai_api_key" not in str(e).lower() for e in journal)
+    text = r.json()["choices"][0]["message"]["content"]
+    assert text
+    # The Azure key appears nowhere.
+    assert "AZURE" not in text
+    log = httpx.get(f"{services['proxy']}/log", headers=STUDENT).json()
+    assert log
+    assert all("api_key" not in str(e).lower() and "azure_openai_api_key" not in str(e).lower() for e in log)
 
 
-def test_embeddings_deterministes(services, reset_etat):
+def test_deterministic_embeddings(services, reset_state):
     def once():
         return httpx.post(
             f"{services['proxy']}/v1/embeddings",
-            headers={"Authorization": "Bearer etudiant-essai"},
-            json={"input": "livraison incomplète"},
+            headers=STUDENT,
+            json={"input": "incomplete delivery"},
             timeout=5,
         ).json()["data"][0]["embedding"]
 
@@ -61,12 +64,9 @@ def test_embeddings_deterministes(services, reset_etat):
     assert len(a) == 64
 
 
-def test_cle_azure_absente_des_reponses(services, reset_etat):
-    r = httpx.get(f"{services['proxy']}/sante", timeout=5)
-    corps = r.text.lower()
-    assert "sk-" not in corps
-    assert reglages_sans_cle(r.json())
-
-
-def reglages_sans_cle(data: dict) -> bool:
-    return "azure_openai_api_key" not in data and not data.get("azure_cle_presente")
+def test_azure_key_absent_from_responses(services, reset_state):
+    r = httpx.get(f"{services['proxy']}/health", timeout=5)
+    body = r.text.lower()
+    assert "sk-" not in body
+    data = r.json()
+    assert "azure_openai_api_key" not in data and not data.get("azure_key_present")

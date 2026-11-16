@@ -1,14 +1,15 @@
-# Mode de développement local (atelier 19)
+# Local development mode (workshop 19)
 
-Structure d'accueil vide pour l'atelier sur l'agent de programmation
-(*coding agent*). L'usage d'un tel agent est **facultatif** : vous pouvez
-rédiger et implémenter vous-même la spécification d'un contrôle.
+Empty landing structure for the workshop on the *coding agent*. Using such an
+agent is **optional**: you may write and implement the specification of a
+control yourself.
 
-Dossiers prévus :
+Planned folders:
 
-- `specifications/` — vos spécifications de contrôle (à rédiger à l'atelier 19) ;
-- `controles/` — l'implémentation et les tests contre une sortie de modèle
-  volontairement fausse.
+- `specifications/`: your control specifications (written in workshop 19);
+- `controls/`: the implementation and the checks against a deliberately
+  wrong model output.
 
-Les parcours de test du dépôt ne doivent pas être modifiés (somme de contrôle).
-La part réservée d'évaluation, si elle existe, n'est pas lisible depuis ce mode.
+The repository's evaluation routes (`workshops/17-evaluation/routes/`) must not
+be modified (checksum). The reserved part of the evaluation, if any, is not
+readable from this mode.

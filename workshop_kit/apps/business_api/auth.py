@@ -1,5 +1,4 @@
-
-"""Jetons d'identité : un jeton « application » au nom d'un utilisateur."""
+"""Identity tokens: an "application" token issued on behalf of a user."""
 
 from __future__ import annotations
 
@@ -9,57 +8,57 @@ from typing import Any
 import jwt
 from fastapi import Depends, Header, HTTPException
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
-ALGORITHME = "HS256"
+ALGORITHM = "HS256"
 ROLES = {
-    "charge_clientele",
-    "acheteur",
-    "comptable",
-    "controleur_gestion",
-    "sans_ecriture",
+    "customer_service",
+    "buyer",
+    "accountant",
+    "financial_controller",
+    "read_only",
 }
 
 
-def emettre_jeton(
-    utilisateur_id: str,
+def issue_token(
+    user_id: str,
     role: str,
-    organisation: str,
+    organization: str,
     typ: str = "application",
-    duree_h: int = 12,
+    duration_h: int = 12,
 ) -> str:
-    maintenant = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
     payload = {
-        "sub": utilisateur_id,
+        "sub": user_id,
         "role": role,
-        "organisation": organisation,
+        "organization": organization,
         "typ": typ,
-        "iat": int(maintenant.timestamp()),
-        "exp": int((maintenant + timedelta(hours=duree_h)).timestamp()),
+        "iat": int(now.timestamp()),
+        "exp": int((now + timedelta(hours=duration_h)).timestamp()),
     }
-    return jwt.encode(payload, reglages.secret_jetons, algorithm=ALGORITHME)
+    return jwt.encode(payload, settings.token_secret, algorithm=ALGORITHM)
 
 
-def decoder_jeton(token: str) -> dict[str, Any]:
+def decode_token(token: str) -> dict[str, Any]:
     try:
-        return jwt.decode(token, reglages.secret_jetons, algorithms=[ALGORITHME])
+        return jwt.decode(token, settings.token_secret, algorithms=[ALGORITHM])
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=401, detail="jeton invalide") from exc
+        raise HTTPException(status_code=401, detail="invalid token") from exc
 
 
-def utilisateur_depuis_entete(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def user_from_header(authorization: str | None = Header(default=None)) -> dict[str, Any]:
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="identité manquante")
-    claims = decoder_jeton(authorization.split(" ", 1)[1].strip())
+        raise HTTPException(status_code=401, detail="missing identity")
+    claims = decode_token(authorization.split(" ", 1)[1].strip())
     if claims.get("typ") != "application":
         raise HTTPException(
             status_code=401,
-            detail="l'API n'accepte qu'un jeton émis pour l'application au nom de l'utilisateur",
+            detail="the API only accepts a token issued for the application on behalf of the user",
         )
     if claims.get("role") not in ROLES:
-        raise HTTPException(status_code=401, detail="rôle inconnu")
+        raise HTTPException(status_code=401, detail="unknown role")
     return claims
 
 
-Identite = dict[str, Any]
-exiger_identite = Depends(utilisateur_depuis_entete)
+Identity = dict[str, Any]
+require_identity = Depends(user_from_header)

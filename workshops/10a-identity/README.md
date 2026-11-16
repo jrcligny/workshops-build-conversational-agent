@@ -1,15 +1,21 @@
-# Atelier 10a — Identité et échange de jetons
+# Workshop 10a — Identity and token exchange
 
-## Critère de réussite
+Chapter 10 of the book. No solution is provided: you work in `my-agent/`.
 
-Le serveur d'outils refuse une requête sans identité valide. Pour une requête valide, il vérifie le jeton reçu et l'échange contre un jeton distinct, émis pour l'application au nom de l'utilisateur ; l'application voit l'utilisateur, jamais un compte de service.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-10a/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Make the tool server act on behalf of the user, never as a service account.
 
-```bash
-atelier commencer 10a
-atelier verifier 10a
-atelier verifier 10a --non-regression
+## Success criterion
+
+The tool server refuses a request without a valid identity. For a valid request, it checks the token received and exchanges it for a distinct token, issued for the application on behalf of the user; the application sees the user, never a service account.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 10a
+uv run workshop check 10a
+uv run workshop check 10a --non-regression   # workshops 03 to 10a
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

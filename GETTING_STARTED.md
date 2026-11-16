@@ -1,23 +1,24 @@
-# Avant de commencer
+# Getting started
 
-Ce dépôt accompagne les ateliers du livre. Les ateliers du manuscrit restent des études de décision ; ici, vous les réalisez dans un environnement fourni, sans code d'agent déjà écrit.
+This repository accompanies the workshops of the book. In the book, the workshops are decision studies; here, you carry them out in a provided environment, without any pre-written agent code.
 
-Cible principale : Windows, avec Python 3.15 (dernière version stable de python.org). Voir [docs/installation.md](docs/installation.md).
+Main target: Windows, with Python 3.15 (latest stable release from python.org). See [docs/installation.md](docs/installation.md).
 
-## Ce qui est fourni
+## What is provided
 
-Deux applications de test (métier et documentation), un proxy de modèles en mode simulé, une interface de chat, des traces, un serveur MCP vide, et un lot de tests par atelier. La coquille prévoit aussi les emplacements du confinement, du catalogue de *skills*, des pièces jointes et du mode de développement local, sans en fournir le contenu métier.
+Two test applications (business API and document search), a model proxy in simulated mode, a chat interface, traces, an empty MCP server, and one set of end-to-end tests per workshop, stored next to its guide in `workshops/<id>-<topic>/tests/`. The shell also provides the locations of the sandbox, of the skills catalog, of the attachments and of the local development mode, without their business content. All of this lives in `workshop_kit/`, which you do not edit.
 
-## Ce que vous écrivez
+## What you write
 
-Votre agent, dans `mon-agent/harness.py` : d'abord le *system prompt* et la boucle conversationnelle (atelier 03), puis les outils, la boucle agentique, la compaction, et ainsi de suite. À l'atelier 09, vous brancherez `mon-agent/serveur_mcp.py` sur l'API métier.
+Your agent, in `my-agent/harness.py`: first the *system prompt* and the conversational loop (workshop 03), then the tools, the agent loop, compaction, and so on. In workshop 09, you wire `my-agent/mcp_server.py` to the business API.
 
-## Modèles
+## Models
 
-Aucun modèle réel n'est fourni pendant la conception de ce dépôt, et aucun n'est requis pour commencer. Le mode par défaut est **simulé** (chat scripté, embeddings déterministes, juge scripté). Le mode réel, via un proxy Azure OpenAI, viendra plus tard ; la clé restera côté serveur. Les noms des déploiements Azure sont paramétrables (voir [docs/decisions.md](docs/decisions.md)).
+No real model is provided while this repository is being designed, and none is needed to start. The default mode is **simulated** (scripted chat, deterministic embeddings, scripted judge). The live mode, through an Azure OpenAI proxy, will come later; the key will stay on the server. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
 
-## Commandes utiles
+## Useful commands
 
-- `atelier commencer 07` rappelle le guide, sans copier de corrigé.
-- `atelier verifier 07` lance `tests/atelier-07/`.
-- `atelier verifier 07 --non-regression` lance les tests des ateliers 03 à 07.
+- `uv run workshop start 07` shows the guide, without copying any solution.
+- `uv run workshop check 07` runs `workshops/07-context-compaction/tests/`.
+- `uv run workshop check 07 --non-regression` runs the tests of workshops 03 to 07.
+- `uv run workshop check-shell` checks that every workshop test fails on the empty shell.

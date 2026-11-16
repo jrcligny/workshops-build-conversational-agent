@@ -1,14 +1,14 @@
-# Confinement (coquille)
+# Sandbox (empty base)
 
-Emplacement prévu pour le confinement du serveur d'outils (atelier 10d) : liste
-d'autorisation réseau, absence d'accès fichier, limites de durée et de budget.
+Location of the tool-server sandbox (workshop 10d): network allowlist, no
+file access, duration and budget limits.
 
-Dans cette coquille :
+In this shell:
 
-- `interface.py` expose le contrat (`politique()`, `autorise_sortie()`) ;
-- `politique.yaml` existe, avec `active: false` et une liste d'autorisation vide ;
-- **aucune politique n'est appliquée**.
+- `interface.py` exposes the contract (`policy()`, `is_egress_allowed()`);
+- `policy.yaml` exists, with `active: false` and an empty allowlist;
+- **no policy is enforced**.
 
-Vous remplirez la politique et, le cas échéant, le profil Compose du conteneur
-à l'atelier 10d. Un mode dégradé sans conteneur (filtre dans le client HTTP)
-reste possible ; il est moins sûr et devra être documenté comme tel.
+You will fill in the policy and, if needed, the Compose profile of the
+container in workshop 10d. A degraded mode without a container (a filter in
+the HTTP client) remains possible; it is less safe and must be documented as such.

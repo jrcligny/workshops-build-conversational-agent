@@ -1,73 +1,77 @@
-# Contrat d'interface agent ↔ tests
+# Agent ↔ tests interface contract
 
-Ce contrat est stable pour tous les ateliers. Les capacités non encore utilisées (étapes, interruption, confirmation, sources, mentions, pièces jointes) existent dans le protocole et restent inactives jusqu'à l'atelier qui les active.
+This contract is stable across all workshops. The capabilities not used yet (steps, interruption, confirmation, sources, mentions, attachments) exist in the protocol and stay inactive until the workshop that activates them.
 
-## Point d'entrée de chat
+## Chat entry point
 
-| Élément | Contrat |
+The chat interface is `workshop_kit/shell/chat_app.py`.
+
+| Element | Contract |
 |---|---|
-| Création | `POST /conversations` avec `utilisateur_id`, `role`, `organisation`, éventuellement `jeton_application`. Réponse : `{ "id": ... }`. |
-| Tour | `POST /conversations/{id}/messages` avec `{ "texte": "..." }`. Réponse en flux SSE. |
-| Événements (atelier 03) | `texte` (morceaux, champ `contenu`) puis `fin` (champ `ok`). Un événement `erreur` signale un échec de la coquille. |
-| Multi-tour | Le même identifiant de conversation est réutilisé. Le *harness* doit rejouer l'historique dans l'entrée du modèle. |
+| Creation | `POST /conversations` with `user_id`, `role`, `organization`, optionally `app_token` and `limits`. Response: `{ "id": ... }`. |
+| Turn | `POST /conversations/{id}/messages` with `{ "text": "..." }`. Server-sent events (SSE) response. |
+| Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the shell. |
+| Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
 
-Les tests utilisent le client en ligne de commande interne (`tests/communs/client_chat.py`), pas un navigateur.
+The tests use the internal client (`workshop_kit/testing/chat_client.py`), not a browser.
 
-## Pièces jointes (réservé à l'atelier 15)
+## Attachments (reserved for workshop 15)
 
-Le contrat prévoit déjà le point d'entrée, sans fichier fourni dans la coquille :
+The contract already provides the entry point, with no file in the shell:
 
-| Élément | Contrat |
+| Element | Contract |
 |---|---|
-| Liste | `GET /pieces-jointes` renvoie `{ "pieces_jointes": [...] }` à partir de la zone `services/pieces_jointes/`. Dans la coquille, la liste est vide. |
-| Tour | Le corps de `POST /conversations/{id}/messages` accepte un champ optionnel `pieces_jointes` (liste d'identifiants). Il est transmis au *harness* (`tour(..., pieces_jointes=...)`). |
-| Événement réservé | `piece_jointe` pourra signaler une lecture de document joint. |
+| List | `GET /attachments` returns `{ "attachments": [...] }` from the area `workshop_kit/services/attachments/`. In the shell, the list is empty. |
+| Turn | The body of `POST /conversations/{id}/messages` accepts an optional `attachments` field (list of ids). It is passed to the *harness* (`turn(..., attachments=...)`). |
+| Reserved event | `attachment` may report that an attached document was read. |
 
-Aucun devis d'essai n'est déposé dans la coquille. Vous alimenterez la zone à l'atelier 15.
+No sample quote is dropped in the shell. You will fill the area in workshop 15.
 
-## Serveur MCP (coquille vide, à brancher à l'atelier 09)
+## MCP server (empty shell, wired in workshop 09)
 
-La coquille inclut `mon-agent/serveur_mcp.py` : un serveur MCP qui démarre et répond au handshake, écrit avec le SDK Python officiel `mcp`. Il n'expose **aucun outil métier**. Transport prévu : HTTP en flux (`streamable-http`), mode sans état, point d'entrée `/mcp` (port 8004 par défaut).
+The shell includes `my-agent/mcp_server.py`: an MCP server that starts and answers the handshake, written with the official Python SDK `mcp`. It exposes **no business tool**. Planned transport: streamable HTTP (`streamable-http`), stateless mode, endpoint `/mcp` (port 8004 by default).
 
-```bash
-uv run python mon-agent/serveur_mcp.py
+```powershell
+uv run python my-agent/mcp_server.py
 ```
 
-À l'atelier 09, vous y migrerez les outils et les brancherez sur l'API métier. Les tests de l'atelier 09 restent rouges tant que ce branchement n'est pas fait.
+In workshop 09, you will move the tools there and wire them to the business API. The workshop 09 tests stay red until this is done.
 
 ## Traces
 
-Une trace par tour, fichier JSONL dans le dossier configuré (`traces/` par défaut). Champs exigés dès l'atelier 03 :
+One trace per turn, in a JSONL file (`turns.jsonl`) in the configured folder (`traces/` by default). Fields required from workshop 03:
 
-- identifiants de conversation et de tour, horodatage ;
-- entrée envoyée au modèle : *system prompt*, historique, nouveau message ;
-- modèle : identifiant exposé par le proxy, *tokens*, durée, raison d'arrêt ;
-- sortie : texte d'assistant ;
-- outils : liste vide à l'atelier 03 ;
-- aucun secret (clé Azure, jeton).
+- conversation and turn ids, `timestamp`;
+- `input` sent to the model: `system_prompt`, `history`, new `message`;
+- `model`: id exposed by the proxy, tokens, duration, stop reason;
+- `output`: assistant text;
+- `tools`: empty list in workshop 03;
+- no secret (Azure key, token).
 
-Si vous passez par le client `socle.modele.client.ClientModele`, les appels au modèle peuvent être complétés par vos propres écritures de trace (`socle.traces.tracer.ecrire`).
+Later workshops add fields such as `cycles`, `compaction`, `state` (working memory), `identity` and component versions; each workshop guide and its tests name the fields they read.
 
-## Harness à implémenter
+If you go through the client `workshop_kit.shell.model_client.ModelClient`, the model calls can be complemented by your own trace writes (`workshop_kit.shell.tracer.write`).
 
-Dans `mon-agent/harness.py`, une classe `Harness` expose `tour(conversation_id, message, utilisateur, historique, pieces_jointes=None)` et cède des `Evenement`. La coquille livrée lève `NotImplementedError` : c'est voulu.
+## Harness to implement
 
-## Autres emplacements de la coquille
+In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `workshop_kit/shell/harness_contract.py`). The shipped shell raises `NotImplementedError`: this is intended.
 
-| Emplacement | Rôle | État dans la coquille |
+## Other locations of the shell
+
+| Location | Role | State in the shell |
 |---|---|---|
-| `services/confinement/` | Interface et politique du confinement (atelier 10d) | Présent, politique inactive, liste d'autorisation vide |
-| `services/catalogue/` | Catalogue versionné de *skills* (atelier 14) | Manifeste valide, zéro *skill* |
-| `services/pieces_jointes/` | Zone en lecture seule des documents joints (atelier 15) | Vide |
-| `mon-agent/mode-local/` | Accueil du mode de développement (atelier 19, *coding agent* facultatif) | Structure vide (`specifications/`, `controles/`) |
+| `workshop_kit/services/sandbox/` | Sandbox interface and policy (workshop 10d) | Present, policy inactive, empty allowlist |
+| `workshop_kit/services/skills_catalog/` | Versioned skills catalog (workshop 14) | Valid manifest, zero *skill* |
+| `workshop_kit/services/attachments/` | Read-only area for attached documents (workshop 15) | Empty |
+| `workshops/17-evaluation/routes/` | Evaluation routes and their checksum (workshops 17 and 19) | Empty set, checksum present |
+| `my-agent/local-mode/` | Development mode landing (workshop 19, *coding agent* optional) | Empty structure (`specifications/`, `controls/`) |
 
+## Reserved events and gestures (workshops 06, 07, 10b, 10d)
 
-## Événements et gestes réservés (ateliers 06, 07, 10b)
-
-| Élément | Contrat |
+| Element | Contract |
 |---|---|
-| Étape | Événement SSE `etape` pendant un tour à plusieurs cycles (atelier 06). |
-| Interruption | `POST /conversations/{id}/interruption`, ou champ `interrompre` du message. Le *harness* reçoit `interruption_demandee=True` et arrête le tour sans nouvel appel (événement `interruption`). |
-| Compaction | Événement SSE `compaction` (ou `mention` qui l'annonce) lorsque l'historique a été compacté (atelier 07). La trace décrit le moment, les échanges remplacés, le résumé et les éléments conservés à l'identique. |
-| Confirmation | `POST /conversations/{id}/confirmation` avec `{ "confirme": true }`. Le tour suivant reçoit `confirmation=True` (atelier 10b). L'événement `confirmation_demandee` précède le geste. |
-| Limites | Champ optionnel `limites` de `POST /conversations` (`duree_s`, `budget_jetons`), transmis au *harness* (atelier 10d). |
+| Step | SSE event `step` during a turn with several cycles (workshop 06). |
+| Interruption | `POST /conversations/{id}/interruption`, or the `interrupt` field of the message. The *harness* receives `interrupt_requested=True` and stops the turn without a new call (event `interruption`). |
+| Compaction | SSE event `compaction` (or a `mention` announcing it) when the history has been compacted (workshop 07). The trace describes the moment, the replaced exchanges, the summary and the items kept verbatim. |
+| Confirmation | `POST /conversations/{id}/confirmation` with `{ "confirmed": true }`. The next turn receives `confirmation=True` (workshop 10b). The `confirmation_requested` event precedes the gesture. |
+| Limits | Optional `limits` field of `POST /conversations` (`duration_s`, `token_budget`), passed to the *harness* (workshop 10d). |

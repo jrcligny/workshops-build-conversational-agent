@@ -1,6 +1,6 @@
-# Catalogue versionné des skills — coquille vide (atelier 14).
-# Format attendu : un identifiant, un titre, un chemin vers le dossier du skill,
-# une version. Le catalogue est vide : l'étudiant l'alimentera à l'atelier 14
-# (retards client, contrôle de facture, demande d'achat conforme).
+# Versioned skills catalog — empty base (workshop 14).
+# Expected format: an id, a title, a path to the skill folder, a version.
+# The catalog is empty: the student fills it in during workshop 14
+# (customer delays, invoice check, compliant purchase request).
 version: "0"
 skills: []

@@ -1,32 +1,32 @@
-# Procédure de validation de l'équipe
+# Team validation procedure
 
-Il n'y a pas d'agent de référence livré. Les tests d'atelier restent rouges sur la coquille vide. Cette procédure a deux phases.
+No reference agent is shipped. The workshop tests stay red on the empty shell. This procedure has two phases.
 
-## Phase A — Conception, sans modèle réel (maintenant)
+## Phase A — Design, without a real model (now)
 
-Aucun déploiement Azure n'est requis. Tout se fait en mode simulé (chat scripté, embeddings déterministes, juge scripté ou rejeu manuscrit).
+No Azure deployment is needed. Everything runs in simulated mode (scripted chat, deterministic embeddings, scripted judge or hand-written replay).
 
-1. Coquille vide : `uv run atelier verifier-coquille` doit réussir (tous les tests d'atelier échouent, aucun ne passe).
-2. Pour un lot N, avec un *harness* temporaire **non livré** : les tests 03 à N−1 passent en simulé ; ceux de N restent rouges ; une fois N réalisé, 03 à N passent.
-3. Contrôles négatifs, un défaut à la fois (documentation collée dans le prompt, appel métier dès l'atelier 03, compaction qui perd un identifiant, etc.).
-4. Les tests de `tests/application`, `tests/documentation`, `tests/proxy` et `tests/socle` passent.
+1. Empty shell: `uv run workshop check-shell` must succeed (every workshop test fails, none passes).
+2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run workshop check N --non-regression`).
+3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
+4. The infrastructure tests in `tests/kit/` pass.
 
-La CI publique rejoue les points 1 et 4 à chaque commit.
+The CI replays points 1 and 4 on every commit.
 
-## Phase B — Calibrage, une fois Azure OpenAI disponible
+## Phase B — Calibration, once Azure OpenAI is available
 
-Le proxy reste le seul point d'accès : la clé Azure est une variable d'environnement du serveur, jamais distribuée aux étudiants. Chaque étudiant reçoit un jeton de cours, avec quota.
+The proxy stays the only access point: the Azure key is an environment variable of the server, never distributed to students. Each student receives a course token, with a quota.
 
-Alors seulement l'équipe :
+Only then does the team:
 
-1. Exécute les items jugés en mode réel, ajuste les **grilles du juge** et le seuil **k sur n** (amorce actuelle : 3 réussites sur 5).
-2. Ajuste le plafond de taille du *system prompt* de l'atelier 03.
-3. Mesure la recherche paraphrasée et, le cas échéant, le reclassement.
-4. Vérifie la fidélité des résumés de compaction produits par le modèle réel (la conservation à l'identique des identifiants et des décisions, elle, est déjà testée en simulé, car elle est à la charge du *harness*).
-5. Contrôle le proxy en conditions réelles (jeton valide, jeton refusé, clé Azure absente des traces, quota explicite).
-6. Enregistre des trajectoires réelles qui compléteront les rejeux manuscrits en CI.
-7. Archive le rapport de calibrage. Le *harness* de validation n'est pas distribué.
+1. Run the judged items in live mode, adjust the **judge rubrics** and the **k out of n** threshold (current starting point: 3 successes out of 5).
+2. Adjust the size cap of the workshop 03 *system prompt*.
+3. Measure paraphrased search and, if needed, reranking.
+4. Check the fidelity of the compaction summaries produced by the real model (keeping ids and decisions verbatim is already tested in simulated mode, because it is the *harness*'s job).
+5. Check the proxy in real conditions (valid token, refused token, Azure key absent from traces, explicit quota).
+6. Record real trajectories that will complement the hand-written replays in CI.
+7. Archive the calibration report. The validation *harness* is not distributed.
 
-Tant que la phase B n'a pas eu lieu, les items qualitatifs restent « à calibrer » et ne sont pas bloquants en CI.
+Until phase B has taken place, the qualitative items stay "to calibrate" and are not blocking in CI.
 
-Les défauts provisoires (seuil de compaction, schéma de métadonnées du corpus, noms des déploiements Azure) sont recensés dans [decisions.md](decisions.md).
+The provisional defaults (compaction threshold, corpus metadata schema, Azure deployment names) are listed in [decisions.md](decisions.md).

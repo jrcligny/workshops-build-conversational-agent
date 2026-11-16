@@ -1,32 +1,32 @@
-"""Zone de pièces jointes en lecture seule — coquille vide (atelier 15)."""
+"""Read-only attachments area — empty base (workshop 15)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
 EXTENSIONS = {".txt", ".md", ".pdf", ".csv"}
 
 
-def dossier() -> Path:
-    return Path(reglages.pieces_jointes_dir)
+def folder() -> Path:
+    return Path(settings.attachments_dir)
 
 
-def lister() -> list[dict]:
-    """Fichiers déposés dans la zone, hors documentation et sentinelles."""
-    racine = dossier()
-    if not racine.is_dir():
+def list_attachments() -> list[dict]:
+    """Files dropped in the area, excluding documentation and sentinel files."""
+    root = folder()
+    if not root.is_dir():
         return []
-    pieces = []
-    for chemin in sorted(racine.iterdir()):
-        if not chemin.is_file():
+    items = []
+    for path in sorted(root.iterdir()):
+        if not path.is_file():
             continue
-        if chemin.name.startswith("."):
+        if path.name.startswith("."):
             continue
-        if chemin.suffix.lower() == ".py" or chemin.name.upper() == "README.MD":
+        if path.suffix.lower() == ".py" or path.name.upper() == "README.MD":
             continue
-        if chemin.suffix.lower() not in EXTENSIONS and chemin.suffix:
+        if path.suffix.lower() not in EXTENSIONS and path.suffix:
             continue
-        pieces.append({"id": chemin.name, "nom": chemin.name, "chemin": str(chemin)})
-    return pieces
+        items.append({"id": path.name, "name": path.name, "path": str(path)})
+    return items

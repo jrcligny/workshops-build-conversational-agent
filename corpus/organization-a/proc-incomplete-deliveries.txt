@@ -1,20 +1,20 @@
 
-# Procédure — Livraisons incomplètes
-Version 2.1 — public : chargés de clientèle — Maison Claire
+# Procedure — Incomplete deliveries
+Version 2.1 — audience: customer service representatives — Maison Claire
 
-## Objet
-Cette procédure décrit ce que doit faire un chargé de clientèle lorsqu'une livraison arrive incomplète, c'est-à-dire lorsqu'une partie des lignes d'une commande n'a pas été réceptionnée.
+## Purpose
+This procedure describes what a customer service representative must do when a delivery arrives incomplete, that is, when some of the lines of an order were not received.
 
-## Constat
-Le chargé de clientèle relève le numéro de commande, la liste des lignes manquantes et la date de livraison partielle. Il ne promet aucun avoir avant d'avoir consulté l'état réel de la commande dans l'application.
+## Findings
+The customer service representative notes the order number, the list of missing lines and the date of the partial delivery. They promise no credit note before checking the actual status of the order in the application.
 
-## Délai de réclamation
-La réclamation pour livraison incomplète doit être ouverte dans un délai de cinq jours ouvrés après la date de livraison partielle enregistrée. Passé ce délai, le dossier est orienté vers un examen exceptionnel.
+## Claim deadline
+The claim for an incomplete delivery must be opened within five working days after the recorded date of the partial delivery. After that deadline, the file is referred for an exceptional review.
 
-## Suite à donner
-1. Ouvrir une réclamation liée à la commande.
-2. Informer le client du délai de traitement mentionné dans la fiche « Délai de traitement d'une réclamation ».
-3. Ne pas modifier le statut de la commande : cette mise à jour relève de l'équipe logistique.
+## Next steps
+1. Open a claim linked to the order.
+2. Tell the customer the processing time given in the sheet "Processing time of a claim".
+3. Do not change the status of the order: that update belongs to the logistics team.
 
-## Dépassement du délai convenu
-Lorsque la livraison partielle s'accompagne d'un dépassement du délai convenu (retard de livraison), le chargé de clientèle signale aussi le retard dans la réclamation, sans se substituer au suivi logistique.
+## Agreed lead time exceeded
+When the partial delivery also exceeds the agreed lead time (late delivery), the customer service representative also reports the delay in the claim, without taking over the logistics follow-up.

@@ -1,2 +1,3 @@
-atelier: '09'
-titre: "Contrat d'outils et MCP"
+workshop: '09'
+title: 'Tool contract and MCP'
+tests: tests/

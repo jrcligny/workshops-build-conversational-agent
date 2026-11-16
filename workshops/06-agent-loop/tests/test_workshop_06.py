@@ -1,73 +1,73 @@
-"""Tests de bout en bout de l'atelier 06. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 06. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.testing.turns import apply_rubric, flat, successful_turn, tools
 
-pytestmark = pytest.mark.atelier
+pytestmark = pytest.mark.workshop
 
 
-GRILLE_PARTIEL = {
-    "id": "06-limite-cycles-partiel",
-    "juge_sens": True,
-    "exigences": [
-        {"type": "requis_un_de", "motifs": ["partiel", "pas pu", "n'ai pas", "pas vérifi", "pas verifi", "incomplet", "manque"]},
+PARTIAL_RUBRIC = {
+    "id": "06-cycle-limit-partial",
+    "judge_meaning": True,
+    "requirements": [
+        {"type": "required_any", "patterns": ["partial", "could not", "couldn't", "not verified", "incomplete", "missing"]},
     ],
 }
 
 
-def test_plusieurs_cycles(client_chat):
-    tour, trace = tour_reussi(client_chat, "Trouve Léa Martin de Lille et donne l'état de sa commande.")
-    cycles = trace.get("cycles") or outils(trace)
-    assert cycles, "la boucle agentique doit produire plusieurs cycles ou appels"
+def test_several_cycles(chat_client):
+    turn, trace = successful_turn(chat_client, "Find Léa Martin from Lille and give me the status of her order.")
+    cycles = trace.get("cycles") or tools(trace)
+    assert cycles, "the agent loop must produce several cycles or calls"
     if trace.get("cycles"):
-        assert len(trace["cycles"]) >= 2 or (isinstance(trace["cycles"], int) and trace["cycles"] >= 2)
+        assert (isinstance(trace["cycles"], int) and trace["cycles"] >= 2) or len(trace["cycles"]) >= 2
 
 
-def test_appels_independants_groupes(client_chat):
-    _, trace = tour_reussi(
-        client_chat,
-        "Donne l'état de CMD-1042 et, en parallèle, le nombre de commandes de Martin Durand.",
+def test_independent_calls_grouped(chat_client):
+    _, trace = successful_turn(
+        chat_client,
+        "Give me the status of CMD-1042 and, in parallel, the number of orders of Martin Durand.",
     )
-    appels = outils(trace)
-    assert len(appels) >= 2
-    # au moins deux appels portent le même indice de cycle, s'il est exposé
-    indices = [a.get("cycle") or a.get("cycle_id") for a in appels if a.get("cycle") or a.get("cycle_id") is not None]
+    calls = tools(trace)
+    assert len(calls) >= 2
+    # at least two calls carry the same cycle index, when it is exposed
+    indices = [c.get("cycle") or c.get("cycle_id") for c in calls if c.get("cycle") or c.get("cycle_id") is not None]
     if indices:
-        assert len(set(indices)) < len(indices), "les appels indépendants doivent être groupés dans un même cycle"
+        assert len(set(indices)) < len(indices), "independent calls must be grouped in the same cycle"
 
 
-def test_etapes_signalees_a_l_interface(client_chat):
-    tour, _ = tour_reussi(client_chat, "Trouve Léa Martin de Lille et donne l'état de sa commande.")
-    assert "etape" in tour.types
+def test_steps_reported_to_the_interface(chat_client):
+    turn, _ = successful_turn(chat_client, "Find Léa Martin from Lille and give me the status of her order.")
+    assert "step" in turn.types
 
 
-def test_limite_de_cycles_reponse_partielle(client_chat):
-    tour, trace = tour_reussi(
-        client_chat,
-        "Fais un bilan complet de toutes les commandes de Transports Morel, client par client lié, sans t'arrêter.",
+def test_cycle_limit_partial_answer(chat_client):
+    turn, trace = successful_turn(
+        chat_client,
+        "Make a full review of every order of Transports Morel, linked customer by linked customer, without stopping.",
     )
-    if "mention" in tour.types or "partiel" in tour.texte.lower():
-        appliquer_grille(GRILLE_PARTIEL, tour, trace)
+    if "mention" in turn.types or "partial" in turn.text.lower():
+        apply_rubric(PARTIAL_RUBRIC, turn, trace)
         return
-    # à défaut d'une mention, la trace doit indiquer qu'un plafond de cycles a été atteint
-    assert "limite" in plat(trace).lower() or "plafond" in plat(trace).lower() or "max_cycles" in plat(trace).lower()
-    appliquer_grille(GRILLE_PARTIEL, tour, trace)
+    # without a mention, the trace must show that a cycle cap was reached
+    assert "limit" in flat(trace).lower() or "cap" in flat(trace).lower() or "max_cycles" in flat(trace).lower()
+    apply_rubric(PARTIAL_RUBRIC, turn, trace)
 
 
-def test_interruption_arrete_sans_nouvel_appel(client_chat):
-    client_chat.ouvrir()
-    client_chat.interrompre()
-    tour, trace = tour_reussi(
-        client_chat,
-        "Trouve Léa Martin de Lille, puis toutes ses commandes, puis leur détail.",
-        interrompre=True,
+def test_interruption_stops_without_new_call(chat_client):
+    chat_client.open()
+    chat_client.interrupt()
+    turn, trace = successful_turn(
+        chat_client,
+        "Find Léa Martin from Lille, then all her orders, then their details.",
+        interrupt=True,
     )
-    assert "interruption" in tour.types or "interrompu" in tour.texte.lower() or "interromp" in plat(trace).lower()
-    # aucun nouvel appel après l'événement d'interruption
-    apres = False
-    for ev_type, _ in tour.evenements:
-        if ev_type == "interruption":
-            apres = True
-        if apres:
-            assert ev_type in {"interruption", "texte", "mention", "fin", "erreur"}
+    assert "interruption" in turn.types or "interrupted" in turn.text.lower() or "interrupt" in flat(trace).lower()
+    # no new call after the interruption event
+    after = False
+    for event_type, _ in turn.events:
+        if event_type == "interruption":
+            after = True
+        if after:
+            assert event_type in {"interruption", "text", "mention", "end", "error"}

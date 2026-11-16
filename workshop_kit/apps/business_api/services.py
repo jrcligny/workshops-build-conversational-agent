@@ -1,5 +1,4 @@
-
-"""Règles métier et requêtes, y compris le cloisonnement par organisation et par rôle."""
+"""Business rules and queries, including isolation by organization and by role."""
 
 from __future__ import annotations
 
@@ -7,259 +6,255 @@ import json
 import uuid
 from typing import Any
 
-from application.db import connexion
-from socle.horodatage import HORLOGE, maintenant
+from workshop_kit.apps.business_api.db import connection
+from workshop_kit.shell.timestamps import CLOCK, now
 
-STATUTS_EXCLUS_CLIENT = {"supprimee", "rejetee"}
-
-
-def _org(identite: dict) -> str:
-    return identite["organisation"]
+STATUSES_HIDDEN_FROM_CUSTOMER_SERVICE = {"deleted", "rejected"}
 
 
-def journaliser(methode: str, route: str, identite: dict | None, code: int) -> None:
-    connexion().execute(
-        """INSERT INTO journal_appels(horodatage, methode, route, utilisateur_id, organisation_id, role, code)
+def _org(identity: dict) -> str:
+    return identity["organization"]
+
+
+def log_call(method: str, route: str, identity: dict | None, code: int) -> None:
+    connection().execute(
+        """INSERT INTO call_log(timestamp, method, route, user_id, organization_id, role, code)
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (
-            maintenant().isoformat(),
-            methode,
+            now().isoformat(),
+            method,
             route,
-            (identite or {}).get("sub"),
-            (identite or {}).get("organisation"),
-            (identite or {}).get("role"),
+            (identity or {}).get("sub"),
+            (identity or {}).get("organization"),
+            (identity or {}).get("role"),
             code,
         ),
     )
-    connexion().commit()
+    connection().commit()
 
 
-def lire_journal() -> list[dict]:
-    rows = connexion().execute("SELECT * FROM journal_appels ORDER BY id").fetchall()
+def read_call_log() -> list[dict]:
+    rows = connection().execute("SELECT * FROM call_log ORDER BY id").fetchall()
     return [dict(r) for r in rows]
 
 
-def panne_active() -> str | None:
-    row = connexion().execute("SELECT type, active FROM pannes WHERE id = 1").fetchone()
+def active_failure() -> str | None:
+    row = connection().execute("SELECT type, active FROM failures WHERE id = 1").fetchone()
     if row and row["active"]:
         return row["type"]
     return None
 
 
-def armer_panne(type_panne: str | None, active: bool = True) -> None:
-    connexion().execute("UPDATE pannes SET type = ?, active = ? WHERE id = 1", (type_panne, int(active)))
-    connexion().commit()
+def arm_failure(failure_type: str | None, active: bool = True) -> None:
+    connection().execute("UPDATE failures SET type = ?, active = ? WHERE id = 1", (failure_type, int(active)))
+    connection().commit()
 
 
 def _row(d) -> dict | None:
     return dict(d) if d is not None else None
 
 
-def exclue(row: dict, identite: dict) -> bool:
-    if identite.get("role") == "charge_clientele":
-        return bool(row.get("supprimee")) or row.get("statut") in STATUTS_EXCLUS_CLIENT
+def is_excluded(row: dict, identity: dict) -> bool:
+    if identity.get("role") == "customer_service":
+        return bool(row.get("deleted")) or row.get("status") in STATUSES_HIDDEN_FROM_CUSTOMER_SERVICE
     return False
 
 
-def est_en_retard(row: dict) -> bool:
-    if row.get("supprimee") or row.get("statut") in {"livree", "rejetee", "supprimee"}:
+def is_late(row: dict) -> bool:
+    if row.get("deleted") or row.get("status") in {"delivered", "rejected", "deleted"}:
         return False
-    promise = row.get("date_promise")
-    if not promise:
+    promised = row.get("promised_date")
+    if not promised:
         return False
-    return promise < HORLOGE.date().isoformat()
+    return promised < CLOCK.date().isoformat()
 
 
-def get_commande(reference: str, identite: dict) -> dict | None:
-    row = connexion().execute(
-        "SELECT * FROM commandes WHERE reference = ? AND organisation_id = ?",
-        (reference, _org(identite)),
+def get_order(reference: str, identity: dict) -> dict | None:
+    row = connection().execute(
+        "SELECT * FROM orders WHERE reference = ? AND organization_id = ?",
+        (reference, _org(identity)),
     ).fetchone()
     if not row:
         return None
     data = dict(row)
-    if exclue(data, identite):
+    if is_excluded(data, identity):
         return None
-    data["en_retard"] = est_en_retard(data)
+    data["late"] = is_late(data)
     return data
 
 
-def rechercher_clients(nom: str, identite: dict) -> list[dict]:
-    rows = connexion().execute(
-        "SELECT * FROM clients WHERE organisation_id = ? AND nom LIKE ? COLLATE NOCASE",
-        (_org(identite), f"%{nom}%"),
+def search_customers(name: str, identity: dict) -> list[dict]:
+    rows = connection().execute(
+        "SELECT * FROM customers WHERE organization_id = ? AND name LIKE ? COLLATE NOCASE",
+        (_org(identity), f"%{name}%"),
     ).fetchall()
     return [dict(r) for r in rows]
 
 
-def get_client(client_id: str, identite: dict) -> dict | None:
-    row = connexion().execute(
-        "SELECT * FROM clients WHERE id = ? AND organisation_id = ?",
-        (client_id, _org(identite)),
+def get_customer(customer_id: str, identity: dict) -> dict | None:
+    row = connection().execute(
+        "SELECT * FROM customers WHERE id = ? AND organization_id = ?",
+        (customer_id, _org(identity)),
     ).fetchone()
     return _row(row)
 
 
-def lister_commandes(client_id: str, identite: dict, filtre: str | None = None, limite: int | None = None) -> dict:
-    rows = connexion().execute(
-        "SELECT * FROM commandes WHERE client_id = ? AND organisation_id = ? ORDER BY date_commande",
-        (client_id, _org(identite)),
+def list_orders(customer_id: str, identity: dict, filter: str | None = None, limit: int | None = None) -> dict:
+    rows = connection().execute(
+        "SELECT * FROM orders WHERE customer_id = ? AND organization_id = ? ORDER BY order_date",
+        (customer_id, _org(identity)),
     ).fetchall()
-    commandes = [dict(r) for r in rows]
-    commandes = [c for c in commandes if not exclue(c, identite)]
-    for c in commandes:
-        c["en_retard"] = est_en_retard(c)
-    if filtre == "en_retard":
-        commandes = [c for c in commandes if c["en_retard"]]
-    total = len(commandes)
-    tronque = False
-    if limite is not None and len(commandes) > limite:
-        commandes = commandes[:limite]
-        tronque = True
-    return {"commandes": commandes, "total": total, "tronque": tronque, "limite": limite}
+    orders = [dict(r) for r in rows]
+    orders = [o for o in orders if not is_excluded(o, identity)]
+    for o in orders:
+        o["late"] = is_late(o)
+    if filter == "late":
+        orders = [o for o in orders if o["late"]]
+    total = len(orders)
+    truncated = False
+    if limit is not None and len(orders) > limit:
+        orders = orders[:limit]
+        truncated = True
+    return {"orders": orders, "total": total, "truncated": truncated, "limit": limit}
 
 
-def resoudre_nom(type_entite: str, nom: str, identite: dict) -> list[dict]:
-    tables = {"client": "clients", "fournisseur": "fournisseurs", "utilisateur": "utilisateurs"}
-    table = tables.get(type_entite)
+def resolve_name(entity_type: str, name: str, identity: dict) -> list[dict]:
+    tables = {"customer": "customers", "supplier": "suppliers", "user": "users"}
+    table = tables.get(entity_type)
     if not table:
         return []
-    col_org = "organisation_id"
-    rows = connexion().execute(
-        f"SELECT * FROM {table} WHERE {col_org} = ? AND nom LIKE ? COLLATE NOCASE",
-        (_org(identite), f"%{nom}%"),
+    rows = connection().execute(
+        f"SELECT * FROM {table} WHERE organization_id = ? AND name LIKE ? COLLATE NOCASE",
+        (_org(identity), f"%{name}%"),
     ).fetchall()
     return [dict(r) for r in rows]
 
 
 SOURCES = {
-    "commandes": {
-        "description": "Commandes et livraisons",
-        "champs": {
-            "reference": "référence de commande",
-            "statut": "code de statut (libellés : livrée, expédiée, en préparation, rejetée, supprimée)",
-            "montant": "montant TTC",
-            "date_promise": "date promise de livraison",
-            "client_id": "identifiant du client",
+    "orders": {
+        "description": "Orders and deliveries",
+        "fields": {
+            "reference": "order reference",
+            "status": "status code (labels: delivered, shipped, in preparation, rejected, deleted)",
+            "amount": "amount including tax",
+            "promised_date": "promised delivery date",
+            "customer_id": "customer identifier",
         },
-        "relations": {"client_id": "clients.id"},
-        "valeurs_codees": {
-            "statut": {
-                "livree": "livrée",
-                "expediee": "expédiée",
-                "en_preparation": "en préparation",
-                "rejetee": "rejetée",
-                "supprimee": "supprimée",
-                "confirmee": "confirmée",
+        "relations": {"customer_id": "customers.id"},
+        "coded_values": {
+            "status": {
+                "delivered": "delivered",
+                "shipped": "shipped",
+                "in_preparation": "in preparation",
+                "rejected": "rejected",
+                "deleted": "deleted",
+                "confirmed": "confirmed",
             }
         },
-        "agregats": ["decompte", "total", "moyenne"],
+        "aggregates": ["count", "total", "average"],
     },
-    "clients": {
-        "description": "Clients de l'organisation",
-        "champs": {"nom": "nom", "ville": "ville"},
+    "customers": {
+        "description": "Customers of the organization",
+        "fields": {"name": "name", "city": "city"},
         "relations": {},
-        "valeurs_codees": {},
-        "agregats": ["decompte"],
+        "coded_values": {},
+        "aggregates": ["count"],
     },
-    "factures": {
-        "description": "Factures fournisseurs",
-        "champs": {"reference": "référence", "statut": "statut", "montant": "montant", "doublon_de": "facture d'origine si doublon"},
-        "relations": {"commande_id": "commandes.id"},
-        "valeurs_codees": {
-            "statut": {"reglee": "réglée", "en_attente": "en attente d'approbation", "approuvee": "approuvée"}
+    "invoices": {
+        "description": "Supplier invoices",
+        "fields": {"reference": "reference", "status": "status", "amount": "amount", "duplicate_of": "original invoice when duplicated"},
+        "relations": {"order_id": "orders.id"},
+        "coded_values": {
+            "status": {"paid": "paid", "pending": "pending approval", "approved": "approved"}
         },
-        "agregats": ["decompte", "total", "moyenne"],
+        "aggregates": ["count", "total", "average"],
     },
-    "fournisseurs": {
-        "description": "Fournisseurs",
-        "champs": {"nom": "nom"},
+    "suppliers": {
+        "description": "Suppliers",
+        "fields": {"name": "name"},
         "relations": {},
-        "valeurs_codees": {},
-        "agregats": ["decompte"],
+        "coded_values": {},
+        "aggregates": ["count"],
     },
-    "demandes_achat": {
-        "description": "Demandes d'achat",
-        "champs": {"objet": "objet", "statut": "statut", "montant": "montant"},
+    "purchase_requests": {
+        "description": "Purchase requests",
+        "fields": {"subject": "subject", "status": "status", "amount": "amount"},
         "relations": {},
-        "valeurs_codees": {},
-        "agregats": ["decompte", "total"],
+        "coded_values": {},
+        "aggregates": ["count", "total"],
     },
 }
 
 
-def interroger_source(nom: str, identite: dict, filtres: dict, limite: int | None, agregat: str | None, regroupement: str | None) -> dict:
-    if nom not in SOURCES:
-        raise ValueError("source inconnue")
-    if agregat == "mediane":
+def query_source(name: str, identity: dict, filters: dict, limit: int | None, aggregate: str | None, group_by: str | None) -> dict:
+    if name not in SOURCES:
+        raise ValueError("unknown source")
+    if aggregate == "median":
         return {
-            "refuse": True,
-            "motif": "la médiane n'est pas proposée",
-            "agregats_disponibles": SOURCES[nom]["agregats"],
+            "refused": True,
+            "reason": "the median is not offered",
+            "available_aggregates": SOURCES[name]["aggregates"],
         }
-    table = nom
-    sql = f"SELECT * FROM {table} WHERE organisation_id = ?"
-    params: list[Any] = [_org(identite)]
-    for cle, valeur in (filtres or {}).items():
-        if cle not in SOURCES[nom]["champs"] and cle not in {"organisation_id", "id", "client_id", "statut"}:
-            raise ValueError(f"filtre non reconnu : {cle}")
-        sql += f" AND {cle} = ?"
-        params.append(valeur)
-    rows = [dict(r) for r in connexion().execute(sql, params).fetchall()]
-    if nom == "commandes":
-        rows = [r for r in rows if not exclue(r, identite)]
+    sql = f"SELECT * FROM {name} WHERE organization_id = ?"
+    params: list[Any] = [_org(identity)]
+    for key, value in (filters or {}).items():
+        if key not in SOURCES[name]["fields"] and key not in {"organization_id", "id", "customer_id", "status"}:
+            raise ValueError(f"unrecognized filter: {key}")
+        sql += f" AND {key} = ?"
+        params.append(value)
+    rows = [dict(r) for r in connection().execute(sql, params).fetchall()]
+    if name == "orders":
+        rows = [r for r in rows if not is_excluded(r, identity)]
         for r in rows:
-            r["en_retard"] = est_en_retard(r)
+            r["late"] = is_late(r)
     total = len(rows)
-    if agregat or regroupement:
-        if regroupement:
-            groupes: dict[str, list[float]] = {}
+    if aggregate or group_by:
+        if group_by:
+            groups: dict[str, list[float]] = {}
             for r in rows:
-                cle = str(r.get(regroupement, ""))
-                groupes.setdefault(cle, []).append(float(r.get("montant") or 0))
-            resultat = []
-            for cle, vals in groupes.items():
-                item = {"groupe": cle, "decompte": len(vals)}
-                if agregat in {None, "decompte"}:
-                    pass
-                if agregat == "total":
-                    item["total"] = round(sum(vals), 2)
-                if agregat == "moyenne":
-                    item["moyenne"] = round(sum(vals) / len(vals), 2) if vals else 0
-                resultat.append(item)
-            return {"lignes": resultat, "total": len(resultat), "agregat": agregat, "regroupement": regroupement}
-        montants = [float(r.get("montant") or 0) for r in rows]
-        if agregat == "decompte":
-            valeur = total
-        elif agregat == "total":
-            valeur = round(sum(montants), 2)
-        elif agregat == "moyenne":
-            valeur = round(sum(montants) / len(montants), 2) if montants else 0
+                key = str(r.get(group_by, ""))
+                groups.setdefault(key, []).append(float(r.get("amount") or 0))
+            result = []
+            for key, values in groups.items():
+                item = {"group": key, "count": len(values)}
+                if aggregate == "total":
+                    item["total"] = round(sum(values), 2)
+                if aggregate == "average":
+                    item["average"] = round(sum(values) / len(values), 2) if values else 0
+                result.append(item)
+            return {"rows": result, "total": len(result), "aggregate": aggregate, "group_by": group_by}
+        amounts = [float(r.get("amount") or 0) for r in rows]
+        if aggregate == "count":
+            value = total
+        elif aggregate == "total":
+            value = round(sum(amounts), 2)
+        elif aggregate == "average":
+            value = round(sum(amounts) / len(amounts), 2) if amounts else 0
         else:
-            raise ValueError("agrégat inconnu")
-        return {"valeur": valeur, "agregat": agregat, "total": total}
-    tronque = False
-    if limite is not None and len(rows) > limite:
-        rows = rows[:limite]
-        tronque = True
-    return {"lignes": rows, "total": total, "tronque": tronque, "limite": limite}
+            raise ValueError("unknown aggregate")
+        return {"value": value, "aggregate": aggregate, "total": total}
+    truncated = False
+    if limit is not None and len(rows) > limit:
+        rows = rows[:limit]
+        truncated = True
+    return {"rows": rows, "total": total, "truncated": truncated, "limit": limit}
 
 
-def preparer_brouillon(typ: str, payload: dict, identite: dict) -> dict:
-    brouillon_id = f"BR-{uuid.uuid4().hex[:10]}"
-    connexion().execute(
-        """INSERT INTO brouillons(id, type, organisation_id, utilisateur_id, payload, soumis, date_creation)
+def prepare_draft(typ: str, payload: dict, identity: dict) -> dict:
+    draft_id = f"DRAFT-{uuid.uuid4().hex[:10]}"
+    connection().execute(
+        """INSERT INTO drafts(id, type, organization_id, user_id, payload, submitted, created_at)
            VALUES (?, ?, ?, ?, ?, 0, ?)""",
-        (brouillon_id, typ, _org(identite), identite["sub"], json.dumps(payload, ensure_ascii=False), maintenant().isoformat()),
+        (draft_id, typ, _org(identity), identity["sub"], json.dumps(payload, ensure_ascii=False), now().isoformat()),
     )
-    connexion().commit()
-    return {"id": brouillon_id, "type": typ, "payload": payload, "soumis": False}
+    connection().commit()
+    return {"id": draft_id, "type": typ, "payload": payload, "submitted": False}
 
 
-def get_brouillon(brouillon_id: str, identite: dict) -> dict | None:
-    row = connexion().execute(
-        "SELECT * FROM brouillons WHERE id = ? AND organisation_id = ?",
-        (brouillon_id, _org(identite)),
+def get_draft(draft_id: str, identity: dict) -> dict | None:
+    row = connection().execute(
+        "SELECT * FROM drafts WHERE id = ? AND organization_id = ?",
+        (draft_id, _org(identity)),
     ).fetchone()
     if not row:
         return None
@@ -268,98 +263,99 @@ def get_brouillon(brouillon_id: str, identite: dict) -> dict | None:
     return data
 
 
-def soumettre_brouillon(brouillon_id: str, identite: dict) -> dict:
-    panne = panne_active()
-    if panne == "indisponible":
-        raise RuntimeError("application indisponible")
-    brouillon = get_brouillon(brouillon_id, identite)
-    if not brouillon:
-        raise KeyError("brouillon introuvable")
-    if brouillon["soumis"]:
-        # Pas d'idempotence : une resoumission est une nouvelle tentative, sans clé.
+def submit_draft(draft_id: str, identity: dict) -> dict:
+    failure = active_failure()
+    if failure == "unavailable":
+        raise RuntimeError("application unavailable")
+    draft = get_draft(draft_id, identity)
+    if not draft:
+        raise KeyError("draft not found")
+    if draft["submitted"]:
+        # No idempotency: a resubmission is a new attempt, without a key.
         pass
-    if panne == "issue_inconnue":
-        # Accepte puis silence : on n'écrit pas, on n'informe pas du résultat.
-        raise RuntimeError("issue_inconnue")
-    typ = brouillon["type"]
-    payload = brouillon["payload"]
-    if typ == "demande_achat":
-        demande_id = f"DA-{uuid.uuid4().hex[:8]}"
-        connexion().execute(
-            """INSERT INTO demandes_achat(
-                id, organisation_id, fournisseur_id, statut, objet, montant, brouillon,
-                attribue_a, pour_le_compte_de, date_creation, date_soumission
+    if failure == "unknown_outcome":
+        # Accept, then silence: nothing is written and the outcome is not reported.
+        raise RuntimeError("unknown_outcome")
+    typ = draft["type"]
+    payload = draft["payload"]
+    if typ == "purchase_request":
+        request_id = f"PR-{uuid.uuid4().hex[:8]}"
+        connection().execute(
+            """INSERT INTO purchase_requests(
+                id, organization_id, supplier_id, status, subject, amount, draft,
+                assigned_to, on_behalf_of, created_at, submitted_at
             ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)""",
             (
-                demande_id,
-                _org(identite),
-                payload.get("fournisseur_id"),
-                "soumise",
-                payload.get("objet", ""),
-                payload.get("montant"),
+                request_id,
+                _org(identity),
+                payload.get("supplier_id"),
+                "submitted",
+                payload.get("subject", ""),
+                payload.get("amount"),
                 "agent",
-                identite["sub"],
-                maintenant().isoformat(),
-                maintenant().isoformat(),
+                identity["sub"],
+                now().isoformat(),
+                now().isoformat(),
             ),
         )
-        resultat = {"demande_id": demande_id, "statut": "soumise", "attribue_a": "agent", "pour_le_compte_de": identite["sub"]}
-    elif typ == "approbation_facture":
-        facture_id = payload.get("facture_id")
-        connexion().execute(
-            "UPDATE factures SET statut = ? WHERE id = ? AND organisation_id = ?",
-            ("approuvee", facture_id, _org(identite)),
+        result = {"request_id": request_id, "status": "submitted", "assigned_to": "agent", "on_behalf_of": identity["sub"]}
+    elif typ == "invoice_approval":
+        invoice_id = payload.get("invoice_id")
+        connection().execute(
+            "UPDATE invoices SET status = ? WHERE id = ? AND organization_id = ?",
+            ("approved", invoice_id, _org(identity)),
         )
-        resultat = {"facture_id": facture_id, "statut": "approuvee", "attribue_a": "agent", "pour_le_compte_de": identite["sub"]}
+        result = {"invoice_id": invoice_id, "status": "approved", "assigned_to": "agent", "on_behalf_of": identity["sub"]}
     else:
-        raise ValueError("type de brouillon inconnu")
-    connexion().execute("UPDATE brouillons SET soumis = 1 WHERE id = ?", (brouillon_id,))
-    connexion().commit()
-    return resultat
+        raise ValueError("unknown draft type")
+    connection().execute("UPDATE drafts SET submitted = 1 WHERE id = ?", (draft_id,))
+    connection().commit()
+    return result
 
 
-def get_facture(facture_id: str, identite: dict) -> dict | None:
-    row = connexion().execute(
-        "SELECT * FROM factures WHERE id = ? AND organisation_id = ?",
-        (facture_id, _org(identite)),
+def get_invoice(invoice_id: str, identity: dict) -> dict | None:
+    row = connection().execute(
+        "SELECT * FROM invoices WHERE id = ? AND organization_id = ?",
+        (invoice_id, _org(identity)),
     ).fetchone()
     return _row(row)
 
 
-def get_reglages(identite: dict) -> dict:
-    row = connexion().execute(
-        "SELECT * FROM reglages WHERE utilisateur_id = ?", (identite["sub"],)
+def get_user_settings(identity: dict) -> dict:
+    row = connection().execute(
+        "SELECT * FROM user_settings WHERE user_id = ?", (identity["sub"],)
     ).fetchone()
     if not row:
-        return {"utilisateur_id": identite["sub"], "preferer_hors_taxes": False}
+        return {"user_id": identity["sub"], "prefer_excl_tax": False}
     return dict(row)
 
 
-def set_reglages(identite: dict, preferer_hors_taxes: bool) -> dict:
-    connexion().execute(
-        "INSERT INTO reglages(utilisateur_id, preferer_hors_taxes) VALUES (?, ?) ON CONFLICT(utilisateur_id) DO UPDATE SET preferer_hors_taxes = excluded.preferer_hors_taxes",
-        (identite["sub"], int(preferer_hors_taxes)),
+def set_user_settings(identity: dict, prefer_excl_tax: bool) -> dict:
+    connection().execute(
+        "INSERT INTO user_settings(user_id, prefer_excl_tax) VALUES (?, ?) "
+        "ON CONFLICT(user_id) DO UPDATE SET prefer_excl_tax = excluded.prefer_excl_tax",
+        (identity["sub"], int(prefer_excl_tax)),
     )
-    connexion().commit()
-    return get_reglages(identite)
+    connection().commit()
+    return get_user_settings(identity)
 
 
-def etat_cas(cas: str) -> dict:
-    conn = connexion()
-    if cas.startswith("CMD-") or cas.startswith("FAC-") or cas.startswith("DA-") or cas.startswith("BR-"):
-        commande = conn.execute("SELECT * FROM commandes WHERE reference = ?", (cas,)).fetchone()
-        facture = conn.execute("SELECT * FROM factures WHERE id = ? OR reference = ?", (cas, cas)).fetchone()
-        demande = conn.execute("SELECT * FROM demandes_achat WHERE id = ?", (cas,)).fetchone()
-        brouillon = conn.execute("SELECT * FROM brouillons WHERE id = ?", (cas,)).fetchone()
+def case_state(case: str) -> dict:
+    conn = connection()
+    if case.startswith(("CMD-", "FAC-", "PR-", "DRAFT-")):
+        order = conn.execute("SELECT * FROM orders WHERE reference = ?", (case,)).fetchone()
+        invoice = conn.execute("SELECT * FROM invoices WHERE id = ? OR reference = ?", (case, case)).fetchone()
+        request = conn.execute("SELECT * FROM purchase_requests WHERE id = ?", (case,)).fetchone()
+        draft = conn.execute("SELECT * FROM drafts WHERE id = ?", (case,)).fetchone()
         return {
-            "cas": cas,
-            "commande": dict(commande) if commande else None,
-            "facture": dict(facture) if facture else None,
-            "demande_achat": dict(demande) if demande else None,
-            "brouillon": dict(brouillon) if brouillon else None,
+            "case": case,
+            "order": dict(order) if order else None,
+            "invoice": dict(invoice) if invoice else None,
+            "purchase_request": dict(request) if request else None,
+            "draft": dict(draft) if draft else None,
         }
-    if cas == "soumissions":
-        demandes = [dict(r) for r in conn.execute("SELECT * FROM demandes_achat WHERE brouillon = 0").fetchall()]
-        brouillons = [dict(r) for r in conn.execute("SELECT * FROM brouillons").fetchall()]
-        return {"demandes_soumises": demandes, "brouillons": brouillons}
-    return {"cas": cas, "inconnu": True}
+    if case == "submissions":
+        requests = [dict(r) for r in conn.execute("SELECT * FROM purchase_requests WHERE draft = 0").fetchall()]
+        drafts = [dict(r) for r in conn.execute("SELECT * FROM drafts").fetchall()]
+        return {"submitted_requests": requests, "drafts": drafts}
+    return {"case": case, "unknown": True}

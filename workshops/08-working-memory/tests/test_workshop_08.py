@@ -1,45 +1,43 @@
-"""Tests de bout en bout de l'atelier 08. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 08. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.shell.config import settings
+from workshop_kit.testing.turns import flat, model_input, successful_turn
 
-pytestmark = pytest.mark.atelier
-
-
-from socle.config import reglages
+pytestmark = pytest.mark.workshop
 
 
-def _etat(trace) -> str:
-    return plat(trace.get("etat") or trace.get("memoire_travail") or entree(trace).get("etat") or "")
+def _state(trace) -> str:
+    return flat(trace.get("state") or trace.get("working_memory") or model_input(trace).get("state") or "")
 
 
-def test_etat_preserve_apres_compaction(client_chat):
-    tour_reussi(client_chat, "Je parle du client Martin Durand, commande CMD-1042.")
-    for i in range(int(reglages.seuil_compaction_messages) + 2):
-        tour_reussi(client_chat, f"D'accord, continue de suivre ce dossier ({i}).")
-    tour, trace = tour_reussi(client_chat, "Et celle-là, elle est où ?")
-    etat = _etat(trace)
-    assert etat, "l'état de conversation doit figurer dans la trace, distinct du résumé"
-    assert "1042" in etat or "Durand" in etat
-    # distinct du résumé de compaction
-    assert trace.get("etat") or trace.get("memoire_travail") or entree(trace).get("etat")
+def test_state_kept_after_compaction(chat_client):
+    successful_turn(chat_client, "I am talking about the customer Martin Durand, order CMD-1042.")
+    for i in range(int(settings.compaction_message_threshold) + 2):
+        successful_turn(chat_client, f"All right, keep following this file ({i}).")
+    turn, trace = successful_turn(chat_client, "And that one, where is it?")
+    state = _state(trace)
+    assert state, "the conversation state must appear in the trace, distinct from the summary"
+    assert "1042" in state or "Durand" in state
+    # distinct from the compaction summary
+    assert trace.get("state") or trace.get("working_memory") or model_input(trace).get("state")
 
 
-def test_choix_entre_homonymes_conserve(client_chat):
-    tour_reussi(client_chat, "Quelles sont les commandes de Léa Martin ?")
-    tour_reussi(client_chat, "Celle de Lille, s'il te plaît.")
-    for i in range(int(reglages.seuil_compaction_messages) + 2):
-        tour_reussi(client_chat, f"Merci, on reste sur ce dossier ({i}).")
-    _, trace = tour_reussi(client_chat, "Rappelle-moi le client en cours.")
-    etat = _etat(trace) + plat(entree(trace))
-    assert "Lille" in etat or "lille" in etat.lower()
-    assert "Lyon" not in etat or "Lille" in etat
+def test_choice_between_namesakes_kept(chat_client):
+    successful_turn(chat_client, "What are the orders of Léa Martin?")
+    successful_turn(chat_client, "The one in Lille, please.")
+    for i in range(int(settings.compaction_message_threshold) + 2):
+        successful_turn(chat_client, f"Thanks, let's stay on this file ({i}).")
+    _, trace = successful_turn(chat_client, "Remind me of the current customer.")
+    state = _state(trace) + flat(model_input(trace))
+    assert "lille" in state.lower()
+    assert "Lyon" not in state or "Lille" in state
 
 
-def test_changement_de_client_sans_ambiguite(client_chat):
-    tour_reussi(client_chat, "Je parle de Martin Durand, commande CMD-1042.")
-    tour, trace = tour_reussi(client_chat, "Passons maintenant à Transports Morel uniquement.")
-    etat = _etat(trace)
-    assert "Morel" in etat or "morel" in etat.lower()
-    assert "Durand" not in etat
+def test_customer_change_without_ambiguity(chat_client):
+    successful_turn(chat_client, "I am talking about Martin Durand, order CMD-1042.")
+    turn, trace = successful_turn(chat_client, "Let's now move on to Transports Morel only.")
+    state = _state(trace)
+    assert "morel" in state.lower()
+    assert "Durand" not in state

@@ -1,2 +1,3 @@
-atelier: '11'
-titre: 'Un agent unique'
+workshop: '11'
+title: 'A single agent: queries on the trace'
+tests: tests/

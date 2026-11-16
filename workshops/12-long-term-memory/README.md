@@ -1,15 +1,21 @@
-# Atelier 12 — Mémoire longue refusée
+# Workshop 12 — Long-term memory declined
 
-## Critère de réussite
+Chapter 12 of the book. No solution is provided: you work in `my-agent/`.
 
-Une préférence donnée dans une conversation n'apparaît pas dans la suivante, et l'agent ne promet pas de s'en souvenir. L'interface l'annonce à l'ouverture de chaque conversation. Lorsqu'un utilisateur évoque un travail antérieur, l'agent relit l'application au lieu de supposer une conclusion passée.
+## Goal
 
-Les tests correspondants sont dans `tests/atelier-12/`. Ils restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par programme (état de l'application, traces, droits, événements d'interface) l'est en premier. Lorsqu'un critère porte sur la qualité d'une réponse, une grille de juge écrite s'applique ; l'appréciation de sens sera calibrée en phase B.
+Decline long-term memory explicitly, and reread the application instead of relying on past conversations.
 
-```bash
-atelier commencer 12
-atelier verifier 12
-atelier verifier 12 --non-regression
+## Success criterion
+
+A preference given in one conversation does not appear in the next one, and the agent does not promise to remember it. The interface announces it when each conversation opens. When a user mentions earlier work, the agent rereads the application instead of assuming a past conclusion.
+
+## How to check
+
+The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+
+```powershell
+uv run workshop start 12
+uv run workshop check 12
+uv run workshop check 12 --non-regression   # workshops 03 to 12
 ```
-
-Aucun corrigé n'est fourni. Vous travaillez dans `mon-agent/`.

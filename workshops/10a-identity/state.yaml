@@ -1,2 +1,3 @@
-atelier: '10a'
-titre: 'Identité et échange de jetons'
+workshop: '10a'
+title: 'Identity and token exchange'
+tests: tests/

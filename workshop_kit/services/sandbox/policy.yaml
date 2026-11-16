@@ -1,8 +1,8 @@
-# Politique de confinement — coquille vide (atelier 10d).
-# Aucune politique n'est encore appliquée : la liste d'autorisation est vide
-# et le drapeau "active" reste à false. L'étudiant la remplira à l'atelier 10d.
+# Sandbox policy — empty base (workshop 10d).
+# No policy is enforced yet: the allowlist is empty and the "active" flag
+# stays false. The student fills it in during workshop 10d.
 active: false
-liste_autorisation: []
-limites:
-  duree_s: null
-  budget_jetons: null
+allowlist: []
+limits:
+  duration_s: null
+  token_budget: null

@@ -1,2 +1,3 @@
-atelier: '13'
-titre: 'Recherche documentaire'
+workshop: '13'
+title: 'Document search'
+tests: tests/

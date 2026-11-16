@@ -1,102 +1,101 @@
-"""Tests de bout en bout de l'atelier 07. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 07. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.shell.config import settings
+from workshop_kit.testing.turns import apply_rubric, flat, model_input, successful_turn, tools
 
-pytestmark = pytest.mark.atelier
+pytestmark = pytest.mark.workshop
 
 
-from socle.config import reglages
-
-GRILLE_PARTIEL = {
-    "id": "07-annonce-resultat-partiel",
-    "juge_sens": True,
-    "exigences": [
-        {"type": "requis_un_de", "motifs": ["partie", "partiel", "extrait", "limité", "limite", "total"]},
+PARTIAL_RUBRIC = {
+    "id": "07-partial-result-announced",
+    "judge_meaning": True,
+    "requirements": [
+        {"type": "required_any", "patterns": ["part of", "partial", "excerpt", "limited", "limit", "total"]},
     ],
 }
 
-DEMANDE_INITIALE = "Je m'occupe du dossier de Martin Durand, commande CMD-1042, uniquement les livrées."
+INITIAL_REQUEST = "I am handling the file of Martin Durand, order CMD-1042, delivered orders only."
 
 
 def _compaction(trace) -> dict | None:
     if isinstance(trace.get("compaction"), dict):
         return trace["compaction"]
-    if isinstance(entree(trace).get("compaction"), dict):
-        return entree(trace)["compaction"]
-    for ev in trace.get("evenements") or []:
-        if str(ev.get("type") or ev[0] if isinstance(ev, (list, tuple)) else "") == "compaction":
-            return ev if isinstance(ev, dict) else {"type": "compaction"}
-    if "compaction" in plat(trace).lower():
+    if isinstance(model_input(trace).get("compaction"), dict):
+        return model_input(trace)["compaction"]
+    for event in trace.get("events") or []:
+        kind = event.get("type") if isinstance(event, dict) else (event[0] if isinstance(event, (list, tuple)) else "")
+        if str(kind) == "compaction":
+            return event if isinstance(event, dict) else {"type": "compaction"}
+    if "compaction" in flat(trace).lower():
         return {"present": True}
     return None
 
 
-def test_liste_bornee_et_total_declare(client_chat, observation):
-    observation.reinitialiser("volume")
-    tour, trace = tour_reussi(
-        client_chat,
-        "Quelles sont les commandes en retard de Transports Morel, et combien y en a-t-il ?",
+def test_bounded_list_and_declared_total(chat_client, observation):
+    observation.reset("volume")
+    turn, trace = successful_turn(
+        chat_client,
+        "What are the late orders of Transports Morel, and how many are there?",
     )
-    assert outils(trace)
-    plat_outils = plat(outils(trace)).lower()
-    assert "total" in plat_outils or "total" in tour.texte.lower()
-    appliquer_grille(GRILLE_PARTIEL, tour, trace)
-    # taille du contexte relevée à chaque cycle
-    assert "taille" in plat(trace).lower() or "tokens" in plat(trace).lower() or trace.get("contexte") or entree(trace).get("taille")
+    assert tools(trace)
+    flat_tools = flat(tools(trace)).lower()
+    assert "total" in flat_tools or "total" in turn.text.lower()
+    apply_rubric(PARTIAL_RUBRIC, turn, trace)
+    # context size recorded at each cycle
+    assert "size" in flat(trace).lower() or "tokens" in flat(trace).lower() or trace.get("context") or model_input(trace).get("size")
 
 
-def test_mode_decompte(client_chat, observation):
-    observation.reinitialiser("volume")
-    tour, trace = tour_reussi(
-        client_chat,
-        "Combien y a-t-il de commandes en retard chez Transports Morel ? Je ne veux que le nombre, pas les lignes.",
+def test_count_mode(chat_client, observation):
+    observation.reset("volume")
+    turn, trace = successful_turn(
+        chat_client,
+        "How many late orders does Transports Morel have? I only want the number, not the lines.",
     )
-    plat_outils = plat(outils(trace)).lower()
-    assert "decompte" in plat_outils or "décompte" in plat_outils or "count" in plat_outils or "total" in plat_outils or "combien" in tour.texte.lower() or any(ch.isdigit() for ch in tour.texte)
+    flat_tools = flat(tools(trace)).lower()
+    assert "count" in flat_tools or "total" in flat_tools or "how many" in turn.text.lower() or any(ch.isdigit() for ch in turn.text)
 
 
-def test_plafond_total_minimum(client_chat, observation):
-    observation.reinitialiser("volume")
-    tour, trace = tour_reussi(client_chat, "Liste toutes les commandes en retard de Transports Morel, j'en veux le total exact.")
-    plat_tout = (tour.texte + plat(outils(trace))).lower()
-    assert "minimum" in plat_tout or "au moins" in plat_tout or "plancher" in plat_tout or "plafond" in plat_tout or "partiel" in plat_tout
+def test_cap_reached_total_is_a_minimum(chat_client, observation):
+    observation.reset("volume")
+    turn, trace = successful_turn(chat_client, "List all late orders of Transports Morel, I want the exact total.")
+    flat_all = (turn.text + flat(tools(trace))).lower()
+    assert "minimum" in flat_all or "at least" in flat_all or "lower bound" in flat_all or "cap" in flat_all or "partial" in flat_all
 
 
-def test_pas_de_compaction_en_deca_du_seuil(client_chat):
-    _, trace = tour_reussi(client_chat, DEMANDE_INITIALE)
-    _, trace = tour_reussi(client_chat, "Peux-tu juste confirmer le client en cours ?")
+def test_no_compaction_below_threshold(chat_client):
+    _, trace = successful_turn(chat_client, INITIAL_REQUEST)
+    _, trace = successful_turn(chat_client, "Can you just confirm the current customer?")
     assert _compaction(trace) is None
-    assert "compaction" not in plat(trace).lower()
+    assert "compaction" not in flat(trace).lower()
 
 
-def test_compaction_au_dela_du_seuil_preserve_les_messages_utilisateur(client_chat):
-    messages_utilisateur = [DEMANDE_INITIALE]
-    _, trace = tour_reussi(client_chat, DEMANDE_INITIALE)
-    seuil = int(reglages.seuil_compaction_messages)
-    for i in range(seuil + 2):
-        msg = f"Précision numéro {i} : je ne veux que les commandes livrées de CMD-1042."
-        messages_utilisateur.append(msg)
-        tour, trace = tour_reussi(client_chat, msg)
-    evenement = _compaction(trace)
-    assert evenement, "la trace doit contenir l'événement de compaction"
-    contenu_entree = plat(entree(trace))
-    assert DEMANDE_INITIALE in contenu_entree or "CMD-1042" in contenu_entree
-    # les messages de l'utilisateur restent à l'identique ; seuls réponses et résultats d'outils sont résumés
-    for msg in messages_utilisateur:
-        assert msg in contenu_entree, f"message utilisateur attendu à l'identique dans l'entrée : {msg!r}"
-    assert "résumé" in plat(trace).lower() or "resume" in plat(trace).lower() or "summary" in plat(trace).lower() or evenement.get("resume") or evenement.get("résumé")
+def test_compaction_above_threshold_keeps_user_messages(chat_client):
+    user_messages = [INITIAL_REQUEST]
+    _, trace = successful_turn(chat_client, INITIAL_REQUEST)
+    threshold = int(settings.compaction_message_threshold)
+    for i in range(threshold + 2):
+        msg = f"Detail number {i}: I only want the delivered orders of CMD-1042."
+        user_messages.append(msg)
+        turn, trace = successful_turn(chat_client, msg)
+    event = _compaction(trace)
+    assert event, "the trace must contain the compaction event"
+    input_content = flat(model_input(trace))
+    assert INITIAL_REQUEST in input_content or "CMD-1042" in input_content
+    # user messages are kept verbatim; only answers and tool results are summarized
+    for msg in user_messages:
+        assert msg in input_content, f"user message expected verbatim in the model input: {msg!r}"
+    assert "summary" in flat(trace).lower() or event.get("summary")
 
 
-def test_compaction_signalee_dans_l_interface(client_chat):
-    tour_reussi(client_chat, DEMANDE_INITIALE)
-    tour = None
-    for i in range(int(reglages.seuil_compaction_messages) + 2):
-        tour, _ = tour_reussi(client_chat, f"Suite du dossier Martin Durand CMD-1042 ({i}).")
-    signale = "compaction" in tour.types or any(
-        ev[0] in {"compaction", "mention"}
-        and ("résum" in str(ev[1]).lower() or "resum" in str(ev[1]).lower() or ev[0] == "compaction")
-        for ev in tour.evenements
+def test_compaction_reported_in_the_interface(chat_client):
+    successful_turn(chat_client, INITIAL_REQUEST)
+    turn = None
+    for i in range(int(settings.compaction_message_threshold) + 2):
+        turn, _ = successful_turn(chat_client, f"Next step on the Martin Durand file CMD-1042 ({i}).")
+    reported = "compaction" in turn.types or any(
+        ev[0] in {"compaction", "mention"} and ("summar" in str(ev[1]).lower() or ev[0] == "compaction")
+        for ev in turn.events
     )
-    assert signale, "l'interface doit signaler que la partie ancienne de la conversation a été résumée"
+    assert reported, "the interface must report that the older part of the conversation was summarized"

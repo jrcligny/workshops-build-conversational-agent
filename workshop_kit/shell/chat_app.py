@@ -1,4 +1,4 @@
-"""Interface de chat minimale : flux typés, client utilisé par les tests."""
+"""Minimal chat interface: typed SSE events, consumed by the tests' client."""
 
 from __future__ import annotations
 
@@ -10,20 +10,20 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from socle.harness_base.contrat import Evenement, HarnessNonImplemente, Message, UtilisateurEssai
-from socle.interface.chargeur import charger_harness
+from workshop_kit.shell.harness_contract import Event, HarnessNotImplemented, Message, TestUser
+from workshop_kit.shell.loader import load_harness
 
-app = FastAPI(title="Interface de chat des ateliers", version="0.1.0")
+app = FastAPI(title="Workshop chat interface", version="0.1.0")
 
 _conversations: dict[str, dict] = {}
-_historiques: dict[str, list[Message]] = defaultdict(list)
+_histories: dict[str, list[Message]] = defaultdict(list)
 _confirmations: dict[str, bool] = {}
 _interruptions: set[str] = set()
 _harness = None
 _urls: dict[str, str] = {}
 
 
-def configurer(urls: dict[str, str] | None = None) -> None:
+def configure(urls: dict[str, str] | None = None) -> None:
     global _urls
     _urls = urls or {}
 
@@ -31,13 +31,13 @@ def configurer(urls: dict[str, str] | None = None) -> None:
 def harness():
     global _harness
     if _harness is None:
-        _harness = charger_harness()
+        _harness = load_harness()
     return _harness
 
 
-def reinitialiser_conversations() -> None:
+def reset_conversations() -> None:
     _conversations.clear()
-    _historiques.clear()
+    _histories.clear()
     _confirmations.clear()
     _interruptions.clear()
     global _harness
@@ -45,120 +45,119 @@ def reinitialiser_conversations() -> None:
 
 
 class ConversationIn(BaseModel):
-    utilisateur_id: str = "camille-renard"
-    role: str = "charge_clientele"
-    organisation: str = "organisation-a"
-    jeton_application: str | None = None
-    limites: dict | None = None
+    user_id: str = "camille-renard"
+    role: str = "customer_service"
+    organization: str = "organization-a"
+    app_token: str | None = None
+    limits: dict | None = None
 
 
 class MessageIn(BaseModel):
-    texte: str
-    pieces_jointes: list[str] = []
-    interrompre: bool = False
+    text: str
+    attachments: list[str] = []
+    interrupt: bool = False
 
 
 class ConfirmationIn(BaseModel):
-    confirme: bool = True
+    confirmed: bool = True
 
 
-@app.get("/sante")
-def sante():
-    return {"statut": "ok"}
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
-@app.get("/pieces-jointes")
-def lister_pieces_jointes():
-    """Point d'entrée du contrat pour l'atelier 15. La zone est vide dans la coquille."""
-    from services.pieces_jointes.registre import lister
+@app.get("/attachments")
+def list_attachments():
+    """Contract entry point for workshop 15. The area is empty in the shell."""
+    from workshop_kit.services.attachments.registry import list_attachments as _list
 
-    return {"pieces_jointes": lister()}
+    return {"attachments": _list()}
 
 
 @app.post("/conversations")
-def creer_conversation(corps: ConversationIn):
-    identifiant = uuid.uuid4().hex
-    _conversations[identifiant] = corps.model_dump()
-    _historiques[identifiant] = []
-    return {"id": identifiant, "utilisateur": corps.model_dump()}
+def create_conversation(body: ConversationIn):
+    conversation_id = uuid.uuid4().hex
+    _conversations[conversation_id] = body.model_dump()
+    _histories[conversation_id] = []
+    return {"id": conversation_id, "user": body.model_dump()}
 
 
 @app.post("/conversations/{conversation_id}/confirmation")
-def confirmer(conversation_id: str, corps: ConfirmationIn):
-    """Geste de confirmation de l'utilisateur (atelier 10b)."""
+def confirm(conversation_id: str, body: ConfirmationIn):
+    """The user's confirmation gesture (workshop 10b)."""
     if conversation_id not in _conversations:
-        raise HTTPException(status_code=404, detail="conversation inconnue")
-    _confirmations[conversation_id] = bool(corps.confirme)
-    return {"ok": True, "confirme": bool(corps.confirme)}
+        raise HTTPException(status_code=404, detail="unknown conversation")
+    _confirmations[conversation_id] = bool(body.confirmed)
+    return {"ok": True, "confirmed": bool(body.confirmed)}
 
 
 @app.post("/conversations/{conversation_id}/interruption")
-def interrompre(conversation_id: str):
-    """Demande d'interruption du tour en cours (atelier 06)."""
+def interrupt(conversation_id: str):
+    """Interruption request for the current turn (workshop 06)."""
     if conversation_id not in _conversations:
-        raise HTTPException(status_code=404, detail="conversation inconnue")
+        raise HTTPException(status_code=404, detail="unknown conversation")
     _interruptions.add(conversation_id)
     return {"ok": True}
 
 
 @app.post("/conversations/{conversation_id}/messages")
-def envoyer_message(conversation_id: str, corps: MessageIn):
+def send_message(conversation_id: str, body: MessageIn):
     if conversation_id not in _conversations:
-        raise HTTPException(status_code=404, detail="conversation inconnue")
+        raise HTTPException(status_code=404, detail="unknown conversation")
     meta = _conversations[conversation_id]
-    utilisateur = UtilisateurEssai(
-        id=meta["utilisateur_id"],
+    user = TestUser(
+        id=meta["user_id"],
         role=meta["role"],
-        organisation=meta["organisation"],
-        jeton_application=meta.get("jeton_application"),
+        organization=meta["organization"],
+        app_token=meta.get("app_token"),
     )
-    historique = list(_historiques[conversation_id])
-    interruption = conversation_id in _interruptions or corps.interrompre
+    history = list(_histories[conversation_id])
+    interrupt_requested = conversation_id in _interruptions or body.interrupt
     confirmation = _confirmations.get(conversation_id, False)
-    limites = meta.get("limites")
+    limits = meta.get("limits")
 
-    def flux():
+    def stream():
         try:
-            evenements = list(
-                harness().tour(
+            events = list(
+                harness().turn(
                     conversation_id,
-                    corps.texte,
-                    utilisateur,
-                    historique,
-                    pieces_jointes=corps.pieces_jointes,
-                    interruption_demandee=interruption,
+                    body.text,
+                    user,
+                    history,
+                    attachments=body.attachments,
+                    interrupt_requested=interrupt_requested,
                     confirmation=confirmation,
-                    limites=limites,
+                    limits=limits,
                 )
             )
-        except HarnessNonImplemente as exc:
-            ev = Evenement(type="erreur", data={"detail": str(exc)})
-            yield _sse(ev)
-            yield _sse(Evenement(type="fin", data={"ok": False, "detail": str(exc)}))
+        except HarnessNotImplemented as exc:
+            yield _sse(Event(type="error", data={"detail": str(exc)}))
+            yield _sse(Event(type="end", data={"ok": False, "detail": str(exc)}))
             return
         except NotImplementedError as exc:
-            detail = str(exc) or "Harness non implémenté (coquille vide)."
-            yield _sse(Evenement(type="erreur", data={"detail": detail}))
-            yield _sse(Evenement(type="fin", data={"ok": False, "detail": detail}))
+            detail = str(exc) or "Harness not implemented (empty shell)."
+            yield _sse(Event(type="error", data={"detail": detail}))
+            yield _sse(Event(type="end", data={"ok": False, "detail": detail}))
             return
         except Exception as exc:  # noqa: BLE001
-            yield _sse(Evenement(type="erreur", data={"detail": f"{type(exc).__name__}: {exc}"}))
-            yield _sse(Evenement(type="fin", data={"ok": False, "detail": str(exc)}))
+            yield _sse(Event(type="error", data={"detail": f"{type(exc).__name__}: {exc}"}))
+            yield _sse(Event(type="end", data={"ok": False, "detail": str(exc)}))
             return
-        texte = ""
-        for ev in evenements:
-            if ev.type == "texte":
-                texte += ev.data.get("contenu", "")
-            yield _sse(ev)
-        if not any(ev.type == "fin" for ev in evenements):
-            yield _sse(Evenement(type="fin", data={"ok": True, "texte": texte}))
-        # L'historique n'est mis à jour par le socle que si le harness a produit une fin réussie.
-        if texte:
-            _historiques[conversation_id].append(Message(role="user", contenu=corps.texte))
-            _historiques[conversation_id].append(Message(role="assistant", contenu=texte))
+        text = ""
+        for event in events:
+            if event.type == "text":
+                text += event.data.get("content", "")
+            yield _sse(event)
+        if not any(event.type == "end" for event in events):
+            yield _sse(Event(type="end", data={"ok": True, "text": text}))
+        # The shell only updates the history when the harness produced a successful end.
+        if text:
+            _histories[conversation_id].append(Message(role="user", content=body.text))
+            _histories[conversation_id].append(Message(role="assistant", content=text))
 
-    return StreamingResponse(flux(), media_type="text/event-stream")
+    return StreamingResponse(stream(), media_type="text/event-stream")
 
 
-def _sse(ev: Evenement) -> str:
-    return f"event: {ev.type}\ndata: {json.dumps(ev.data, ensure_ascii=False)}\n\n"
+def _sse(event: Event) -> str:
+    return f"event: {event.type}\ndata: {json.dumps(event.data, ensure_ascii=False)}\n\n"

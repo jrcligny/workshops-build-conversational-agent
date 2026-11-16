@@ -1,2 +1,3 @@
-atelier: '07'
-titre: 'Contexte et compaction'
+workshop: '07'
+title: 'Context and compaction'
+tests: tests/

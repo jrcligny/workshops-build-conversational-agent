@@ -1,2 +1,3 @@
-atelier: '04'
-titre: 'Premier outil'
+workshop: '04'
+title: 'First tool'
+tests: tests/

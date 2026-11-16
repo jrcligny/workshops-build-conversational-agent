@@ -1,14 +1,14 @@
 
-# Définition des statuts de facture
-Version 2.0 — public : comptables — Maison Claire
+# Definition of invoice statuses
+Version 2.0 — audience: accountants — Maison Claire
 
-## Codes et libellés
-- en_attente : facture reçue, en attente d'approbation.
-- approuvee : l'approbation a été soumise après confirmation.
-- reglee : la facture a déjà été payée.
+## Codes and labels
+- pending: invoice received, pending approval.
+- approved: the approval was submitted after confirmation.
+- paid: the invoice has already been paid.
 
-## Rapprochement
-Avant d'approuver, le comptable rapproche la facture, la commande et la réception. Le code de statut « reglee » interdit une nouvelle approbation de bon sens, mais le système n'empêche pas de soumettre un doublon si l'utilisateur le confirme : le cas d'une facture en double déjà réglée doit être détecté par le contrôle prévu à cet effet.
+## Matching
+Before approving, the accountant matches the invoice, the order and the goods receipt. Common sense says the "paid" status code forbids a new approval, but the system does not prevent a duplicate from being submitted if the user confirms it: the case of a duplicate invoice that has already been paid must be detected by the control designed for that purpose.
 
-## Public
-Cette fiche s'adresse aux comptables. Elle n'est pas destinée aux chargés de clientèle.
+## Audience
+This sheet is meant for accountants. It is not intended for customer service representatives.

@@ -1,30 +1,26 @@
-"""Tests de bout en bout de l'atelier 05. Ils doivent échouer sur la coquille vide."""
+"""End-to-end tests of workshop 05. They must fail on the empty shell."""
 
 import pytest
 
-from tests.communs.tours import appliquer_grille, entree, journal_metier, outils, plat, tour_reussi
+from workshop_kit.testing.turns import successful_turn, tools
 
-pytestmark = pytest.mark.atelier
-
-
-def test_homonymes_plusieurs_candidats(client_chat):
-    tour, trace = tour_reussi(client_chat, "Quelles sont les commandes de Léa Martin ?")
-    texte = tour.texte.lower()
-    assert "lille" in texte and "lyon" in texte
-    # l'agent ne choisit pas un des deux à la place de l'utilisateur
-    assert "laquelle" in texte or "plusieurs" in texte or "homonym" in texte or "deux" in texte or "?" in tour.texte
-    assert outils(trace)
+pytestmark = pytest.mark.workshop
 
 
-def test_filtre_retard_applique_par_l_outil(client_chat, observation):
-    observation.reinitialiser("volume")
-    tour, trace = tour_reussi(client_chat, "Quelles sont les commandes en retard de Transports Morel ?")
-    assert tour.texte
-    assert outils(trace)
-    plat_outils = str(outils(trace)).lower()
-    assert "retard" in plat_outils or "en_retard" in plat_outils or "late" in plat_outils
-    # le filtre est dans l'appel, pas seulement dans une sélection faite par le modèle après coup
-    assert any(
-        "retard" in str((o.get("arguments") or o.get("parametres") or o)).lower()
-        for o in outils(trace)
-    )
+def test_namesakes_several_candidates(chat_client):
+    turn, trace = successful_turn(chat_client, "What are the orders of Léa Martin?")
+    text = turn.text.lower()
+    assert "lille" in text and "lyon" in text
+    # the agent does not pick one of the two on behalf of the user
+    assert "which" in text or "several" in text or "namesake" in text or "two" in text or "?" in turn.text
+    assert tools(trace)
+
+
+def test_late_filter_applied_by_the_tool(chat_client, observation):
+    observation.reset("volume")
+    turn, trace = successful_turn(chat_client, "What are the late orders of Transports Morel?")
+    assert turn.text
+    assert tools(trace)
+    assert "late" in str(tools(trace)).lower()
+    # the filter is in the call, not only in a selection made afterwards by the model
+    assert any("late" in str(t.get("arguments") or t.get("parameters") or t).lower() for t in tools(trace))

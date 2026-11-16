@@ -1,5 +1,4 @@
-
-"""Rejeu de trajectoires écrites à la main ou enregistrées plus tard."""
+"""Replay of hand-written trajectories, or of trajectories recorded later."""
 
 from __future__ import annotations
 
@@ -7,26 +6,26 @@ import json
 from pathlib import Path
 from typing import Any
 
-RACINE = Path(__file__).resolve().parent / "rejeux"
+ROOT = Path(__file__).resolve().parent / "replays"
 
 
-def charger(nom: str) -> dict[str, Any] | None:
-    chemin = RACINE / f"{nom}.json"
-    if not chemin.exists():
+def load(name: str) -> dict[str, Any] | None:
+    path = ROOT / f"{name}.json"
+    if not path.exists():
         return None
-    return json.loads(chemin.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def trouver(messages: list[dict[str, Any]]) -> dict[str, Any] | None:
-    if not RACINE.exists():
+def find(messages: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not ROOT.exists():
         return None
-    dernier = ""
+    last = ""
     for msg in reversed(messages):
         if msg.get("role") == "user":
-            dernier = msg.get("content") or ""
+            last = msg.get("content") or ""
             break
-    for chemin in RACINE.glob("*.json"):
-        data = json.loads(chemin.read_text(encoding="utf-8"))
-        if data.get("si_contient") and data["si_contient"].lower() in dernier.lower():
-            return data.get("reponse")
+    for path in ROOT.glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("if_contains") and data["if_contains"].lower() in last.lower():
+            return data.get("response")
     return None

@@ -1,15 +1,15 @@
-# mon-agent
+# my-agent
 
-C'est ici que vous construisez votre agent.
+This is where you build your agent. It is the **only** folder where you write code.
 
-- `harness.py` est une coquille : il n'implémente ni la boucle, ni le *system prompt*.
-- `serveur_mcp.py` est un serveur MCP vide : il démarre et répond au handshake, mais n'expose aucun outil métier. Vous le brancherez à l'atelier 09.
-- `mode-local/` est la structure d'accueil vide de l'atelier 19 (spécification d'un contrôle ; *coding agent* facultatif).
+- `harness.py` is an empty shell: it implements neither the loop nor the *system prompt*.
+- `mcp_server.py` is an empty MCP server: it starts and answers the handshake, but exposes no business tool. You will wire it in workshop 09.
+- `local-mode/` is the empty landing structure of workshop 19 (specification of a control; using a *coding agent* is optional).
 
-Les tests des ateliers restent rouges tant que le critère de réussite n'est pas atteint.
+The workshop tests stay red until the success criterion is met.
 
-Livrables ajoutés au fil des ateliers :
+Deliverables added along the workshops:
 
-- à l'atelier 11 : `requetes_trace.py`, avec les fonctions `part_lectures_intermediaires` et `domaines_incompatibles` ;
-- à l'atelier 17 : un rapport de parcours (`rapport-parcours.md` ou équivalent) ;
-- à l'atelier 19 : spécification et essais sous `mode-local/`.
+- workshop 11: `trace_queries.py`, with the functions `intermediate_reads_share` and `incompatible_domains`;
+- workshop 17: a route report (`route-report.md` or equivalent);
+- workshop 19: specification and checks under `local-mode/`.

@@ -1,13 +1,13 @@
-"""Horloge figée pour des retards stables."""
+"""Frozen clock, so that delivery delays stay stable."""
 
 from __future__ import annotations
 
 from datetime import datetime
 
-from socle.config import reglages
+from workshop_kit.shell.config import settings
 
-HORLOGE = datetime.fromisoformat(reglages.horloge_figee)
+CLOCK = datetime.fromisoformat(settings.frozen_clock)
 
 
-def maintenant() -> datetime:
-    return HORLOGE
+def now() -> datetime:
+    return CLOCK

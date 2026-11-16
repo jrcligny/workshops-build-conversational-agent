@@ -1,5 +1,4 @@
-
-"""Client de modèle : parle au proxy (simulé, rejoué, plus tard réel)."""
+"""Model client: talks to the proxy (simulated, replayed, later live)."""
 
 from __future__ import annotations
 
@@ -7,48 +6,45 @@ from typing import Any, Iterator
 
 import httpx
 
-from socle.config import reglages
 
-
-class ClientModele:
-    def __init__(self, base_url: str, jeton: str = "etudiant-essai", timeout: float = 30.0):
+class ModelClient:
+    def __init__(self, base_url: str, token: str = "test-student", timeout: float = 30.0):
         self.base_url = base_url.rstrip("/")
-        self.jeton = jeton
+        self.token = token
         self.timeout = timeout
 
     def _headers(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self.jeton}"}
+        return {"Authorization": f"Bearer {self.token}"}
 
-    def generer(self, messages: list[dict[str, Any]], outils: list[dict] | None = None) -> dict[str, Any]:
+    def generate(self, messages: list[dict[str, Any]], tools: list[dict] | None = None) -> dict[str, Any]:
         with httpx.Client(timeout=self.timeout) as client:
-            reponse = client.post(
+            response = client.post(
                 f"{self.base_url}/v1/chat/completions",
                 headers=self._headers(),
-                json={"model": "defaut", "messages": messages, "tools": outils or None, "stream": False},
+                json={"model": "default", "messages": messages, "tools": tools or None, "stream": False},
             )
-            reponse.raise_for_status()
-            return reponse.json()
+            response.raise_for_status()
+            return response.json()
 
-    def generer_flux(self, messages: list[dict[str, Any]], outils: list[dict] | None = None) -> Iterator[str]:
-        # En conception, le proxy renvoie une réponse unique ; on la découpe pour exercer le flux.
-        data = self.generer(messages, outils)
-        texte = data.get("choices", [{}])[0].get("message", {}).get("content") or ""
-        morceaux = _decouper(texte)
-        yield from morceaux
+    def generate_stream(self, messages: list[dict[str, Any]], tools: list[dict] | None = None) -> Iterator[str]:
+        # During design, the proxy returns a single response; it is split here to exercise streaming.
+        data = self.generate(messages, tools)
+        text = data.get("choices", [{}])[0].get("message", {}).get("content") or ""
+        yield from _split(text)
 
-    def embeddings(self, textes: list[str]) -> list[list[float]]:
+    def embeddings(self, texts: list[str]) -> list[list[float]]:
         with httpx.Client(timeout=self.timeout) as client:
-            reponse = client.post(
+            response = client.post(
                 f"{self.base_url}/v1/embeddings",
                 headers=self._headers(),
-                json={"model": "embeddings", "input": textes},
+                json={"model": "embeddings", "input": texts},
             )
-            reponse.raise_for_status()
-            data = reponse.json()["data"]
+            response.raise_for_status()
+            data = response.json()["data"]
             return [item["embedding"] for item in sorted(data, key=lambda x: x["index"])]
 
 
-def _decouper(texte: str, taille: int = 24) -> list[str]:
-    if not texte:
+def _split(text: str, size: int = 24) -> list[str]:
+    if not text:
         return [""]
-    return [texte[i : i + taille] for i in range(0, len(texte), taille)] or [texte]
+    return [text[i : i + size] for i in range(0, len(text), size)] or [text]
