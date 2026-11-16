@@ -16,7 +16,7 @@ Your agent, in `my-agent/harness.py`: first the *system prompt* and the conversa
 
 ## Models
 
-No real model is provided while this repository is being designed, and none is needed to start. The default mode is **simulated** (scripted chat, deterministic embeddings, scripted judge). The live mode, through an Azure OpenAI proxy, will come later; the key will stay on the server. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
+No real model is needed to start. The default mode is **simulated** (scripted chat, deterministic embeddings, scripted judge). The **live** mode (`PROXY_MODE=live` in `.env`) forwards chat completions to Azure OpenAI through the proxy, which keeps the key on the server; it needs `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT` (plus `AZURE_OPENAI_FALLBACK_DEPLOYMENT` for workshop 18). Embeddings stay deterministic in every mode. The tests honour `PROXY_MODE` from `.env`. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
 
 ## Useful commands
 

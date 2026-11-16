@@ -1,4 +1,4 @@
-"""OpenAI-compatible proxy: simulated and replay modes; live mode later (Azure, server-side key)."""
+"""OpenAI-compatible proxy: simulated, replay and live modes (Azure OpenAI, server-side key)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from workshop_kit.llm_proxy import replay, simulated
+from workshop_kit.llm_proxy import live, replay, simulated
 from workshop_kit.llm_proxy.tokens import STUDENTS, consume, issue_student_token, require_student, usage
 from workshop_kit.shell.config import settings
 
@@ -55,10 +55,23 @@ def _record(student: str, route: str, model: str, tokens: int, code: int) -> Non
     logger.info("proxy call student=%s route=%s tokens=%s code=%s", student, route, tokens, code)
 
 
-def _refuse_live_mode() -> None:
-    if not settings.azure_openai_api_key:
-        raise HTTPException(status_code=503, detail="live mode unavailable: no Azure key is configured")
-    raise HTTPException(status_code=503, detail="live mode is not enabled during the design phase")
+def _scripted(messages: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """A loaded test script still takes precedence in live mode, so test scenarios stay reproducible."""
+    if not _SCRIPTS:
+        return None
+    user_text = next((m.get("content") or "" for m in reversed(messages) if m.get("role") == "user"), "")
+    for script in _SCRIPTS:
+        if simulated._match(script, messages, user_text):
+            return simulated.complete(messages, [script])
+    return None
+
+
+def _live_chat(body: ChatIn, student: str) -> dict[str, Any]:
+    try:
+        return live.chat(body.messages, model=body.model, tools=body.tools, temperature=body.temperature)
+    except live.LiveError as exc:
+        _record(student, "/v1/chat/completions", body.model or "", 0, exc.status_code)
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
 @app.get("/health")
@@ -77,9 +90,9 @@ def chat(body: ChatIn, student: dict = Depends(require_student)):
         if "fallback" not in model.lower():
             _record(student["sub"], "/v1/chat/completions", model, 0, 503)
             raise HTTPException(status_code=503, detail="primary model unavailable")
-    if _mode() == "live":
-        _refuse_live_mode()
     response = None
+    if _mode() == "live":
+        response = _scripted(body.messages) or _live_chat(body, student["sub"])
     if _mode() == "replay":
         response = replay.find(body.messages)
     if response is None:
@@ -96,8 +109,7 @@ def chat(body: ChatIn, student: dict = Depends(require_student)):
 
 @app.post("/v1/embeddings")
 def embeddings(body: EmbeddingsIn, student: dict = Depends(require_student)):
-    if _mode() == "live":
-        _refuse_live_mode()
+    # Embeddings stay deterministic in every mode: the document index is built with the same local vectors.
     texts = body.input if isinstance(body.input, list) else [body.input]
     response = simulated.embeddings(texts)
     tokens = int((response.get("usage") or {}).get("total_tokens") or len(texts))

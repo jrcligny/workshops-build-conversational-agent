@@ -11,9 +11,7 @@ import os
 import httpx
 import pytest
 
-# Simulated mode from import time, before the applications read their settings.
-os.environ.setdefault("PROXY_MODE", "simulated")
-os.environ.setdefault("MODEL_MODE", "simulated")
+# Simulated mode by default; PROXY_MODE / MODEL_MODE from the environment or .env are honoured.
 os.environ.setdefault("OBSERVATION_TOKEN", "workshop-observation")
 os.environ.setdefault("TOKEN_SECRET", "workshop-test-secret-32-bytes-long!")
 
@@ -39,8 +37,6 @@ def session_dir(tmp_path_factory):
     settings.business_api_db = str(root / "business_api.db")
     settings.docs_search_db = str(root / "docs_search.db")
     settings.traces_dir = str(root / "traces")
-    settings.proxy_mode = "simulated"
-    settings.model_mode = "simulated"
     settings.token_secret = "workshop-test-secret-32-bytes-long!"
     settings.observation_token = OBSERVATION_TOKEN
     reassign(settings.business_api_db)

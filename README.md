@@ -26,7 +26,7 @@ workshop_kit/        provided infrastructure (Python package), never edited by s
     src/workshop_tools/ CLI (cli.py) and six-service launcher (devstack.py)
   chat-ui/           standard Chainlit UI, with its own Python project and dependencies
   shell/             settings, harness contract, chat interface, model client, tracer
-  llm_proxy/         OpenAI-compatible proxy (simulated / replay; live Azure OpenAI later)
+  llm_proxy/         OpenAI-compatible proxy (simulated / replay / live Azure OpenAI)
   apps/business_api/ business API test app (FastAPI + SQLite)
   apps/docs_search/  document search test app (SQLite FTS5 + sqlite-vec)
   services/          readers for my-agent/sandbox, my-agent/skills, my-agent/attachments
