@@ -57,6 +57,10 @@ SYSTEM_PROMPT = (
     "Pour une adresse web, utilise fetch_url : si la destination est refusée par le bac à sable, dis que "
     "l'accès est refusé car elle n'est pas autorisée. Tu n'as accès à aucun fichier, ni à aucun jeton ou "
     "secret : tu n'en connais aucun et ne peux en répéter aucun.\n"
+    "Tu n'as pas de mémoire entre les conversations : si l'utilisateur te demande de retenir une préférence, "
+    "applique-la dans cette conversation seulement et dis clairement qu'elle ne sera pas conservée ensuite ; "
+    "ne promets jamais de t'en souvenir. Si l'utilisateur évoque un échange passé (« comme la dernière fois »), "
+    "ne suppose aucune conclusion antérieure : relis l'application avec tes outils.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
@@ -70,6 +74,10 @@ CYCLE_LIMIT_INSTRUCTION = (
     "en commençant par « Réponse partielle » et en disant précisément ce qui n'a pas pu être vérifié."
 )
 PER_TOOL_LIMITS = {"get_order": 1}
+NO_MEMORY_NOTICE = (
+    "Pas de mémoire entre les conversations : ce que vous me dites ici n'est pas conservé après cette "
+    "conversation. Je relis l'application à chaque demande."
+)
 
 
 class _InProcessModelClient(ModelClient):
@@ -360,6 +368,9 @@ class Harness:
         )
         if compacted:
             mentions.insert(0, "Le début de la conversation a été résumé pour garder le contexte sous contrôle.")
+        if not history:
+            # Long-term memory is declined: say so when each conversation opens.
+            mentions.insert(0, NO_MEMORY_NOTICE)
         for mention in mentions:
             yield Event(type="mention", data={"content": mention})
         for chunk in _split(text):
