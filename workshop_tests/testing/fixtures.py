@@ -58,7 +58,21 @@ def services(session_dir):
     urls = {name: f"http://127.0.0.1:{port}" for name, port in ports.items()}
     for url in urls.values():
         wait_for(f"{url}/health")
+    # Same variables as `workshop serve`, so the harness reaches the services the same way.
+    exported = {
+        "BUSINESS_API_URL": urls["business_api"],
+        "DOCS_SEARCH_URL": urls["docs_search"],
+        "PROXY_URL": urls["proxy"],
+        "INTERFACE_URL": urls["interface"],
+    }
+    previous = {name: os.environ.get(name) for name in exported}
+    os.environ.update(exported)
     yield urls
+    for name, value in previous.items():
+        if value is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = value
     for server in servers.values():
         server.should_exit = True
 

@@ -7,6 +7,10 @@ from dataclasses import dataclass, field
 
 import httpx
 
+# Default of `open`: a signed-in interface, which hands the agent a valid entry token for
+# the user. Workshop 10a passes `app_token=None` (or a bad token) to test the refusal.
+SIGNED_IN = object()
+
 
 @dataclass
 class Turn:
@@ -30,14 +34,18 @@ class ChatClient:
         user_id: str = "camille-renard",
         role: str = "customer_service",
         organization: str = "organization-a",
-        app_token: str | None = None,
+        app_token: str | None | object = SIGNED_IN,
         limits: dict | None = None,
     ) -> str:
+        sign_in = app_token is SIGNED_IN
+        if sign_in:
+            app_token = None
         body = {
             "user_id": user_id,
             "role": role,
             "organization": organization,
             "app_token": app_token,
+            "sign_in": sign_in,
         }
         if limits:
             body["limits"] = limits

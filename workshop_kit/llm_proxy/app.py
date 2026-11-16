@@ -101,9 +101,9 @@ def chat(body: ChatIn, student: dict = Depends(require_student)):
     try:
         consume(student["sub"], tokens)
     except HTTPException as exc:
-        _record(student["sub"], "/v1/chat/completions", response.get("model", ""), tokens, exc.status_code)
+        _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, exc.status_code)
         raise
-    _record(student["sub"], "/v1/chat/completions", response.get("model", ""), tokens, 200)
+    _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, 200)
     return response
 
 

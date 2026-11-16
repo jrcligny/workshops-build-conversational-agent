@@ -49,6 +49,8 @@ class ConversationIn(BaseModel):
     role: str = "customer_service"
     organization: str = "organization-a"
     app_token: str | None = None
+    # A signed-in interface hands the agent an entry token for the user (workshop 10a).
+    sign_in: bool = False
     limits: dict | None = None
 
 
@@ -78,6 +80,10 @@ def list_attachments():
 @app.post("/conversations")
 def create_conversation(body: ConversationIn):
     conversation_id = uuid.uuid4().hex
+    if body.sign_in and not body.app_token:
+        from workshop_kit.apps.business_api.auth import issue_token
+
+        body.app_token = issue_token(body.user_id, body.role, body.organization, typ="entry")
     _conversations[conversation_id] = body.model_dump()
     _histories[conversation_id] = []
     return {"id": conversation_id, "user": body.model_dump()}
@@ -113,8 +119,11 @@ def send_message(conversation_id: str, body: MessageIn):
         app_token=meta.get("app_token"),
     )
     history = list(_histories[conversation_id])
+    # An interruption applies to the next turn only.
     interrupt_requested = conversation_id in _interruptions or body.interrupt
-    confirmation = _confirmations.get(conversation_id, False)
+    _interruptions.discard(conversation_id)
+    # A confirmation gesture applies to the next turn only: a later draft needs a new gesture.
+    confirmation = _confirmations.pop(conversation_id, False)
     limits = meta.get("limits")
 
     def stream():

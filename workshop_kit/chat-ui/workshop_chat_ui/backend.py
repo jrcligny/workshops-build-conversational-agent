@@ -96,7 +96,7 @@ class BackendClient:
     async def create_conversation(self) -> str:
         try:
             async with self._client() as client:
-                response = await client.post("conversations", json={})
+                response = await client.post("conversations", json={"sign_in": True})
                 response.raise_for_status()
                 payload = response.json()
                 conversation_id = payload.get("id") if isinstance(payload, dict) else None

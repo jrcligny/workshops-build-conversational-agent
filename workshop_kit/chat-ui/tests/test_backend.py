@@ -42,7 +42,7 @@ async def test_new_conversations_and_request_contract():
     assert await backend.create_conversation() == "1"
     assert await backend.create_conversation() == "2"
     assert all(r.url.path == "/prefix/conversations" and r.method == "POST" for r in requests)
-    assert all(json.loads(r.content) == {} for r in requests)
+    assert all(json.loads(r.content) == {"sign_in": True} for r in requests)
 
 
 @pytest.mark.asyncio
