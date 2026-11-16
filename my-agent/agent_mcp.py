@@ -70,14 +70,10 @@ def _client(token: str):
 def user_token(user) -> str:
     """The user's own token, as received from the interface.
 
-    Without one (local test runs), an entry token for the conversation's user stands in for the interface's
-    session token: the agent never mints an application token itself.
+    Without one, the request carries no identity: the agent never issues a token itself from the declared
+    user, and the tool server refuses to read anything.
     """
-    if user.app_token:
-        return user.app_token
-    from workshop_kit.apps.business_api.auth import issue_token
-
-    return issue_token(user.id, user.role, user.organization, typ="entry")
+    return user.app_token or ""
 
 
 def identity_record(user, token: str) -> dict:
@@ -90,6 +86,7 @@ def identity_record(user, token: str) -> dict:
         received = "unreadable"
     return {
         "user": user.id,
+        "token_type": "application",
         "role": user.role,
         "organization": user.organization,
         "received_token_type": received,

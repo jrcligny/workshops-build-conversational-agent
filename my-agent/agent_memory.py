@@ -40,6 +40,17 @@ class WorkingMemory:
         if candidates:
             listed = " ; ".join(f"{c['name']} ({c.get('city')}, id {c['id']})" for c in candidates)
             lines.append(f"- homonymes en attente du choix de l'utilisateur : {listed}")
+        listing = state.get("last_listing")
+        if listing:
+            following = (
+                f"suite avec query(source orders, filters {listing['filters']}, offset {listing['next_offset']})"
+                if listing.get("next_offset") is not None
+                else "aucune ligne suivante"
+            )
+            lines.append(
+                f"- dernière liste de commandes : lignes 1 à {listing['returned_until']} reçues sur {listing['total']} "
+                f"({listing['total_status']}) ; {following}"
+            )
         return "\n".join(lines)
 
     def update(self, conversation_id: str, name: str, arguments: dict, result: dict, lookup) -> None:
@@ -58,6 +69,14 @@ class WorkingMemory:
             if customer_id and customer_id in known and conversation_id in self._choice_pending:
                 # Control: a namesake is recorded as current customer only after the user's choice.
                 return
+            if isinstance(result.get("orders"), list):
+                state["last_listing"] = {
+                    "filters": result.get("filters"),
+                    "returned_until": (result.get("offset") or 0) + (result.get("returned") or 0),
+                    "next_offset": result.get("next_offset"),
+                    "total": result.get("total"),
+                    "total_status": result.get("total_status"),
+                }
             if customer_id:
                 current = state.get("current_customer") or {}
                 customer = (

@@ -40,7 +40,7 @@ class Attachments:
         attachment_id = (attachment_id or "").strip()
         if attachment_id not in self.attached(conversation_id, organization, user_id):
             return {
-                "status": "refused",
+                "status": "denied",
                 "attachment_id": attachment_id,
                 "error": "no such attachment on a record this user may view",
             }
@@ -49,12 +49,12 @@ class Attachments:
             root = folder().resolve()
             path = (root / attachment_id).resolve()
             if path.parent != root or not path.is_file():
-                return {"status": "refused", "attachment_id": attachment_id, "error": "outside the attachments area"}
+                return {"status": "not_found", "attachment_id": attachment_id, "error": "outside the attachments area"}
             with path.open("r", encoding="utf-8", errors="replace") as fh:
                 self._cache[key] = fh.read(MAX_CHARS + 1)
         content = self._cache[key]
         return {
-            "status": "read",
+            "status": "ok",
             "attachment_id": attachment_id,
             "untrusted": True,
             "content": content[:MAX_CHARS],

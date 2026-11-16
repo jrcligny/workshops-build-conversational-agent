@@ -7,6 +7,7 @@ so the application applies the user's own permissions.
 from __future__ import annotations
 
 import os
+import re
 from typing import Any
 
 from mcp.server import MCPServer
@@ -236,7 +237,8 @@ def _normalize_filters(filters: Any, meta: dict, source: str) -> tuple[dict | No
             else:
                 return None, False, {
                     "status": "error",
-                    "error": f"invalid value {value!r} for {key!r}",
+                    "error": f"invalid value {value!r} for {key!r}; allowed values: "
+                    + ", ".join(f"{c} ({l})" for c, l in codes.items()),
                     "fix": f"use one of the codes listed for {key!r} (a business label is accepted too)",
                     "values": [{"code": c, "label": l} for c, l in codes.items()],
                 }
@@ -245,6 +247,9 @@ def _normalize_filters(filters: Any, meta: dict, source: str) -> tuple[dict | No
 
 
 # ------------------------------------------------------------------------------------------------- tools
+
+
+ORDER_REFERENCE = re.compile(r"CMD-[A-Z0-9]{4,8}")
 
 
 def get_order(reference: str, ctx: Context) -> dict:
@@ -257,6 +262,12 @@ def get_order(reference: str, ctx: Context) -> dict:
     reference = (reference or "").strip().upper()
     if not reference:
         return {"status": "error", "error": "missing reference", "fix": "pass a reference such as CMD-1042"}
+    if not ORDER_REFERENCE.fullmatch(reference):
+        return {
+            "status": "error",
+            "error": f"invalid reference {reference!r}: an order reference is CMD- followed by 4 to 8 letters or digits",
+            "fix": "ask the user for a reference such as CMD-1042",
+        }
     meta, _ = _source(api, "orders")
     meta = meta or {}
     code, body = api.request("GET", f"/orders/{reference}")
@@ -271,13 +282,12 @@ def get_order(reference: str, ctx: Context) -> dict:
     rows = body.get("rows", []) if code == 200 else []
     candidates = [r for r in rows if _close(reference, str(r.get("reference", "")).upper())]
     if len(candidates) == 1:
-        order = _labelled(candidates[0], meta)
-        order["customer"] = _customer(api, candidates[0].get("customer_id"))
+        # Only the reference is suggested: the close order's details wait for the user's confirmation.
         return {
             "status": "approximate",
             "requested_reference": reference,
-            "detail": "the requested reference does not exist; closest existing order returned",
-            "order": order,
+            "detail": "the requested reference does not exist; ask the user whether they meant the suggested reference",
+            "suggestions": [candidates[0].get("reference")],
         }
     return {
         "status": "not_found",
@@ -286,11 +296,12 @@ def get_order(reference: str, ctx: Context) -> dict:
     }
 
 
-def find_by_name(name: str, ctx: Context, entity_type: str = "customer") -> dict:
+def find_by_name(name: str, ctx: Context, entity_type: str = "customer", city: str | None = None) -> dict:
     """Resolves a name to identifiers: entity_type is 'customer' (default), 'supplier' or 'user'.
 
     Returns every match, namesakes included, with their id (and city for customers). When nothing matches
     the requested type, the other types are searched too and the type actually found is reported.
+    city: pass it only when the user named the city; matches from other cities are then left out.
     Never pick one of several matches on behalf of the user.
     """
     api = _api(ctx)
@@ -311,6 +322,13 @@ def find_by_name(name: str, ctx: Context, entity_type: str = "customer") -> dict
             break
     if not matches:
         return {"status": "not_found", "entity_type": entity_type, "name": name, "matches": [], "searched": types}
+    if city and city.strip():
+        wanted = city.strip().casefold()
+        same_city = [m for m in matches if str(m.get("city") or "").casefold() == wanted]
+        if not same_city:
+            return {"status": "not_found", "entity_type": found_type, "name": name, "city": city,
+                    "matches": [], "other_cities": sorted({str(m.get("city")) for m in matches if m.get("city")})}
+        matches = same_city
     result: dict[str, Any] = {"status": "ok", "entity_type": found_type, "count": len(matches), "matches": matches}
     if found_type != entity_type:
         result["note_type"] = f"no {entity_type} with this name; found as {found_type}"
@@ -338,6 +356,9 @@ def query(
     aggregate: str | None = None,
     group_by: str | None = None,
     limit: int | None = None,
+    offset: int | None = None,
+    mode: str | None = None,
+    filter: str | None = None,
 ) -> dict:
     """Generic read query on a data source (orders, customers, invoices, suppliers, purchase_requests).
 
@@ -345,6 +366,11 @@ def query(
     On orders, {"late": true} keeps only late deliveries (applied here, never filter a list yourself).
     aggregate: 'count', 'total' or 'average' (amount); group_by: a field. Without aggregate, at most 20 rows
     are returned together with the total; use aggregate='count' when only the number is wanted.
+    Orders of one customer (filters {customer_id[, late]}) come back as a summarized portion: `orders`,
+    `returned`, `total`, `total_status` ('exact' or 'minimum' at the application's retrieval cap), `truncated`
+    and `next_offset`; pass offset=next_offset for the following portion, mode='count' for the number only.
+    filter: 'late' (orders only) keeps only late deliveries, selected by the application, never by you.
+    The detail of one order (amount, delivery) comes from get_order.
     Every coded value comes back with its business label (field_label).
     """
     api = _api(ctx)
@@ -354,8 +380,29 @@ def query(
     api_filters, late_only, error = _normalize_filters(filters, meta, source)
     if error:
         return error
+    if filter not in (None, ""):
+        if filter != LATE or source != "orders":
+            return {"status": "error", "error": f"unknown filter {filter!r}; allowed values: late (orders only)",
+                    "fix": "filter is 'late' on orders, or omitted"}
+        late_only = True
+    if mode not in (None, "", "list", "count"):
+        return {"status": "error", "error": f"unknown mode {mode!r}", "fix": "mode is 'list' (default) or 'count'"}
+    if source == "orders" and set(api_filters) == {"customer_id"} and not group_by and (
+        aggregate is None or (mode == "count" and aggregate == "count")
+    ):
+        return _customer_orders(api, meta, str(api_filters["customer_id"]), late_only,
+                                "count" if mode == "count" else "list", limit, offset)
     aggregates = meta.get("aggregates") or []
     if aggregate and aggregate not in aggregates:
+        # The application states the refusal itself (with the aggregates it offers) when it knows the request.
+        code, data = api.request("POST", f"/sources/{source}/query", json={"filters": {}, "aggregate": aggregate})
+        if code == 200 and isinstance(data, dict) and data.get("refused"):
+            return {
+                "status": "error",
+                "refused": True,
+                "error": f"refused by the application: {data.get('reason')}",
+                "available_aggregates": data.get("available_aggregates") or aggregates,
+            }
         return {
             "status": "error",
             "error": f"aggregate {aggregate!r} is not offered for {source!r}",
@@ -383,7 +430,7 @@ def query(
             detail = data.get("detail") if isinstance(data, dict) else data
             return {"status": "error", "error": f"query refused ({code}): {detail}", "fields": sorted(meta.get("fields") or {})}
     if isinstance(data, dict) and data.get("refused"):
-        return {"status": "error", "error": data.get("reason"), "available_aggregates": data.get("available_aggregates")}
+        return {"status": "error", "refused": True, "error": data.get("reason"), "available_aggregates": data.get("available_aggregates")}
     result: dict[str, Any] = {"status": "ok", "source": source, "filters": {**api_filters, **({LATE: True} if late_only else {})}}
     customer_id = api_filters.get("customer_id")
     if source == "orders" and customer_id:
@@ -432,6 +479,57 @@ def query(
             f"partial list: only {len(shown)} rows shown (cap {cap}); "
             + (f"at least {len(shown)} rows exist (minimum)" if total_is_minimum else f"exact total {total}")
             + ". Say the answer is partial and give the total; use aggregate='count' for the number only."
+        )
+    return result
+
+
+SUMMARY_FIELDS = ("reference", "status", "status_label", "order_date", "late")
+
+
+def _customer_orders(
+    api: BusinessAPI, meta: dict, customer_id: str, late_only: bool, mode: str, limit: int | None, offset: int | None
+) -> dict:
+    """One bounded, summarized portion of a customer's orders (or only their number in count mode)."""
+    cap = max(1, min(int(limit or MAX_ROWS), MAX_ROWS))
+    params: dict[str, Any] = {"limit": 0 if mode == "count" else cap, "offset": max(int(offset or 0), 0)}
+    if late_only:
+        params["filter"] = LATE
+    code, data = api.request("GET", f"/customers/{customer_id}/orders", params=params)
+    if code != 200:
+        return {"status": "error", "error": f"business API answered {code}", "customer_id": customer_id}
+    result: dict[str, Any] = {
+        "status": "ok",
+        "source": "orders",
+        "filters": {"customer_id": customer_id, **({LATE: True} if late_only else {})},
+        "customer": _customer(api, customer_id),
+        "total": data.get("total"),
+        "total_status": data.get("total_status"),
+    }
+    if mode == "count":
+        result["count"] = data.get("total")
+        result["value"] = data.get("total")
+        if data.get("total_status") == "minimum":
+            result["note"] = f"at least {data.get('total')} orders (application retrieval cap): say 'au moins'"
+        return result
+    orders = [{k: v for k, v in _labelled(r, meta).items() if k in SUMMARY_FIELDS} for r in data.get("orders", [])]
+    result.update(
+        {
+            "orders": orders,
+            "returned": len(orders),
+            "offset": data.get("offset", 0),
+            "next_offset": data.get("next_offset"),
+            "truncated": bool(data.get("truncated")),
+        }
+    )
+    if result["truncated"]:
+        minimum = data.get("total_status") == "minimum"
+        result["note"] = (
+            f"partial list: only an extract of {len(orders)} orders is shown; total "
+            + (f"is a MINIMUM: at least {data.get('total')} orders (application retrieval cap)" if minimum
+               else f"{data.get('total')} (exact)")
+            + ". Say the answer is partial and give the total"
+            + (f"; next portion with offset={data.get('next_offset')}" if data.get("next_offset") is not None else "")
+            + ". Amounts and delivery details come from get_order."
         )
     return result
 
@@ -528,18 +626,17 @@ def prepare_invoice_approval(invoice: str, ctx: Context) -> dict:
     rows = data.get("rows", []) if code == 200 else []
     invoice_id = rows[0]["id"] if rows else invoice
     original = rows[0].get("duplicate_of") if rows else None
-    if original:
-        # Control, not instruction: a probable duplicate never gets an approval draft.
-        return {
-            "status": "duplicate_suspected",
-            "invoice": rows[0].get("reference") or invoice,
-            "duplicate_of": original,
-            "error": f"invoice {invoice!r} looks like a duplicate of {original}: no approval draft prepared",
-        }
     code, body = api.request("POST", f"/invoices/{invoice_id}/approval/drafts")
     if code == 404:
         return {"status": "not_found", "error": f"invoice {invoice!r} not found"}
-    return _draft_result(code, body, "invoice approval draft")
+    result = _draft_result(code, body, "invoice approval draft")
+    if original:
+        # A probable duplicate is flagged on the draft: the user decides when confirming, warned.
+        result["duplicate_suspected"] = True
+        result["duplicate_of"] = original
+        result["warning"] = (f"invoice {invoice!r} looks like a duplicate of {original}: tell the user before they "
+                             "confirm; nothing is approved without their gesture")
+    return result
 
 
 def submit_draft(draft_id: str, ctx: Context) -> dict:
@@ -567,10 +664,10 @@ def search_documents(ctx: Context, query: str) -> dict:
 
     Returns only the passages the user may read (their organization and role). Use it for "what does the
     procedure / documentation say"; use the data tools for the state of an order, invoice, etc.
-    An empty result is declared explicitly (status no_passage): then say that nothing was found.
+    An empty result is declared explicitly (status no_passage): then answer that the documentation does not mention it ("ne mentionne pas").
     """
     code, body = DocsSearch((ctx.headers or {}).get("authorization")).request(
-        "POST", "/search", json={"query": query, "k": 4, "threshold": 0.1}
+        "POST", "/search", json={"query": query, "k": 5, "threshold": 0.3}
     )
     if code != 200:
         return {"status": "error", "error": f"document search answered {code}", "query": query}
@@ -582,6 +679,8 @@ def search_documents(ctx: Context, query: str) -> dict:
             "section": p["section"],
             "version": p["version"],
             "address": p["address"],
+            "audience": p.get("audience"),
+            "score": p.get("score"),
             "text": p["text"][:1500],
         }
         for p in body.get("passages") or []
@@ -590,12 +689,14 @@ def search_documents(ctx: Context, query: str) -> dict:
         return {
             "status": "no_passage",
             "query": query,
+            "no_passage": True,
             "passages": [],
             "note": "no passage of the documentation available to this user answers the question",
         }
     return {
         "status": "found",
         "query": query,
+        "no_passage": False,
         "passages": passages,
         "note": (
             "documentation passages, filtered by the user's organization and role, ranked by a search that "
@@ -629,7 +730,8 @@ def create_server() -> MCPServer:
         version=VERSION,
         instructions=(
             "Read tools of the customer service agent, wired to the business API with the caller's identity. "
-            "Use find_by_name to resolve names, query for any read on a data source, get_order for one order."
+            "Use find_by_name to resolve names, query for any read on a data source (orders of one customer: "
+            "source 'orders', filters {customer_id}, filter 'late' for late deliveries), get_order for one order."
         ),
     )
     for tool in (
