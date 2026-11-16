@@ -1,42 +1,64 @@
-"""End-to-end tests of workshop 16. They must fail on the empty shell."""
+"""End-to-end tests of workshop 16. They must fail on the empty shell.
+
+Contract read here: interface event `mention` (data `content`), built by the program below
+the answer; trace `state` (workshop 08: `current_customer`, `candidates`, `current_order`);
+`tools[].result.status` and `total` / `truncated` (workshop 07).
+"""
 
 import pytest
 
 from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import flat, model_input, successful_turn
+from workshop_tests.testing.turns import events_of, successful_turn, tool_arguments, tool_status, tools
 
 pytestmark = pytest.mark.workshop
 
 
-def test_partial_result_mention_built_by_the_harness(chat_client, observation):
+def _mentions(turn) -> str:
+    return " ".join(str(m.get("content", "")) for m in events_of(turn, "mention"))
+
+
+def test_partial_result_mention_built_by_the_harness(chat_client, observation, business_client):
     observation.reset("volume")
-    turn, _ = successful_turn(chat_client, "Listez toutes les commandes en retard de Transports Morel.")
-    assert "mention" in turn.types, "the bounded-result mention is built by the harness, below the answer"
+    customer = business_client.get("/customers", params={"name": "Transports Morel"}).json()[0]
+    total = business_client.get(f"/customers/{customer['id']}/orders", params={"filter": "late"}).json()["total"]
+    turn, trace = successful_turn(chat_client, "Listez toutes les commandes en retard de Transports Morel.")
+    assert any(c.get("result", {}).get("truncated") for c in tools(trace)), "the list is bounded by the tool"
+    mention = _mentions(turn)
+    assert "partiel" in mention.lower() and str(total) in mention, (
+        f"a mention, built from the tool result, says the list is partial and gives the total ({total})"
+    )
 
 
 def test_customer_recorded_only_after_the_choice(chat_client):
-    turn, trace = successful_turn(chat_client, "Quelles sont les commandes de Léa Martin ?")
-    state = flat(trace.get("state") or model_input(trace).get("state") or "")
-    # several candidates: no single current customer yet
-    assert "Léa Martin" not in state or "lille" not in state.lower() or "current" not in state.lower()
-    turn, trace = successful_turn(chat_client, "Celle de Lille.")
-    state = flat(trace.get("state") or model_input(trace).get("state") or trace)
-    assert "lille" in state.lower()
+    _, trace = successful_turn(chat_client, "Quelles sont les commandes de Léa Martin ?")
+    state = trace.get("state") or {}
+    assert len(state.get("candidates") or []) == 2, "the two namesakes are kept as candidates"
+    assert not state.get("current_customer"), "no current customer is recorded before the user chooses"
+    _, trace = successful_turn(chat_client, "Celle de Lille.")
+    assert ((trace.get("state") or {}).get("current_customer") or {}).get("city") == "Lille"
 
 
 def test_unconsulted_record_marked_unverified(chat_client):
     turn, trace = successful_turn(chat_client, "La facture FAC-9999 et la commande CMD-0000 sont-elles réglées ?")
-    flat_t = (turn.text + flat(trace)).lower()
-    assert "mention" in turn.types or "non vérifié" in flat_t or "pas vérifié" in flat_t or "non consulté" in flat_t or "unverified" in flat_t
+    looked_up = {ref: [tool_status(c) for c in tools(trace) if ref in str(tool_arguments(c))] for ref in ("FAC-9999", "CMD-0000")}
+    assert all(looked_up.values()), "each record is looked up in the application"
+    mention = _mentions(turn)
+    assert "FAC-9999" in mention and "CMD-0000" in mention, "a mention lists the records that could not be verified"
+    assert all(s == "not_found" for v in looked_up.values() for s in v), "neither record exists in the application"
 
 
-def test_simultaneous_conversations_isolated(services, observation):
+def test_simultaneous_conversations_isolated(services):
     a = ChatClient(services["interface"])
     a.open(user_id="camille-renard", role="customer_service", organization="organization-a")
-    successful_turn(a, "Je traite Martin Durand, commande CMD-1042.")
     b = ChatClient(services["interface"])
     b.open(user_id="paul-buyer", role="buyer", organization="organization-a")
-    turn, trace = successful_turn(b, "Qui est le client en cours, et quelle commande est-ce que je suis ?")
-    flat_t = (turn.text + flat(trace.get("state") or "") + flat(model_input(trace))).lower()
-    assert "cmd-1042" not in flat_t
-    assert "durand" not in flat_t
+    turn_a, trace_a = successful_turn(a, "Quel est le statut de la commande CMD-1042 de Martin Durand ?")
+    assert ((trace_a.get("state") or {}).get("current_order") or {}).get("reference") == "CMD-1042", (
+        "conversation A records its current order"
+    )
+    turn_b, trace_b = successful_turn(b, "Qui est le client en cours, et quelle commande est-ce que je suis ?")
+    state_b = trace_b.get("state") or {}
+    assert not state_b.get("current_order") and not state_b.get("current_customer"), "conversation B has its own, empty, state"
+    assert "durand" not in turn_b.text.lower() and "CMD-1042" not in turn_b.text
+    turn_a, trace_a = successful_turn(a, "Et son client ?")
+    assert "durand" in turn_a.text.lower(), "conversation A keeps its state while B runs"

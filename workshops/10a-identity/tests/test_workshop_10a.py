@@ -1,34 +1,119 @@
-"""End-to-end tests of workshop 10a. They must fail on the empty shell."""
+"""End-to-end tests of workshop 10a. They must fail on the empty shell.
 
+Contract read here:
+- the business application's call log (`user_id`, `role`, `code`): the API only accepts an
+  `application` token; the interface hands the agent an `entry` token (`app_token` of
+  `POST /conversations`), which must be exchanged, never relayed as is nor replaced by a token
+  the agent issues itself from the declared `user_id`;
+- trace `identity` ({`user`, `token_type`: "application"}) and `tools[].result.status`
+  ("denied" or "error" when the identity cannot be established);
+- the MCP server of `my-agent/mcp_server.py` (workshop 09) reads the entry token from the HTTP
+  header `Authorization: Bearer <entry token>`; without it, or with an invalid token, its
+  generic tool (input schema with `source` and `filters`) reads nothing.
+"""
+
+import asyncio
+
+import jwt
 import pytest
+from mcp import ClientSession
+from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
 from workshop_kit.apps.business_api.auth import issue_token
+from workshop_kit.shell.loader import load_mcp_server
 from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import business_log, flat, successful_turn
+from workshop_tests.testing.servers import free_port, start_uvicorn, wait_for_port
+from workshop_tests.testing.turns import business_log, successful_turn, tool_status, tools
 
 pytestmark = pytest.mark.workshop
 
+QUESTION = "Quel est le statut de la commande CMD-1042 ?"
+DATA_ROUTES = ("/orders", "/sources", "/customers", "/invoices")
 
-def test_token_exchange(chat_client, observation, services):
+
+def _data_log(observation) -> list[dict]:
+    return [e for e in business_log(observation) if str(e.get("route", "")).startswith(DATA_ROUTES)]
+
+
+def _forged_entry_token() -> str:
+    """Well-formed entry token for camille-renard, signed with a key the application does not know."""
+    return jwt.encode({"sub": "camille-renard", "role": "customer_service", "organization": "organization-a", "typ": "entry"}, "not-the-secret-of-the-business-application", algorithm="HS256")
+
+
+def test_token_exchange(services, observation):
     token = observation.token("camille-renard")
-    chat_client.open(app_token=token["app_token"])
-    turn, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
-    log = business_log(observation)
-    assert log, "the application must receive a call on behalf of the user"
-    flat_log = flat(log).lower()
-    assert "camille-renard" in flat_log or "camille" in flat_log
-    assert "service-account" not in flat_log
-    assert trace.get("identity") or any("application" in str(e).lower() for e in log)
-
-
-def test_request_without_identity_refused(services, observation):
-    # An entry token (typ=entry) is not accepted by the application: the tool server
-    # must exchange it, not relay it. A turn without exchange lets the API refuse.
-    wrong = issue_token("camille-renard", "customer_service", "organization-a", typ="entry")
     client = ChatClient(services["interface"])
-    client.open(app_token=wrong)
-    turn, trace = successful_turn(client, "Quel est le statut de la commande CMD-1042 ?")
-    log = business_log(observation)
-    # either no business call went through (refused upstream), or the API answered 401
-    codes = [e.get("code") or e.get("status") for e in log]
-    assert (not log) or any(c in {401, 403, "401", "403"} for c in codes) or "refus" in flat(trace).lower() or "identit" in turn.text.lower()
+    client.open(app_token=token["entry_token"])
+    turn, trace = successful_turn(client, QUESTION)
+    log = _data_log(observation)
+    assert log, "the application must receive a call on behalf of the user"
+    assert {e.get("user_id") for e in log} == {"camille-renard"}, "every call is made with the user's identity"
+    assert all(e.get("code") == 200 for e in log), "the entry token was exchanged for an application token"
+    identity = trace.get("identity") or {}
+    assert identity.get("user") == "camille-renard" and identity.get("token_type") == "application", (
+        "trace.identity records the user and the exchanged token type"
+    )
+    assert "livrée" in turn.text.lower()
+
+
+@pytest.mark.parametrize("app_token", [None, "not-a-token", "forged"], ids=["no-token", "malformed", "forged-signature"])
+def test_request_without_identity_refused(services, observation, app_token):
+    client = ChatClient(services["interface"])
+    client.open(user_id="camille-renard", role="customer_service", app_token=_forged_entry_token() if app_token == "forged" else app_token)
+    turn, trace = successful_turn(client, QUESTION)
+    assert not any(e.get("code") == 200 for e in _data_log(observation)), (
+        "no data is read without a valid entry token: the agent never issues a token itself from the declared user"
+    )
+    statuses = {tool_status(c) for c in tools(trace)}
+    assert statuses and statuses <= {"denied", "error"}, "the refusal is recorded in the tool result (status denied)"
+    assert "livrée" not in turn.text.lower()
+
+
+def test_other_organization_sees_nothing(services, observation):
+    client = ChatClient(services["interface"])
+    token = issue_token("ines-service-b", "customer_service", "organization-b", typ="entry")
+    client.open(user_id="ines-service-b", role="customer_service", organization="organization-b", app_token=token)
+    turn, trace = successful_turn(client, QUESTION)
+    log = _data_log(observation)
+    assert log and {e.get("user_id") for e in log} == {"ines-service-b"}, "the call is made as the organization-b user"
+    assert "livrée" not in turn.text.lower(), "an order of another organization is never disclosed"
+
+
+@pytest.fixture(scope="module")
+def mcp_server_url():
+    module = load_mcp_server()
+    port = free_port()
+    server = start_uvicorn(module.application(), port)
+    wait_for_port("127.0.0.1", port)
+    yield f"http://127.0.0.1:{port}{module.MCP_PATH}"
+    server.should_exit = True
+
+
+def _call_generic_tool(url: str, authorization: str | None):
+    async def _run():
+        headers = {"Authorization": authorization} if authorization else None
+        async with create_mcp_http_client(headers=headers) as http:
+            async with streamable_http_client(url, http_client=http) as streams:
+                async with ClientSession(streams[0], streams[1]) as session:
+                    await session.initialize()
+                    tools_ = (await session.list_tools()).tools
+                    generic = [t for t in tools_ if {"source", "filters"} <= set((t.inputSchema or {}).get("properties", {}))]
+                    assert generic, "the MCP server exposes the generic query tool of workshop 09"
+                    return await session.call_tool(generic[0].name, {"source": "orders", "filters": {"id": "CMD-1042"}})
+
+    return asyncio.run(_run())
+
+
+def test_mcp_server_requires_the_entry_token(mcp_server_url, observation):
+    token = observation.token("camille-renard")["entry_token"]
+    _call_generic_tool(mcp_server_url, f"Bearer {token}")
+    log = _data_log(observation)
+    assert log and all(e.get("code") == 200 and e.get("user_id") == "camille-renard" for e in log), (
+        "with the entry token in the Authorization header, the server reads as the user"
+    )
+    before = len(_data_log(observation))
+    for authorization in (None, "Bearer not-a-token", f"Bearer {_forged_entry_token()}"):
+        _call_generic_tool(mcp_server_url, authorization)
+    assert not any(e.get("code") == 200 for e in _data_log(observation)[before:]), (
+        "without a valid entry token, the MCP server reads nothing (it neither relays nor invents an identity)"
+    )
