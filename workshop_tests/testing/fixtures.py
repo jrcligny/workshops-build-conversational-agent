@@ -7,6 +7,7 @@ Loaded as a pytest plugin by `workshop_tests/pyproject.toml`, so that the kit te
 from __future__ import annotations
 
 import os
+import shutil
 
 import httpx
 import pytest
@@ -64,6 +65,8 @@ def services(session_dir):
         "DOCS_SEARCH_URL": urls["docs_search"],
         "PROXY_URL": urls["proxy"],
         "INTERFACE_URL": urls["interface"],
+        # Persistent memory of the agent (workshop 12): one store per test session, emptied by reset_state.
+        "MEMORY_DIR": str(session_dir / "memory"),
     }
     previous = {name: os.environ.get(name) for name in exported}
     os.environ.update(exported)
@@ -85,6 +88,9 @@ def reset_state(session_dir, services):
     clear_proxy_log()
     reset_usage()
     reset_conversations()
+    memory_dir = session_dir / "memory"
+    shutil.rmtree(memory_dir, ignore_errors=True)
+    memory_dir.mkdir()
     yield
 
 

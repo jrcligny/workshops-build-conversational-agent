@@ -102,7 +102,7 @@ synonym), `approximate`, `not_found`, `error` and `denied`.
 | 10c | | | no tool whose name contains `python`, `exec`, `code`, `eval`, `shell`; median refused |
 | 10d | `limit_reached` (`duration` or `token_budget`) | `mention` | `my-agent/sandbox/policy.yaml`; runtime probes on files opened and hosts contacted |
 | 11 | per turn: `turn_id`, `context.intermediate_reads`, `tools[].domain` | | `my-agent/trace_queries.py`: `intermediate_reads_share(traces)`, `incompatible_domains(traces, permissions)` |
-| 12 | | `mention` (first turn) | |
+| 12 | `memory` (`loaded`, `written`, `deleted`; entries `topic`, `value`, `origin`, `recorded_at`, `user`, `organization`), `input` | `mention` (first turn), `memory` (`action`, `topic`, `value`) | `MEMORY_DIR` (files on disk, read at call time); topics `amount_display` (`excluding_tax`, `including_tax`), `answer_format` (`table`, `text`); `origin: "user"` |
 | 13 | `tools[].result.passages[]`, `no_passage` | `sources` (`sources[]`: `title`, `version`, `address`) | |
 | 14 | `skills_loaded[]` (`id`, `version`, `cycle`), `offered_tools` (one list per model call) | | `my-agent/skills/` manifest: `id`, `title`, `version`, `path`; approvals by `nina-accountant` |
 | 15 | `offered_tools` | no `confirmation_requested` | attachment read by id (`sample-quote.txt`) |

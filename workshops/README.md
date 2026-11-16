@@ -52,7 +52,7 @@ jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 | 10c | [10c-groupings](10c-groupings/) | Regroupements |
 | 10d | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
 | 11 | [11-architecture](11-architecture/) | Un seul agent : requêtes sur la trace |
-| 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire longue déclinée |
+| 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire persistante |
 | 13 | [13-document-search](13-document-search/) | Recherche documentaire |
 | 14 | [14-skills](14-skills/) | *Skills* |
 | 15 | [15-read-without-obeying](15-read-without-obeying/) | Lire sans obéir |
