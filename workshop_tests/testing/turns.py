@@ -56,8 +56,12 @@ def tool_result(call: dict) -> dict:
 
 
 def tool_status(call: dict) -> str:
-    """Normalised status of a tool result: ok | not_found | error (see the interface contract)."""
-    return str(tool_result(call).get("status") or "").lower()
+    """Normalised status of a tool result: ok | approximate | not_found | error | denied.
+
+    `found` is accepted as a synonym of `ok` (see the interface contract).
+    """
+    status = str(tool_result(call).get("status") or "").lower()
+    return "ok" if status == "found" else status
 
 
 def events_of(turn, event_type: str) -> list[dict]:
