@@ -7,19 +7,19 @@ No reference agent is shipped. The workshop tests stay red on the bootstrap of `
 No Azure deployment is needed. Everything runs in simulated mode (scripted chat, deterministic embeddings, scripted judge or hand-written replay).
 
 From the repository root, prepare both environments with
-`uv sync --project workshop_kit/bootstrap --locked --python 3.13` and
+`uv sync --project tooling/cli --locked --python 3.13` and
 `uv sync --project workshop_tests --locked --python 3.13`. The tooling CLI
 delegates checks to the test project's environment and pytest configuration;
 `python start.py` starts services only and never installs test dependencies.
 
-1. Bootstrap and inert agent: `uv run --project workshop_kit/bootstrap workshop check-shell` and `workshop check-inert` must succeed (every workshop test fails; only the bootstrap may pass the tests listed in `workshop_tests/bootstrap_passes.txt`).
-2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project workshop_kit/bootstrap workshop check N --non-regression`).
+1. Bootstrap and inert agent: `uv run --project tooling/cli workshop check-bootstrap` and `workshop check-inert` must succeed (every workshop test fails; only the bootstrap may pass the tests listed in `workshop_tests/bootstrap_passes.txt`).
+2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project tooling/cli workshop check N --non-regression`).
 3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
-4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests`.
+4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests`.
 
 The CI replays points 1 and 4 on every commit.
 
-The live mode is the reference for students in every workshop, and is required from workshop 04 on (the simulated model does not call tools); the simulated mode stays the one of the CI, `check-shell` and `check-inert`.
+The live mode is the reference for students in every workshop, and is required from workshop 04 on (the simulated model does not call tools); the simulated mode stays the one of the CI, `check-bootstrap` and `check-inert`.
 
 ## Phase B — Calibration, once Azure OpenAI is available
 

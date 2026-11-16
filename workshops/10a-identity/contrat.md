@@ -6,7 +6,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'objectif de l
 
 Les tests sont dans [tests/](tests/).
 
-**Les jetons** (service de jetons simulé, `workshop_kit/apps/business_api/auth.py`).
+**Les jetons** (service de jetons simulé, `business/business_api/src/business_api/auth.py`).
 
 - L'interface remet au harnais le champ `app_token` de `POST /conversations`, transmis dans l'utilisateur de la conversation (`TestUser.app_token`). C'est un jeton d'**entrée** : `typ` vaut `"entry"`.
 - L'application n'accepte que des jetons `typ` = `"application"`. Avec un autre type, elle répond 401.
@@ -59,16 +59,16 @@ Les tests sont dans [tests/](tests/).
 
 ## Essayer soi-même
 
-1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080.
+1. Lancez `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080.
 2. L'interface de chat ouvre ses conversations comme une interface connectée (`"sign_in": true`) : elle remet au harnais un jeton d'entrée valide pour l'utilisateur choisi dans son sélecteur d'identité (par exemple paul-buyer, ou ines-service-b de l'organisation B). Pour voir un refus, ouvrez une conversation sans `sign_in` ni `app_token` avec un client HTTP.
 3. Lisez `identity` et `tools[].result.status` sur la dernière ligne de `traces/turns.jsonl`.
 4. Lancez `workshop check 10a`.
 
 ## Pistes techniques
 
-- Lisez `workshop_kit/apps/business_api/auth.py` : `issue_token`, `decode_token`, `user_from_header`, `ROLES`.
-- La route d'observation `POST /observation/test-token` (`workshop_kit/apps/business_api/app.py`) renvoie pour un utilisateur un `entry_token` et un `app_token` ; les tests s'en servent.
-- `workshop_kit/shell/chat_app.py` montre comment `app_token` (ou le jeton émis quand `sign_in` vaut `true`) passe de `POST /conversations` à l'utilisateur remis au harnais.
+- Lisez `business/business_api/src/business_api/auth.py` : `issue_token`, `decode_token`, `user_from_header`, `ROLES`.
+- La route d'observation `POST /observation/test-token` (`business/business_api/src/business_api/app.py`) renvoie pour un utilisateur un `entry_token` et un `app_token` ; les tests s'en servent.
+- `gateway/agent_gateway/src/agent_gateway/chat_app.py` montre comment `app_token` (ou le jeton émis quand `sign_in` vaut `true`) passe de `POST /conversations` à l'utilisateur remis au harnais.
 - `list_tools(jeton)` et `call_tool(..., jeton)` de `agent_sdk/src/agent_sdk/mcp_client.py` envoient le jeton en `Authorization: Bearer` ; sa vérification et son échange restent à vous.
 - Le test appelle l'outil générique avec le filtre `id`. Celui-ci n'est pas listé dans les champs de `GET /sources/orders`, mais l'application l'accepte : une validation stricte des clés de filtre le refuserait.
 
@@ -81,7 +81,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 10a. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué. Les tests des ateliers précédents ouvrent leurs conversations avec `"sign_in": true` : l'interface leur remet un jeton d'entrée valide, et vos lectures doivent donc continuer de réussir.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 10a
-uv run --project workshop_kit/bootstrap workshop check 10a
-uv run --project workshop_kit/bootstrap workshop check 10a --non-regression   # ateliers 03 à 10a
+uv run --project tooling/cli workshop start 10a
+uv run --project tooling/cli workshop check 10a
+uv run --project tooling/cli workshop check 10a --non-regression   # ateliers 03 à 10a
 ```

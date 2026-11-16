@@ -58,7 +58,7 @@ en vérifiant le détail de chacune, sans vous arrêter. » → la limite est at
 ## Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne
@@ -75,7 +75,7 @@ Lancez enfin `workshop check 06`.
   `agent_sdk/src/agent_sdk/contract.py` et `docs/interface-contract.md`. Les constructeurs
   `step(outil)`, `mention(texte)` et `interruption()` de `agent_sdk/src/agent_sdk/events.py`
   produisent des événements bien formés ; quand les émettre reste à vous.
-- `workshop_kit/shell/chat_app.py` montre comment l'interface transmet l'interruption :
+- `gateway/agent_gateway/src/agent_gateway/chat_app.py` montre comment l'interface transmet l'interruption :
   `interrupt_requested` est fixé au début du tour (via `/interruption` ou le champ
   `"interrupt": true` du message). Consultez-le avant chaque cycle, avant tout outil.
 - Pour atteindre la limite sur la revue de 30 commandes, elle doit rester inférieure au

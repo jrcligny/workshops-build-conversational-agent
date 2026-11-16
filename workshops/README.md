@@ -13,11 +13,11 @@ Lancez toutes les commandes des contrats depuis la racine du dépôt. Préparez 
 environnements d'outillage et de test, qui sont séparés :
 
 ```powershell
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project tooling/cli --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_kit/bootstrap workshop start 03
-uv run --project workshop_kit/bootstrap workshop check 03
-uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
+uv run --project tooling/cli workshop start 03
+uv run --project tooling/cli workshop check 03
+uv run --project tooling/cli workshop check 07 --non-regression
 ```
 
 **Mode du modèle.** Le **mode live** est la référence pour tous les ateliers
@@ -25,7 +25,7 @@ uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
 L'atelier 03 peut se commencer en mode simulé en attendant un accès Azure, mais se valide en
 live. À partir de l'atelier 04, le live est indispensable : c'est l'agent qui décide quel
 outil appeler, ce que le modèle simulé ne fait pas. Le mode simulé sert à la CI, à
-`check-shell` et à `check-inert`.
+`check-bootstrap` et à `check-inert`.
 
 **Lecture des résultats.** Les faits vérifiables par le code (état de l'application,
 journaux, traces, événements) sont contrôlés d'abord. Une rubrique juge ensuite le sens de
@@ -34,7 +34,7 @@ la réponse ; elle est rejouée sur des conversations neuves et passe si `JUDGE_
 en non-régression dès que l'atelier vérifié atteint `<id>` : c'est le cas des tests « pas
 encore d'outil » de l'atelier 03 à partir de l'atelier 04.
 
-La CLI se trouve dans `workshop_kit/bootstrap/src/workshop_tools/`. Ses commandes de
+La CLI se trouve dans `tooling/cli/src/workshop_tools/`. Ses commandes de
 vérification lancent pytest dans `workshop_tests/`, avec la configuration de ce projet. Il
 n'y a ni projet Python ni environnement partagé à la racine, et `python start.py` n'installe
 jamais les dépendances de test. Voir l'[installation](../docs/installation.md).

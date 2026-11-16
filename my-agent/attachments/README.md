@@ -8,7 +8,7 @@ Read-only area for the documents attached to a conversation turn
   `agent_sdk/src/agent_sdk/attachments.py`, setting `attachments_dir`,
   default `my-agent/attachments`).
 
-No sample quote is provided in the shell. You will drop the files here
+No sample quote is provided in the bootstrap. You will drop the files here
 (including, when the time comes, the booby-trapped quote of workshop 15).
 The workshop 15 tests use their own fixture
 (`workshops/15-read-without-obeying/tests/fixtures/`).

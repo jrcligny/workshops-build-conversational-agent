@@ -51,14 +51,14 @@ Restent libres : le nom des outils et de leurs paramètres (y compris celui de l
 ## Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 Chargez le jeu `volume` par la route d'observation `POST /observation/reset` avec `{"dataset": "volume"}` et le jeton d'observation, ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne de `traces/turns.jsonl` (`tools`, `model.calls[].context_size`). Lancez enfin `workshop check 07`.
 
 ## Pistes techniques
 
-- `GET /customers/{id}/orders` accepte `filter`, `limit` et `offset`. Il renvoie `orders`, `total`, `total_status` (`exact` ou `minimum` au-delà de 200), `truncated`, `limit`, `offset` et `next_offset` ; voir `workshop_kit/apps/business_api/services.py`.
+- `GET /customers/{id}/orders` accepte `filter`, `limit` et `offset`. Il renvoie `orders`, `total`, `total_status` (`exact` ou `minimum` au-delà de 200), `truncated`, `limit`, `offset` et `next_offset` ; voir `business/business_api/src/business_api/services.py`.
 - `GET /orders/{reference}` donne le détail d'une commande.
 - Mesurez `context_size` juste avant chaque appel au modèle et enregistrez-le dans la trace du tour (`tracer.call_model(..., context_size=...)` ou `tracer.model_call(...)`, `agent_sdk/src/agent_sdk/trace.py`).
 - Les assertions détaillées sont dans [tests/](tests/).

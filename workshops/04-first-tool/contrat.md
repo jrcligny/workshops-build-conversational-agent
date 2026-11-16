@@ -56,7 +56,7 @@ sans appeler l'API.
 ## Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne
@@ -64,13 +64,13 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
 
 ## Pistes techniques
 
-- L'API métier est décrite dans `workshop_kit/apps/business_api/app.py` :
+- L'API métier est décrite dans `business/business_api/src/business_api/app.py` :
   `GET /orders/{reference}` renvoie 404 pour une commande absente ou exclue. Elle exige un
-  jeton applicatif (`workshop_kit/apps/business_api/auth.py`).
+  jeton applicatif (`business/business_api/src/business_api/auth.py`).
 - L'API n'offre pas de recherche approchée : votre outil calcule lui-même les références
   candidates et ne garde que celles qui existent.
 - Validez le format avant tout appel : une référence invalide ne doit jamais atteindre l'API.
-- Les données de départ sont dans `workshop_kit/apps/business_api/seed_data.py`.
+- Les données de départ sont dans `business/business_api/src/business_api/seed_data.py`.
 - Le harnais trouve les services dans les variables d'environnement `BUSINESS_API_URL`,
   `PROXY_URL` et `DOCS_SEARCH_URL`, définies par `workshop serve` comme par
   `workshop check` (ports différents : lisez-les au moment de l'appel). L'utilisateur remis

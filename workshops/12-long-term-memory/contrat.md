@@ -64,9 +64,9 @@ Extrait de trace d'une conversation suivante :
 
 ### Essayer soi-même
 
-1. `uv run --project workshop_kit/bootstrap workshop serve`, puis http://127.0.0.1:8080. Ouvrez deux conversations successives et jouez les messages ci-dessus.
+1. `uv run --project tooling/cli workshop serve`, puis http://127.0.0.1:8080. Ouvrez deux conversations successives et jouez les messages ci-dessus.
 2. Regardez le dossier `my-agent/memory/` entre deux conversations, et la dernière ligne de `traces/turns.jsonl` (champ `memory`).
-3. `uv run --project workshop_kit/bootstrap workshop check 12`.
+3. `uv run --project tooling/cli workshop check 12`.
 
 ## Pistes techniques
 
@@ -83,7 +83,7 @@ Extrait de trace d'une conversation suivante :
 Le mode live est la voie de référence de tous les ateliers : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : trace `memory`, événements, fichiers sous `MEMORY_DIR`, entrée du modèle, journal de l'API métier. La non-régression rejoue les ateliers 03 à 12 ; chaque test part d'une mémoire vide.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 12
-uv run --project workshop_kit/bootstrap workshop check 12
-uv run --project workshop_kit/bootstrap workshop check 12 --non-regression   # ateliers 03 à 12
+uv run --project tooling/cli workshop start 12
+uv run --project tooling/cli workshop check 12
+uv run --project tooling/cli workshop check 12 --non-regression   # ateliers 03 à 12
 ```

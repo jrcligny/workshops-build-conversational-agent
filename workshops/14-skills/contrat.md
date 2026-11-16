@@ -70,9 +70,9 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
    ```powershell
    uv run --project workshop_tests python -c "from agent_sdk.skills import load_manifest, skill_folders; print(load_manifest()); print(skill_folders())"
    ```
-2. `uv run --project workshop_kit/bootstrap workshop serve`, puis http://127.0.0.1:8080 : posez les questions sous les trois identités.
+2. `uv run --project tooling/cli workshop serve`, puis http://127.0.0.1:8080 : posez les questions sous les trois identités.
 3. Lisez la dernière ligne de `traces/turns.jsonl` : `skills_loaded`, `offered_tools`, `tools[].cycle`.
-4. `uv run --project workshop_kit/bootstrap workshop check 14`.
+4. `uv run --project tooling/cli workshop check 14`.
 
 ## Pistes techniques
 
@@ -87,7 +87,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 Le mode live est la voie de référence : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout se vérifie ici par le code : manifeste, trace, état de l'application, fragments du texte ; aucune rubrique de juge n'intervient. La non-régression rejoue les ateliers 03 à 14.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 14
-uv run --project workshop_kit/bootstrap workshop check 14
-uv run --project workshop_kit/bootstrap workshop check 14 --non-regression   # ateliers 03 à 14
+uv run --project tooling/cli workshop start 14
+uv run --project tooling/cli workshop check 14
+uv run --project tooling/cli workshop check 14 --non-regression   # ateliers 03 à 14
 ```

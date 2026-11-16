@@ -86,7 +86,7 @@ Extrait du rapport `my-agent/route-report.json` :
 
 ## Essayer soi-même
 
-Lancez `uv run --project workshop_kit/bootstrap workshop serve`, ouvrez http://127.0.0.1:8080 et rejouez à la main les messages de vos parcours. Lisez la dernière ligne de `traces/turns.jsonl` (`model`, `tools`) pour écrire des faits justes. Puis lancez `workshop check 17` : il exécute tous les parcours et écrit `my-agent/route-report.json`, à lire en cas d'échec (`facts` en échec, `meaning.rationale`).
+Lancez `uv run --project tooling/cli workshop serve`, ouvrez http://127.0.0.1:8080 et rejouez à la main les messages de vos parcours. Lisez la dernière ligne de `traces/turns.jsonl` (`model`, `tools`) pour écrire des faits justes. Puis lancez `workshop check 17` : il exécute tous les parcours et écrit `my-agent/route-report.json`, à lire en cas d'échec (`facts` en échec, `meaning.rationale`).
 
 ## Pistes techniques
 
@@ -101,7 +101,7 @@ Lancez `uv run --project workshop_kit/bootstrap workshop serve`, ouvrez http://1
 Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Chaque parcours est vérifié d'abord par le code (les `facts`), puis par sa rubrique : couche structurelle (motifs requis ou interdits, réponse en français), puis couche sémantique si un juge est configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `AZURE_OPENAI_JUDGE_DEPLOYMENT`). Chaque parcours est exécuté sur des conversations neuves selon la règle k sur n (`ROUTE_K` réussites sur `ROUTE_N` essais, une seule exécution par défaut). L'exécution consomme des appels au modèle : comptez plusieurs minutes. Lancez la non-régression.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 17
-uv run --project workshop_kit/bootstrap workshop check 17
-uv run --project workshop_kit/bootstrap workshop check 17 --non-regression   # ateliers 03 à 17
+uv run --project tooling/cli workshop start 17
+uv run --project tooling/cli workshop check 17
+uv run --project tooling/cli workshop check 17 --non-regression   # ateliers 03 à 17
 ```

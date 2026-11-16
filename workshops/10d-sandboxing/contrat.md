@@ -73,7 +73,7 @@ event: end       data: {"ok": true}
 
 ### Essayer soi-même
 
-1. `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080 (interface de chat) et posez les questions ci-dessus.
+1. `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080 (interface de chat) et posez les questions ci-dessus.
 2. Lisez la dernière ligne de `traces/turns.jsonl` : `limit_reached`, `input`, `tools`.
 3. Vérifiez la politique :
    ```powershell
@@ -86,7 +86,7 @@ event: end       data: {"ok": true}
    $body = @{ text = "Faites une revue complète et détaillée de toutes les commandes de Transports Morel." } | ConvertTo-Json
    (Invoke-WebRequest -Method Post "http://127.0.0.1:8000/conversations/$($c.id)/messages" -ContentType 'application/json; charset=utf-8' -Body $body).Content
    ```
-5. `uv run --project workshop_kit/bootstrap workshop check 10d`.
+5. `uv run --project tooling/cli workshop check 10d`.
 
 ## Pistes techniques
 
@@ -102,7 +102,7 @@ event: end       data: {"ok": true}
 Le mode live est la voie de référence : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout ce qui se vérifie par le code est vérifié : politique, sondes, trace, journal du proxy, événements. Cet atelier n'applique pas de rubrique de juge. La non-régression rejoue les ateliers 03 à 10d : la politique active ne doit pas bloquer les outils des ateliers précédents.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 10d
-uv run --project workshop_kit/bootstrap workshop check 10d
-uv run --project workshop_kit/bootstrap workshop check 10d --non-regression   # ateliers 03 à 10d
+uv run --project tooling/cli workshop start 10d
+uv run --project tooling/cli workshop check 10d
+uv run --project tooling/cli workshop check 10d --non-regression   # ateliers 03 à 10d
 ```

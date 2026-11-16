@@ -19,4 +19,4 @@ skills:
     path: invoice-check
 ```
 
-The catalog shipped with the shell is **empty**: no *skill* is provided.
+The catalog shipped with the bootstrap is **empty**: no *skill* is provided.

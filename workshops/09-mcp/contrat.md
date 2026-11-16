@@ -73,7 +73,7 @@ Gardez donc `application()` et `MCP_PATH`. La coquille les fournit déjà, avec 
 
 ## Essayer soi-même
 
-1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`. Le serveur MCP de `my-agent/` écoute sur le port 8004, et le harnais reçoit `MCP_URL=http://127.0.0.1:8004/mcp`.
+1. Lancez `uv run --project tooling/cli workshop serve`. Le serveur MCP de `my-agent/` écoute sur le port 8004, et le harnais reçoit `MCP_URL=http://127.0.0.1:8004/mcp`.
 2. Pour lancer le serveur seul : `uv run --project my-agent python my-agent/mcp_server.py`.
 3. Ouvrez http://127.0.0.1:8080, posez les questions ci-dessus, puis lisez `tools[]` sur la dernière ligne de `traces/turns.jsonl`.
 4. Lancez `workshop check 09`.
@@ -82,9 +82,9 @@ Gardez donc `application()` et `MCP_PATH`. La coquille les fournit déjà, avec 
 
 - Partez de la coquille `my-agent/mcp_server.py` : `create_server()`, `application()`, `MCP_PATH`, SDK officiel `mcp`. Dans le serveur, `agent_sdk.http_client` joint l'API métier.
 - Côté *harness*, `agent_sdk/src/agent_sdk/mcp_client.py` fournit `list_tools()`, `call_tool()` et `as_openai_tool()` (adresse lue dans `MCP_URL`), avec la liste de vérification du branchement dans sa docstring. Le catalogue d'outils et le champ `transport: "mcp"` de la trace restent à vous.
-- Les routes génériques sont dans `workshop_kit/apps/business_api/app.py` : `GET /sources`, `GET /sources/{name}` (champs, valeurs codées, agrégats) et `POST /sources/{name}/query` (`filters`, `limit`, `aggregate`, `group_by`). Une clé de filtre inconnue est refusée (400), mais pas une valeur codée invalide : la vérification revient au serveur MCP.
+- Les routes génériques sont dans `business/business_api/src/business_api/app.py` : `GET /sources`, `GET /sources/{name}` (champs, valeurs codées, agrégats) et `POST /sources/{name}/query` (`filters`, `limit`, `aggregate`, `group_by`). Une clé de filtre inconnue est refusée (400), mais pas une valeur codée invalide : la vérification revient au serveur MCP.
 - Pendant `workshop check`, les tests de cet atelier démarrent votre serveur MCP et transmettent son adresse au harnais par `MCP_URL`, comme `workshop serve`. Lisez `MCP_URL` à chaque tour ; les adresses des autres services arrivent de la même façon (`BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`). Pour les tests d'autres ateliers, où `MCP_URL` n'est pas définie, le harnais démarre ou joint lui-même son serveur.
-- Le chargement du module est fait par `workshop_kit/shell/loader.py` (`load_mcp_server`).
+- Le chargement du module est fait par `gateway/agent_gateway/src/agent_gateway/loader.py` (`load_mcp_server`).
 - La question des factures demande le rôle `accountant`.
 
 ## Vérifier
@@ -96,7 +96,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 09. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué. Attention : les tests des ateliers précédents lisent toujours leurs propres noms d'arguments. L'atelier 05 attend `arguments.filter` = `"late"`, l'atelier 07 attend une liste `result.orders` résumée avec `returned`, `total`, `total_status` et `truncated`, une position pour la portion suivante, et `arguments.mode` = `"count"` avec `result.count`, et l'atelier 06 attend deux noms d'outils distincts pour deux appels indépendants. Vérifiez que votre catalogue MCP les satisfait encore.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 09
-uv run --project workshop_kit/bootstrap workshop check 09
-uv run --project workshop_kit/bootstrap workshop check 09 --non-regression   # ateliers 03 à 09
+uv run --project tooling/cli workshop start 09
+uv run --project tooling/cli workshop check 09
+uv run --project tooling/cli workshop check 09 --non-regression   # ateliers 03 à 09
 ```

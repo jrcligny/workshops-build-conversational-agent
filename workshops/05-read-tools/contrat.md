@@ -50,7 +50,7 @@ Morel a 60 commandes en retard. »
 ## Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne
@@ -61,12 +61,12 @@ test charge le jeu `volume` (60 retards). Lancez enfin `workshop check 05`.
 
 - `GET /customers?name=` cherche par nom ; `GET /customers/{id}/orders?filter=late`
   renvoie `orders`, `total`, `truncated` et `limit` (voir
-  `workshop_kit/apps/business_api/app.py` et `services.py`).
+  `business/business_api/src/business_api/app.py` et `services.py`).
 - Prenez `total` dans la réponse de l'API, pas la longueur de la liste.
 - `business_api(jeton).get(chemin, params={...})` de `agent_sdk/src/agent_sdk/http_client.py`
   passe les filtres en paramètres de requête ; `declare(fonction)` de
   `agent_sdk/src/agent_sdk/tool_schema.py` déclare chaque outil (un `Literal` devient un `enum`).
-- Les données sont dans `workshop_kit/apps/business_api/seed_data.py` ; les assertions
+- Les données sont dans `business/business_api/src/business_api/seed_data.py` ; les assertions
   détaillées sont dans [tests/](tests/).
 
 ## Vérifier

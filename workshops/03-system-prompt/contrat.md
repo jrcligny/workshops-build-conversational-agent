@@ -77,7 +77,7 @@ premier échange figure dans `input.history` du second tour.
 ## Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne

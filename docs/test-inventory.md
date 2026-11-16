@@ -3,9 +3,9 @@
 Aligned with the "success criterion" subsections of the book
 (`jrcligny/ai-generated-books`, branch `relecture/alignement-ateliers`, not yet merged
 into `main`). All these tests **fail against the inert agent** (`workshop check-inert`) and **on the
-bootstrap of `my-agent/`** (`workshop check-shell`), except, for the bootstrap, those listed in
+bootstrap of `my-agent/`** (`workshop check-bootstrap`), except, for the bootstrap, those listed in
 `workshop_tests/bootstrap_passes.txt`: the bootstrap already converses through the model. The infrastructure tests in
-`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/` and `workshop_tests/my_agent_bootstrap/` must pass. Shared fixtures, clients, runtime probes and evaluation
+`<component>/tests/`, `workshop_tests/tests/` and `workshop_tests/integration/` must pass. Shared fixtures, clients, runtime probes and evaluation
 helpers live in `workshop_tests/testing/` and `workshop_tests/evaluation/`, not in the
 runtime kit. The names each test reads are listed in
 [interface-contract.md](interface-contract.md#names-read-by-the-tests).
@@ -47,17 +47,17 @@ the CLI delegates workshop checks to the test project's environment. There is
 no root Python project or pytest configuration.
 
 ```powershell
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project tooling/cli --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
-uv run --project workshop_kit/bootstrap workshop check 07
-uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
-uv run --project workshop_kit/bootstrap workshop check-shell
-uv run --project workshop_kit/bootstrap workshop check-inert
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli workshop check 07
+uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check-bootstrap
+uv run --project tooling/cli workshop check-inert
 ```
 
 UI tests stay in their own environment (MCP 1, isolated from the test project's MCP 2):
 
 ```powershell
-uv run --project workshop_kit/chat-ui --extra dev pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
+uv run --project clients/chat_ui --extra dev pytest --confcutdir clients/chat_ui clients/chat_ui/tests
 ```

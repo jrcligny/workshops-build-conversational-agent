@@ -4,38 +4,38 @@ This contract is stable across all workshops. The capabilities not used yet (ste
 
 ## Chat entry point
 
-The chat interface is `workshop_kit/shell/chat_app.py`.
+The chat interface is `gateway/agent_gateway/src/agent_gateway/chat_app.py`.
 
 | Element | Contract |
 |---|---|
 | Creation | `POST /conversations` with `user_id`, `role`, `organization`, optionally `app_token`, `sign_in` and `limits`. With `"sign_in": true` and no `app_token`, the interface issues an entry token (`typ=entry`) for the user, as a signed-in interface would; the tests and the Chainlit UI open their conversations that way, except the refusal cases of workshop 10a. Response: `{ "id": ... }`. |
 | Test identities | `GET /users` lists the users of the seeded datasets (`user_id`, `name`, `role`, `organization`). The identity selector of the Chainlit UI reads it and opens its conversations with the chosen identity. |
 | Turn | `POST /conversations/{id}/messages` with `{ "text": "..." }`. Server-sent events (SSE) response. |
-| Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the shell. |
+| Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the agent gateway. |
 | Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
 | Service addresses | `BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`, `INTERFACE_URL` are set in the environment by `workshop serve` and by the test fixtures (`workshop check`); `MCP_URL` too, by `workshop serve` and by the tests of workshops 09 and 10a, which start the MCP server of `my-agent/`. Read them at call time: the ports differ between the two. |
 
 The tests use the internal client (`workshop_tests/testing/chat_client.py`), not a browser.
-The standard Chainlit UI in `workshop_kit/chat-ui/` consumes the same HTTP/SSE
+The standard Chainlit UI in `clients/chat_ui/` consumes the same HTTP/SSE
 contract from its own Python environment. From the repository root, run
-`uv run --project workshop_kit/bootstrap workshop serve` to start
+`uv run --project tooling/cli workshop serve` to start
 the complete environment, including that UI.
 
 ## Attachments (reserved for workshop 15)
 
-The contract already provides the entry point, with no file in the shell:
+The contract already provides the entry point, with no file in the bootstrap:
 
 | Element | Contract |
 |---|---|
-| List | `GET /attachments` returns `{ "attachments": [...] }` from the area `my-agent/attachments/` (setting `attachments_dir`). In the shell, the list is empty. |
+| List | `GET /attachments` returns `{ "attachments": [...] }` from the area `my-agent/attachments/` (setting `attachments_dir`). In the bootstrap, the list is empty. |
 | Turn | The body of `POST /conversations/{id}/messages` accepts an optional `attachments` field (list of ids). It is passed to the *harness* (`turn(..., attachments=...)`). |
 | Reserved event | `attachment` may report that an attached document was read. |
 
-No sample quote is dropped in the shell. You will fill the area in workshop 15.
+No sample quote is dropped in the bootstrap. You will fill the area in workshop 15.
 
-## MCP server (empty shell, wired in workshop 09)
+## MCP server (empty bootstrap, wired in workshop 09)
 
-The shell includes `my-agent/mcp_server.py`: an MCP server that starts and answers the handshake, written with the official Python SDK `mcp`. It exposes **no business tool**. Planned transport: streamable HTTP (`streamable-http`), stateless mode, endpoint `/mcp` (port 8004 by default).
+The bootstrap includes `my-agent/mcp_server.py`: an MCP server that starts and answers the handshake, written with the official Python SDK `mcp`. It exposes **no business tool**. Planned transport: streamable HTTP (`streamable-http`), stateless mode, endpoint `/mcp` (port 8004 by default).
 
 ```powershell
 uv run --project my-agent python my-agent/mcp_server.py
@@ -64,9 +64,9 @@ The bootstrap provides `agent_sdk/src/agent_sdk/trace.py`: a `Tracer` with one m
 
 In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `agent_sdk/src/agent_sdk/contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the history and the message, relays the answer and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `workshop_tests/bootstrap_passes.txt`.
 
-## Other locations of the shell
+## Other locations of the bootstrap
 
-| Location | Role | State in the shell |
+| Location | Role | State in the bootstrap |
 |---|---|---|
 | `my-agent/sandbox/policy.yaml` | Sandbox policy (workshop 10d), read by `agent_sdk/src/agent_sdk/sandbox.py` (setting `sandbox_policy_file`) | Present, policy inactive, empty allowlist |
 | `my-agent/skills/` | Versioned skills catalog (workshop 14): `manifest.yaml` + `<id>/SKILL.md`, read by `agent_sdk/src/agent_sdk/skills.py` (setting `skills_dir`) | Valid manifest, zero *skill* |

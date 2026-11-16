@@ -66,18 +66,18 @@ data: {"ok": true}
 
 ## Essayer soi-même
 
-1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080.
+1. Lancez `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080.
 2. L'interface de chat ouvre ses conversations pour l'utilisateur par défaut, camille-renard (`customer_service`). La demande d'achat y est donc refusée. Pour jouer l'acheteur, ouvrez une conversation avec `POST /conversations` sur l'interface (port 8000), avec `user_id` paul-buyer et `role` buyer, puis envoyez la confirmation par `POST /conversations/{id}/confirmation`.
 3. Lisez la dernière ligne de `traces/turns.jsonl`.
 4. Lancez `workshop check 10b`.
 
 ## Pistes techniques
 
-- Routes d'écriture dans `workshop_kit/apps/business_api/app.py` :
+- Routes d'écriture dans `business/business_api/src/business_api/app.py` :
   - `POST /purchase-requests/drafts` (`subject`, `amount`, `supplier_id`) ;
   - `GET /drafts/{id}` ;
   - `POST /drafts/{id}/submit`, qui renvoie `request_id`, `on_behalf_of` et `assigned_to`.
-- `workshop_kit/shell/chat_app.py` : `POST /conversations/{id}/confirmation` et le paramètre `confirmation` transmis au harnais. Le drapeau reste vrai pour les tours suivants de la conversation : décidez à quel brouillon il s'applique.
+- `gateway/agent_gateway/src/agent_gateway/chat_app.py` : `POST /conversations/{id}/confirmation` et le paramètre `confirmation` transmis au harnais. Le drapeau reste vrai pour les tours suivants de la conversation : décidez à quel brouillon il s'applique.
 - La soumission n'est pas idempotente côté application : une seconde soumission crée une seconde demande.
 - Le contrat des événements est dans `docs/interface-contract.md` et `agent_sdk/src/agent_sdk/contract.py` ; `confirmation_requested(draft_id)` de `agent_sdk/src/agent_sdk/events.py` le construit.
 
@@ -90,7 +90,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 10b. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 10b
-uv run --project workshop_kit/bootstrap workshop check 10b
-uv run --project workshop_kit/bootstrap workshop check 10b --non-regression   # ateliers 03 à 10b
+uv run --project tooling/cli workshop start 10b
+uv run --project tooling/cli workshop check 10b
+uv run --project tooling/cli workshop check 10b --non-regression   # ateliers 03 à 10b
 ```

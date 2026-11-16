@@ -54,7 +54,7 @@ Journal du proxy attendu pendant la panne :
 
 ## Essayer soi-même
 
-Lancez `uv run --project workshop_kit/bootstrap workshop serve`. Armez la panne du modèle, posez la question dans l'interface (http://127.0.0.1:8080), puis désarmez-la :
+Lancez `uv run --project tooling/cli workshop serve`. Armez la panne du modèle, posez la question dans l'interface (http://127.0.0.1:8080), puis désarmez-la :
 
 ```powershell
 Invoke-RestMethod -Method Post http://127.0.0.1:8003/_test/failures -ContentType application/json -Body '{"type":"primary_model","active":true}'
@@ -65,7 +65,7 @@ Pour l'issue inconnue, armez `{"type":"unknown_outcome","active":true}` sur `POS
 
 ## Pistes techniques
 
-- `workshop_kit/llm_proxy/app.py` montre la panne simulée ; `workshop_kit/llm_proxy/live.py` (`ROLE_SETTINGS`) associe le nom logique `fallback` à `AZURE_OPENAI_FALLBACK_DEPLOYMENT`. `ModelClient.generate(..., model="fallback")` (`agent_sdk/src/agent_sdk/model_client.py`) sollicite le modèle de repli ; une panne (5xx, 429, délai, service injoignable) y lève `ModelUnavailable`, quelle que soit la bibliothèque HTTP sous-jacente (`model_unavailable(exc)` classe une exception levée par votre propre client). Le choix de basculer relève de votre *harness*. `model_client()` est défini dans `my-agent/harness.py` ; tracez la bascule avec `tracer.fallback(...)`, l'issue inconnue avec `tracer.unknown_outcome(...)` et les versions avec `tracer.versions(...)`.
+- `gateway/model_gateway/src/model_gateway/app.py` montre la panne simulée ; `gateway/model_gateway/src/model_gateway/live.py` (`ROLE_SETTINGS`) associe le nom logique `fallback` à `AZURE_OPENAI_FALLBACK_DEPLOYMENT`. `ModelClient.generate(..., model="fallback")` (`agent_sdk/src/agent_sdk/model_client.py`) sollicite le modèle de repli ; une panne (5xx, 429, délai, service injoignable) y lève `ModelUnavailable`, quelle que soit la bibliothèque HTTP sous-jacente (`model_unavailable(exc)` classe une exception levée par votre propre client). Le choix de basculer relève de votre *harness*. `model_client()` est défini dans `my-agent/harness.py` ; tracez la bascule avec `tracer.fallback(...)`, l'issue inconnue avec `tracer.unknown_outcome(...)` et les versions avec `tracer.versions(...)`.
 - Distinguez le sort de la requête : un 503 du modèle n'a rien écrit ; un 504 sur `/submit` a peut-être écrit. Les lectures peuvent être réessayées, `/submit` jamais.
 - La soumission vient de l'atelier 10b : `confirmation_requested` porte `draft_id`, et le tour suivant reçoit `confirmation=True`.
 - Les versions se lisent là où vous les tenez : consignes, définitions d'outils, `my-agent/skills/manifest.yaml` (atelier 14), index documentaire (atelier 13).
@@ -76,7 +76,7 @@ Pour l'issue inconnue, armez `{"type":"unknown_outcome","active":true}` sur `POS
 Prérequis : le mode live est la voie de référence (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT` et, pour cet atelier, `AZURE_OPENAI_FALLBACK_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Ils vérifient d'abord par le code les journaux du proxy et de l'API métier, l'état de l'application et la trace, puis le sens par une rubrique : couche structurelle, puis juge sémantique si configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `AZURE_OPENAI_JUDGE_DEPLOYMENT`). La rubrique de l'issue inconnue est répétée selon la règle k sur n (`JUDGE_K` sur `JUDGE_N`). Lancez la non-régression : elle rejoue notamment les parcours de l'atelier 17 avec votre *harness* modifié.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 18
-uv run --project workshop_kit/bootstrap workshop check 18
-uv run --project workshop_kit/bootstrap workshop check 18 --non-regression   # ateliers 03 à 18
+uv run --project tooling/cli workshop start 18
+uv run --project tooling/cli workshop check 18
+uv run --project tooling/cli workshop check 18 --non-regression   # ateliers 03 à 18
 ```

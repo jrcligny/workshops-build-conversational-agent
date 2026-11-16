@@ -9,12 +9,12 @@ and route-digest helpers live in `evaluation/`. These are not runtime services.
 Run from the repository root, not from this directory:
 
 ```powershell
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
+uv sync --project tooling/cli --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
-uv run --project workshop_kit/bootstrap workshop check 03
-uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
-uv run --project workshop_kit/bootstrap workshop check-shell
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli workshop check 03
+uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check-bootstrap
 ```
 
 Infrastructure tests must pass. Workshop acceptance tests stay next to their
@@ -38,8 +38,8 @@ UI tests use the separate Chainlit project and its MCP 1 dependencies, never
 this environment's MCP 2 dependencies:
 
 ```powershell
-uv run --project workshop_kit/chat-ui --extra dev pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
+uv run --project clients/chat_ui --extra dev pytest --confcutdir clients/chat_ui clients/chat_ui/tests
 ```
 
 See the [test inventory](../docs/test-inventory.md) and
-[UI guide](../workshop_kit/chat-ui/README.md).
+[UI guide](../clients/chat_ui/README.md).

@@ -76,16 +76,16 @@ Données : CMD-1042 appartient à Martin Durand (Nantes) et elle est livrée. Il
 
 ## Essayer soi-même
 
-1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080.
+1. Lancez `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080.
 2. Jouez la séquence 1 ci-dessus.
 3. Après chaque tour, ouvrez `traces/turns.jsonl`. Sur la dernière ligne, comparez `state` et `input.state` : le second est l'état reçu au début du tour, le premier l'état après le tour.
 4. Lancez `workshop check 08`.
 
 ## Pistes techniques
 
-- Le seuil vient de `workshop_kit/shell/config.py` (`compaction_message_threshold`) ; il se règle avec `COMPACTION_MESSAGE_THRESHOLD` dans `.env`. Lisez `settings.compaction_message_threshold` à chaque tour, sans le recopier dans une constante ni écrire 8 en dur : la valeur réglée peut changer.
+- Le seuil vient de `shared/workshop_config/src/workshop_config/__init__.py` (`compaction_message_threshold`) ; il se règle avec `COMPACTION_MESSAGE_THRESHOLD` dans `.env`. Lisez `settings.compaction_message_threshold` à chaque tour, sans le recopier dans une constante ni écrire 8 en dur : la valeur réglée peut changer.
 - Le contrat de la trace (`state`, `input`) est décrit dans `docs/interface-contract.md` et dans `agent_sdk/src/agent_sdk/contract.py`. `compaction(...)` et `mention(...)` de `agent_sdk/src/agent_sdk/events.py` construisent l'événement ; le seuil, le résumé et ce qui est conservé restent à vous.
-- Les homonymes viennent de la résolution de noms des ateliers 05 et 06 ; les données sont dans `workshop_kit/apps/business_api/seed_data.py`.
+- Les homonymes viennent de la résolution de noms des ateliers 05 et 06 ; les données sont dans `business/business_api/src/business_api/seed_data.py`.
 
 ## Vérifier
 
@@ -96,7 +96,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 08. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 08
-uv run --project workshop_kit/bootstrap workshop check 08
-uv run --project workshop_kit/bootstrap workshop check 08 --non-regression   # ateliers 03 à 08
+uv run --project tooling/cli workshop start 08
+uv run --project tooling/cli workshop check 08
+uv run --project tooling/cli workshop check 08 --non-regression   # ateliers 03 à 08
 ```

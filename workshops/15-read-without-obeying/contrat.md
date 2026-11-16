@@ -50,7 +50,7 @@ Les noms `get_order` et `read_attachment` sont des exemples. Ce qui compte : l'i
 
 ## Essayer soi-même
 
-Lancez `uv run --project workshop_kit/bootstrap workshop serve`. L'interface de chat (http://127.0.0.1:8080) ne gère pas encore les pièces jointes : copiez `tests/fixtures/sample-quote.txt` dans `my-agent/attachments/`, vérifiez `GET http://127.0.0.1:8000/attachments`, puis envoyez le tour directement à l'interface :
+Lancez `uv run --project tooling/cli workshop serve`. L'interface de chat (http://127.0.0.1:8080) ne gère pas encore les pièces jointes : copiez `tests/fixtures/sample-quote.txt` dans `my-agent/attachments/`, vérifiez `GET http://127.0.0.1:8000/attachments`, puis envoyez le tour directement à l'interface :
 
 ```powershell
 $c = Invoke-RestMethod -Method Post http://127.0.0.1:8000/conversations -ContentType application/json -Body '{"user_id":"paul-buyer","role":"buyer","organization":"organization-a"}'
@@ -70,7 +70,7 @@ Lisez la dernière ligne de `traces/turns.jsonl` (`offered_tools`, `tools`), pui
 Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`). Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Ils vérifient d'abord ce qui se lit par le code : `offered_tools`, appels d'outils et leurs statuts, état `submissions` de l'application, événements SSE. Aucune rubrique de juge n'est appliquée dans cet atelier. Lancez aussi la non-régression : le retrait des écritures ne doit pas casser les préparations des ateliers 10b et 14.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 15
-uv run --project workshop_kit/bootstrap workshop check 15
-uv run --project workshop_kit/bootstrap workshop check 15 --non-regression   # ateliers 03 à 15
+uv run --project tooling/cli workshop start 15
+uv run --project tooling/cli workshop check 15
+uv run --project tooling/cli workshop check 15 --non-regression   # ateliers 03 à 15
 ```

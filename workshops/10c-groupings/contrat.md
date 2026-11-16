@@ -70,17 +70,17 @@ Valeurs du jeu `volume` pour Transports Morel (C-VOLUMEX) : 420 commandes, total
 
 ## Essayer soi-même
 
-1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`, puis ouvrez http://127.0.0.1:8080.
+1. Lancez `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080.
 2. Le jeu `volume` se charge par la route d'observation `POST /observation/reset` avec `{"dataset": "volume"}` et le jeton d'observation. Sur le jeu `standard`, Transports Morel a 30 commandes (total 13578,13, moyenne 452,6).
 3. Comparez `tools[].result.value` sur la dernière ligne de `traces/turns.jsonl` avec la réponse.
 4. Lancez `workshop check 10c`.
 
 ## Pistes techniques
 
-- `GET /sources/orders` déclare les agrégats proposés (`aggregates`). `POST /sources/{name}/query` accepte `aggregate` et `group_by` (`workshop_kit/apps/business_api/app.py` et `services.py`).
+- `GET /sources/orders` déclare les agrégats proposés (`aggregates`). `POST /sources/{name}/query` accepte `aggregate` et `group_by` (`business/business_api/src/business_api/app.py` et `services.py`).
 - Les agrégats portent sur le champ `amount`. La médiane n'est pas une erreur HTTP : l'application renvoie `refused` et la liste `available_aggregates`. Un autre agrégat inconnu, lui, est refusé en 400 (`unknown aggregate`).
 - Un résultat sans agrégat est déjà borné et déclaré par l'application (`rows`, `total`, `truncated`, `limit`). Gardez ces champs jusqu'au modèle.
-- Les données du jeu `volume` sont générées dans `workshop_kit/apps/business_api/seed_data.py`.
+- Les données du jeu `volume` sont générées dans `business/business_api/src/business_api/seed_data.py`.
 
 ## Vérifier
 
@@ -91,7 +91,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 10c. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué.
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 10c
-uv run --project workshop_kit/bootstrap workshop check 10c
-uv run --project workshop_kit/bootstrap workshop check 10c --non-regression   # ateliers 03 à 10c
+uv run --project tooling/cli workshop start 10c
+uv run --project tooling/cli workshop check 10c
+uv run --project tooling/cli workshop check 10c --non-regression   # ateliers 03 à 10c
 ```
