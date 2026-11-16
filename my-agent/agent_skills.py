@@ -32,14 +32,14 @@ def load(skill_id: str) -> dict:
     entry = entries.get((skill_id or "").strip())
     if entry is None:
         return {
-            "status": "refused",
+            "status": "not_found",
             "error": f"skill {skill_id!r} refusée : inconnue, hors catalogue",
             "catalog": sorted(entries),
         }
     root = catalog_dir().resolve()
     path = (root / entry["path"] / "SKILL.md").resolve()
     if root not in path.parents or not path.is_file():
-        return {"status": "refused", "error": f"skill {skill_id!r} refusée : fichier absent du catalogue"}
+        return {"status": "error", "error": f"skill {skill_id!r} refusée : fichier absent du catalogue"}
     return {
         "status": "loaded",
         "id": entry["id"],
@@ -59,7 +59,8 @@ def tool_spec() -> dict:
             "name": LOAD_SKILL,
             "description": (
                 "Loads a business procedure (skill) of the versioned catalog before following it. "
-                f"Catalog: {listing}. Any other skill is refused."
+                f"Catalog: {listing}. Whenever the user asks to load a skill, even one outside this catalog, call this "
+                "tool with the requested id: the program decides and refuses any id outside the catalog."
             ),
             "parameters": {
                 "type": "object",

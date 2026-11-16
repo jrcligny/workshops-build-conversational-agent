@@ -10,22 +10,22 @@ from __future__ import annotations
 
 from urllib.parse import urlsplit
 
-from workshop_kit.services.sandbox.interface import policy
+from workshop_kit.services.sandbox.interface import is_egress_allowed, policy
 
 DEFAULT_LIMITS = {"duration_s": 120, "token_budget": 60000}
 
 
 def egress_decision(url: str) -> tuple[bool, str]:
-    current = policy()
-    if not current["active"]:
+    """The kit's allowlist check (host or URL prefix), restricted to http(s) destinations."""
+    allowed = is_egress_allowed(url)
+    if allowed is None:
         return True, "no sandbox policy active"
-    parts = urlsplit(url)
-    if parts.scheme not in ("http", "https"):
-        return False, f"scheme {parts.scheme or '(none)'!r} refused: only http and https leave the sandbox"
-    host = (parts.hostname or "").lower()
-    if host in {h.lower() for h in current["allowlist"]}:
-        return True, f"{host} is on the allowlist"
-    return False, f"destination {host or url!r} refused: not on the sandbox allowlist"
+    scheme = urlsplit(url).scheme
+    if scheme not in ("http", "https"):
+        return False, f"scheme {scheme or '(none)'!r} refused: only http and https leave the sandbox"
+    if allowed:
+        return True, "destination on the sandbox allowlist"
+    return False, f"destination {urlsplit(url).hostname or url!r} refused: not on the sandbox allowlist"
 
 
 def turn_limits(requested: dict | None) -> dict:

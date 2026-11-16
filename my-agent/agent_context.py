@@ -16,9 +16,9 @@ SUMMARY_INSTRUCTION = (
 )
 
 
-def size(messages: list[dict[str, Any]]) -> dict[str, int]:
-    """Size of a model input, recorded at each cycle."""
-    return {"messages": len(messages), "chars": len(json.dumps(messages, ensure_ascii=False))}
+def size(messages: list[dict[str, Any]]) -> int:
+    """Size of a model input in characters, recorded at each cycle."""
+    return len(json.dumps(messages, ensure_ascii=False))
 
 
 def threshold() -> int:
