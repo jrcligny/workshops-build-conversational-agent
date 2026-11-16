@@ -1,12 +1,10 @@
 """End-to-end tests of workshop 17. They must fail on the empty shell.
 
-Contract read here:
-- traces: no secret (Authorization header, bearer token, API key) appears in a trace;
-- trace `model.usage` and `model.duration_ms` (whole turn), `model.calls[]` (one entry per model call) and
-  `tools[]` (one entry per tool call, with `duration_ms`): a turn is observable end to end;
-- routes: official routes in `workshops/17-evaluation/routes/cases/`, the student's own in
-  `my-agent/routes/` (same YAML format, see `workshop_tests/evaluation/route_runner.py`);
-  the runner writes `my-agent/route-report.json`. The test checks the report, not keywords.
+The trace checks (and the contract they read) are in `checks.py`; their cases in `cases.yaml`.
+
+Routes: official routes in `workshops/17-evaluation/routes/cases/`, the student's own in
+`my-agent/routes/` (same YAML format, see `workshop_tests/evaluation/route_runner.py`);
+the runner writes `my-agent/route-report.json`. The test checks the report, not keywords.
 """
 
 import json
@@ -15,23 +13,20 @@ import pytest
 
 from workshop_tests.evaluation import route_runner
 from workshop_tests.evaluation.routes import expected_digest, routes_digest
+from workshop_tests.testing.cases import load_cases, load_checks
 from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import flat, successful_turn, tools
 
 pytestmark = pytest.mark.workshop
 
+checks = load_checks(__file__)
+CASES = load_cases(__file__)
+
 
 def test_masked_and_observable_traces(chat_client, traces):
-    successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
-    trace = traces.last()
-    flat_t = flat(trace).lower()
-    assert "authorization" not in flat_t and "bearer " not in flat_t
-    assert "azure_openai_api_key" not in flat_t and "eyj" not in flat_t, "no secret or token in the trace"
-    model = trace.get("model") or {}
-    assert model.get("usage") and "duration_ms" in model and model.get("calls"), "trace.model records usage, duration_ms and calls"
-    assert tools(trace) and all("duration_ms" in c for c in tools(trace)), "each tool call records duration_ms"
+    checks.masked_and_observable_traces(chat_client, traces, CASES["masked_and_observable_traces"])
 
 
+# Public only: the route tests have no input to vary, hence no case and no private variant.
 def test_student_routes_cover_every_edge_case():
     assert route_runner.load_routes(route_runner.official_dir(), "official"), "official routes are published"
     assert routes_digest() == expected_digest(), "the official routes are not modified"

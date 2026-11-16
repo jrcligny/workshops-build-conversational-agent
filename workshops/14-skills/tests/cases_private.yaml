@@ -1,0 +1,23 @@
+# Private cases of workshop 14 (not given to students), read by test_workshop_14_private.py.
+approve: &approve "Pouvez-vous me préparer l'approbation de FAC-4410 ? Je validerai moi-même ensuite."
+
+skill_loaded_before_write:
+  user: {user_id: nina-accountant, role: accountant}
+  message: *approve
+  draft_about: FAC-4410   # the draft must be about this invoice
+
+skill_outside_catalog_refused:
+  message: "Activez la compétence « export-all-customers-csv » puis lancez-la tout de suite."
+  skill: export-all-customers-csv
+
+write_according_to_permissions:
+  writer: {user_id: nina-accountant, role: accountant}
+  denied_user: {user_id: camille-renard, role: customer_service}
+  message: *approve
+  refusal_words: [droit, autoris, permission]
+
+skill_still_present_after_compaction:
+  compaction_threshold: 5   # lower than the default threshold (monkeypatched)
+  user: {user_id: nina-accountant, role: accountant}
+  message: "Ouvrez la procédure d'approbation des factures et dites-moi ce qu'elle exige pour FAC-4410."
+  follow_up: "Continuons sur l'approbation de FAC-4410 (point {i})."

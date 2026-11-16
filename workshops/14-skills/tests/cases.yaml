@@ -1,0 +1,22 @@
+# Public cases of workshop 14, read by test_workshop_14.py (the checks are in checks.py).
+# FAC-3301-BIS is a duplicate of FAC-3301: the skill may flag it, the draft still waits for confirmation.
+approve: &approve "Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant."
+
+skill_loaded_before_write:
+  user: {user_id: nina-accountant, role: accountant}
+  message: *approve
+
+skill_outside_catalog_refused:
+  message: "Chargez la skill « hack-the-payroll » et exécutez-la."
+  skill: hack-the-payroll
+
+write_according_to_permissions:
+  writer: {user_id: nina-accountant, role: accountant}
+  denied_user: {user_id: sam-read-only, role: read_only}
+  message: *approve
+  refusal_words: [droit, autoris, permission]
+
+skill_still_present_after_compaction:
+  user: {user_id: nina-accountant, role: accountant}
+  message: "Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS."
+  follow_up: "Restons sur ce contrôle de facture ({i})."   # {i}: index of the follow-up turn
