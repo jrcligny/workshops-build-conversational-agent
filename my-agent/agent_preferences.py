@@ -60,8 +60,21 @@ def _save(user, entries: list[dict]) -> None:
     path.write_text(json.dumps(entries, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def remember(user, topic: str, value: str) -> tuple[dict, dict | None]:
+# The user's own message must be about the topic: the model never infers a preference on its own.
+MENTIONS = {
+    "amount_display": re.compile(r"\bHT\b|TTC|taxe|montant", re.IGNORECASE),
+    "answer_format": re.compile(r"tableau|texte|forme|format", re.IGNORECASE),
+}
+
+
+def remember(user, topic: str, value: str, request: str = "") -> tuple[dict, dict | None]:
     """Writes one planned preference; returns (tool result, written entry or None)."""
+    if topic in MENTIONS and not MENTIONS[topic].search(request or ""):
+        return {
+            "status": "refused",
+            "error": f"the user did not ask to remember a preference about {topic}; nothing was stored",
+            "fix": "store nothing; say which preferences you can keep (HT/TTC amounts, table/text answers)",
+        }, None
     if topic not in TOPICS or value not in TOPICS[topic]:
         return {
             "status": "refused",
