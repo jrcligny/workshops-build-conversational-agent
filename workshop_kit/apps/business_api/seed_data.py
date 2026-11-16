@@ -51,6 +51,9 @@ def _base_records(conn) -> None:
         ("C-MARTIN-LILLE", "Léa Martin", "Lille", ORGANIZATION_A),
         ("C-MARTIN-LYON", "Léa Martin", "Lyon", ORGANIZATION_A),
         ("C-VOLUMEX", "Transports Morel", "Rennes", ORGANIZATION_A),
+        # Second pair of namesakes, used by the private tests.
+        ("C-PETIT-BORDEAUX", "Hugo Petit", "Bordeaux", ORGANIZATION_A),
+        ("C-PETIT-STRASBOURG", "Hugo Petit", "Strasbourg", ORGANIZATION_A),
         ("C-SUD-1", "Claire Fabre", "Toulouse", ORGANIZATION_B),
     ]
     for row in customers:
@@ -101,6 +104,25 @@ def _named_cases(conn) -> None:
         (h + timedelta(days=2)).date().isoformat(),
         None, "Lille",
     )
+    # Cases used by the private tests (other namesakes, another deleted order).
+    _order(
+        conn, "CMD-3105", "C-PETIT-BORDEAUX", ORGANIZATION_A, "in_preparation", 320.0,
+        (h - timedelta(days=3)).date().isoformat(),
+        (h + timedelta(days=6)).date().isoformat(),
+        None, "Bordeaux",
+    )
+    _order(
+        conn, "CMD-3110", "C-PETIT-STRASBOURG", ORGANIZATION_A, "delivered", 615.0,
+        (h - timedelta(days=30)).date().isoformat(),
+        (h - timedelta(days=15)).date().isoformat(),
+        (h - timedelta(days=16)).date().isoformat(),
+        "Strasbourg",
+    )
+    _order(
+        conn, "CMD-3150", "C-MARTIN-LYON", ORGANIZATION_A, "deleted", 140.0,
+        (h - timedelta(days=50)).date().isoformat(),
+        None, None, "Lyon", 1,
+    )
     _order(
         conn, "CMD-B-100", "C-SUD-1", ORGANIZATION_B, "delivered", 700.0,
         (h - timedelta(days=20)).date().isoformat(),
@@ -117,6 +139,11 @@ def _named_cases(conn) -> None:
     conn.execute(
         invoice_sql,
         ("FAC-3301-BIS", "FAC-3301-BIS", "CMD-1042", "F-PAPETERIE", ORGANIZATION_A, "pending", 1280.0, (h - timedelta(days=1)).date().isoformat(), "FAC-3301"),
+    )
+    # A pending invoice that is not a duplicate (private tests).
+    conn.execute(
+        invoice_sql,
+        ("FAC-4410", "FAC-4410", "CMD-2010", "F-PAPETERIE", ORGANIZATION_A, "pending", 349.9, (h - timedelta(days=2)).date().isoformat(), None),
     )
     conn.execute("INSERT INTO user_settings(user_id, prefer_excl_tax) VALUES (?, ?)", ("camille-renard", 0))
     conn.execute("INSERT INTO failures(id, type, active) VALUES (1, NULL, 0)")
