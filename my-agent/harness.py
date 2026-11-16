@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import agent_context  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
-import agent_tools  # noqa: E402
 
 from workshop_kit.shell import tracer  # noqa: E402
 from workshop_kit.shell.harness_contract import Event, Message, TestUser  # noqa: E402
@@ -47,6 +46,8 @@ SYSTEM_PROMPT = (
     "l'erreur à l'utilisateur en citant les valeurs valides.\n"
     "Enchaîne les outils nécessaires dans le même tour ; demande en une seule fois les appels "
     "indépendants les uns des autres (par exemple une commande et un client).\n"
+    "Si un outil répond que la requête est refusée faute d'identité vérifiée, dis que tu n'as pas pu vérifier "
+    "l'identité de l'utilisateur et que tu ne peux donc rien consulter en son nom.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
@@ -140,8 +141,9 @@ class Harness:
             *replayed,
             {"role": "user", "content": message},
         ]
-        # The tools live behind the MCP server; the user's token travels with every call.
-        token = user.app_token or agent_tools._user_scoped_token(user)
+        # The tools live behind the MCP server; the user's token travels with every call and the tool server
+        # exchanges it for an application token on behalf of the user.
+        token = agent_mcp.user_token(user)
         tool_specs = agent_mcp.tool_specs(token)
         tools = {spec["function"]["name"] for spec in tool_specs}
 
@@ -250,6 +252,7 @@ class Harness:
                 },
                 "output": text,
                 "transport": "mcp",
+                "identity": agent_mcp.identity_record(user, token),
                 "tools": tool_calls_done,
                 "cycles": cycle,
                 "max_cycles": MAX_CYCLES,
