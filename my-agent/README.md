@@ -24,5 +24,6 @@ The workshop tests stay red until the success criterion is met.
 
 Deliverables added along the workshops:
 
-- workshop 17: a route report (`route-report.md` or equivalent);
+- workshop 12: the preference memory is stored under `MEMORY_DIR` (`my-agent/memory/` by default, not versioned);
+- workshop 17: own evaluation routes under `routes/`, report `route-report.json`;
 - workshop 19: specification and checks under `local-mode/`.
