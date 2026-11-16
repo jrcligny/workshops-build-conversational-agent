@@ -2,13 +2,14 @@
 
 Un dossier par atelier ; le chapitre 10 est découpé en 10a à 10d. Chaque dossier contient :
 
-- `README.md` : le guide, en français. Il comprend l'intention du chapitre, le critère de
-  réussite tiré du livre, les noms lus par les tests (champs de trace, événements, outils),
-  des exemples à essayer avec leurs contre-exemples, des pistes et la façon de vérifier ;
+- `README.md` : le guide de l'étudiant, en français. Il dit ce qu'il faut construire et pourquoi,
+  quand c'est réussi, avec des exemples, ce qu'il faut éviter et des pistes ;
+- `contrat.md` : le contrat vérifié par les tests (champs de trace, événements, outils,
+  rubriques), les étapes pour essayer et la façon de vérifier ;
 - `state.yaml` : l'identifiant et le titre de l'atelier ;
 - `tests/` : les tests de bout en bout de l'atelier, avec leurs fixtures si besoin.
 
-Lancez toutes les commandes des guides depuis la racine du dépôt. Préparez d'abord les
+Lancez toutes les commandes des contrats depuis la racine du dépôt. Préparez d'abord les
 environnements d'outillage et de test, qui sont séparés :
 
 ```powershell

@@ -20,7 +20,7 @@ my-agent/            the ONLY folder students edit
   skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
   attachments/       read-only attachments area (workshop 15)
   local-mode/        landing structure of workshop 19 (specifications/, controls/)
-workshops/           one folder per workshop: README.md (guide), state.yaml, tests/
+workshops/           one folder per workshop: README.md (guide), contrat.md (test contract), state.yaml, tests/
 workshop_kit/        provided infrastructure (Python package), never edited by students
   bootstrap/         CLI project, with its own pyproject.toml, uv.lock and .venv
     src/workshop_tools/ CLI (cli.py) and six-service launcher (devstack.py)

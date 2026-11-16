@@ -1,107 +1,43 @@
 # Atelier 19 — Spécifier un contrôle
 
-Chapitre 19 du livre. Aucune solution n'est fournie : vous travaillez dans `my-agent/`.
+Chapitre 19 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
-## Intention
+## Ce que vous allez construire
 
-Les contrôles du *harness* sont du code à écrire, à tester et à faire évoluer ; un *coding agent* peut en produire une part, à condition de ne pas lui abandonner les décisions. Le chapitre retient la **délégation contrôle par contrôle** : chaque contrôle devient une **spécification courte**, relue par une personne qui ne l'a pas rédigée, car « ce qui n'y figure pas sera décidé par le modèle ». L'implémentation s'accompagne d'essais, dont au moins un soumet au *harness* une **sortie du modèle volontairement fausse**. Le jeu de parcours de l'atelier 17 sert de critère d'acceptation : l'outil peut l'exécuter mais ne le modifie pas, et la part réservée lui reste inaccessible. Utiliser un *coding agent* est facultatif.
+Les contrôles du *harness* sont du code à écrire, à tester et à faire évoluer ; un *coding agent* peut en produire une part, à condition de ne pas lui abandonner les décisions. Le chapitre retient la **délégation contrôle par contrôle** : chaque contrôle devient une **spécification courte**, relue par une personne qui ne l'a pas rédigée, car « ce qui n'y figure pas sera décidé par le modèle ». L'implémentation s'accompagne d'essais, dont au moins un soumet au *harness* une **sortie du modèle volontairement fausse**. Le jeu de parcours de l'atelier 17 sert de critère d'acceptation : on peut l'exécuter, pas le modifier, et sa part réservée reste hors de portée. Utiliser un *coding agent* est facultatif.
 
-## Critère de réussite
+## C'est réussi quand…
 
-Vous écrivez la spécification d'un contrôle du *harness*, avec ses cinq parties remplies. Vous écrivez ses essais : ils passent quand le contrôle est actif, et au moins l'un d'eux échoue quand le contrôle est désactivé, parce qu'il fait produire au modèle une sortie fausse que seul le contrôle arrête. Les parcours officiels de l'atelier 17 restent intacts, et rien dans le mode local ne désigne leur part réservée.
-
-## Ce que lisent les tests
-
-- **Dossier** : `my-agent/local-mode/` (`specifications/` et `controls/`).
-- **Spécification** : `my-agent/local-mode/specifications/*.md`. Seul le premier fichier par ordre alphabétique est lu. Il doit avoir un titre Markdown (ligne qui commence par `#`) pour chacune des cinq parties, avec ces intitulés :
-  - `Comportement`
-  - `Cas limites`
-  - `Résultats indésirables`
-  - `Vérification`
-  - `Hors périmètre`
-
-  Les accents, le singulier ou le pluriel, et `Hors-périmètre` sont acceptés. Sous chaque titre, au moins 40 caractères de texte avant le titre suivant.
-- **Essais** : `my-agent/local-mode/controls/test_*.py`. Le test les exécute deux fois depuis la racine du dépôt, avec l'environnement de test :
-
-  ```powershell
-  python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
-  ```
-
-  une fois avec `MY_AGENT_DISABLE_CONTROL=0` (code de sortie attendu : 0, tous les essais passent), une fois avec `MY_AGENT_DISABLE_CONTROL=1` (code de sortie attendu : 1, et au moins un « N failed » dans la sortie).
-- **Convention** : votre *harness* lit la variable d'environnement `MY_AGENT_DISABLE_CONTROL` ; à `1`, le contrôle spécifié est désactivé, tout le reste du *harness* est inchangé.
-- **Parcours** : l'empreinte de `workshops/17-evaluation/routes/` est égale à `routes.sha256`.
-- **Part réservée** : aucun fichier de `my-agent/local-mode/` ne contient le texte `17-evaluation/routes/reserved` (barres obliques ou inverses).
-
-Restent libres : le contrôle choisi (par exemple un des contrôles de l'atelier 16), le nom des fichiers, la façon d'injecter la sortie fausse, l'usage ou non d'un *coding agent*.
+- Vous avez écrit, dans `my-agent/local-mode/specifications/`, la spécification d'un contrôle du *harness* avec ses cinq parties remplies : comportement, cas limites, résultats indésirables, vérification, hors périmètre.
+- Vous avez écrit ses essais dans `my-agent/local-mode/controls/` : ils passent quand le contrôle est actif.
+- Quand on désactive ce seul contrôle, au moins un essai échoue, parce qu'il fait produire au modèle une sortie fausse que seul le contrôle arrête.
+- Les parcours officiels de l'atelier 17 restent intacts, et rien de ce que vous écrivez ne désigne leur part réservée.
 
 ## Exemples
 
-### Questions à essayer
+Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée » (atelier 16).
 
-Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée » (atelier 16). Un essai fait répondre au modèle, sans aucun appel d'outil, « La commande CMD-0000 est livrée. » à la question « Où en est la commande CMD-0000 ? ». Contrôle actif : une `mention` signale CMD-0000 comme non vérifiée, l'essai passe. Contrôle désactivé : aucune mention, l'essai échoue.
+- Un essai pose la question « Où en est la commande CMD-0000 ? » et force le modèle à répondre, sans consulter aucun outil, « La commande CMD-0000 est livrée. ».
+- Contrôle actif : une mention signale CMD-0000 comme non vérifiée ; l'essai passe.
+- Contrôle désactivé : aucune mention ; l'essai échoue, ce qui prouve que c'est bien le contrôle qui arrête l'erreur.
 
-Squelette de spécification attendu (le contenu est le vôtre) :
+Pour ce contrôle, la spécification dirait par exemple : ce que voit l'utilisateur et à quel moment du tour le contrôle agit ; les cas limites (référence approchée comme CMD-1402, plusieurs références dans une phrase, référence citée par l'utilisateur) ; ce qui ne doit jamais arriver (référence inventée affichée sans mention, mention sur une référence consultée) ; comment on le vérifie (les essais, dont la sortie fausse, et les parcours de l'atelier 17) ; ce qu'elle ne couvre pas (réécrire la réponse du modèle, vérifier le sens du texte).
 
-```markdown
-# Contrôle : références non vérifiées
+## À éviter
 
-## Comportement
-Ce que voit l'utilisateur, ce que reçoit le modèle, à quel moment du tour le contrôle agit.
-
-## Cas limites
-Références approchées (CMD-1402), plusieurs références dans une phrase, référence citée par l'utilisateur…
-
-## Résultats indésirables
-Ce qui ne doit jamais se produire : référence inventée affichée sans mention, mention sur une référence consultée…
-
-## Vérification
-Les essais de controls/, dont la sortie volontairement fausse, et les parcours de l'atelier 17.
-
-## Hors périmètre
-Ce que la demande ne couvre pas : réécrire la réponse du modèle, vérifier le sens du texte…
-```
-
-Une sortie fausse peut être imposée au modèle simulé par le proxy, qui la renvoie en priorité, même en mode live. Forme d'un script (`POST {proxy}/_test/scripts`, avec un jeton obtenu par `POST {proxy}/_test/token`) :
-
-```json
-{"scripts": [{"if_contains": "CMD-0000", "content": "La commande CMD-0000 est livrée."}]}
-```
-
-Un script peut aussi porter un appel d'outil (`"tool"`, au format d'un `tool_call` OpenAI).
-
-### Contre-exemples
-
-- Des essais qui passent avec et sans le contrôle : la seconde exécution doit échouer, sinon rien ne prouve que le contrôle arrête la sortie fausse.
-- Des essais qui ne se chargent pas (import impossible, fixture introuvable) : pytest sort avec le code 2 ou 4, pas 1, et le test échoue.
-- Une spécification dont les parties portent des intitulés en anglais (`Behaviour`, `Out of scope`) ou sont vides : le test exige les intitulés français et 40 caractères au moins.
-- Laisser un *coding agent* « corriger » un parcours officiel qui échoue : l'empreinte change ; c'est à l'équipe de décider si le code ou le parcours doit changer.
-- Citer le chemin de la part réservée dans un fichier du mode local, même en commentaire.
-
-### Essayer soi-même
-
-Lancez vous-même les deux exécutions depuis la racine du dépôt, avec l'environnement de test :
-
-```powershell
-$env:MY_AGENT_DISABLE_CONTROL = "0"; uv run --project workshop_tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
-$env:MY_AGENT_DISABLE_CONTROL = "1"; uv run --project workshop_tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
-```
-
-Pour observer le contrôle dans une conversation, lancez `uv run --project workshop_kit/bootstrap workshop serve`, ouvrez http://127.0.0.1:8080 et lisez la dernière ligne de `traces/turns.jsonl`. Puis lancez `workshop check 19`.
+- Des essais qui passent avec et sans le contrôle : rien ne prouve alors que le contrôle sert à quelque chose.
+- Des essais qui ne se lancent même pas : une erreur de chargement n'est pas un échec du contrôle.
+- Une spécification avec des parties vides ou intitulées en anglais.
+- Laisser un *coding agent* « corriger » un parcours officiel qui échoue : c'est à l'équipe de décider si le code ou le parcours doit changer.
+- Mentionner l'emplacement de la part réservée des parcours, même en commentaire.
 
 ## Pistes
 
-- Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `workshop_tests/testing/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
-- `workshop_kit/llm_proxy/app.py` (`/_test/scripts`, `/_test/token`) et `workshop_kit/llm_proxy/simulated.py` (`if_contains`, `content`, `tool`) décrivent les scripts. Les fixtures partagées effacent les scripts entre deux tests.
-- Choisissez un contrôle dont la violation a une conséquence (tableau 16-3) et qui s'observe par le code : événement, état, trace, journal.
+- Choisissez un contrôle dont la violation a une conséquence (tableau 16-3) et qui s'observe sans lire le texte : une mention, un état, une trace, un journal.
+- Prévoyez un moyen de désactiver ce seul contrôle, sans toucher au reste du *harness*.
+- Réfléchissez à la façon d'imposer au modèle une sortie fausse, de manière reproductible.
 - Relisez ligne à ligne ce qui touche à l'identité, aux droits, à la confirmation, à la soumission et au retrait des outils d'écriture, surtout si un *coding agent* l'a produit ; vérifiez qu'aucun test existant n'a été supprimé ni affaibli.
-- `my-agent/local-mode/README.md` décrit le mode local ; il conserve tous les contrôles du *harness*.
 
-## Vérifier
+## Pour aller plus loin
 
-Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`) ; les scripts du proxy restent prioritaires en mode live. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : structure de la spécification, codes de sortie de vos essais, empreinte des parcours. Aucune rubrique de juge dans cet atelier. Lancez la non-régression : elle rejoue tous les ateliers, dont les parcours de l'atelier 17.
-
-```powershell
-uv run --project workshop_kit/bootstrap workshop start 19
-uv run --project workshop_kit/bootstrap workshop check 19
-uv run --project workshop_kit/bootstrap workshop check 19 --non-regression   # ateliers 03 à 19
-```
+Le détail de ce que vérifient les tests (noms attendus dans la trace, événements, rubriques) est dans [contrat.md](contrat.md). Pour lancer l'atelier et ses tests, voir le [guide de démarrage](../../GETTING_STARTED.md).

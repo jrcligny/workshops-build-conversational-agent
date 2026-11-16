@@ -57,7 +57,7 @@ Rule: **code and technical docs in English; workshop guides and the agent in Fre
   names, assertion messages, log and error messages of the kit, YAML keys,
   trace fields, API routes and field names, business codes (`delivered`,
   `pending`, `customer_service`...).
-- French: the workshop guides (`workshops/*/README.md`, `workshops/17-evaluation/routes/README.md`),
+- French: the workshop guides (`workshops/*/README.md`, `workshops/*/contrat.md`, `workshops/17-evaluation/routes/README.md`),
   written for the French-speaking reader of the book and using its terms as they are
   ("borner et déclarer", "mention", "harnais", "boucle d'agent"...). The names they quote
   (trace fields, events, tools, parameters) stay English, as in the code.

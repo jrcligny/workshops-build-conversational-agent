@@ -1,8 +1,8 @@
 # Atelier 05 — Deux outils de lecture
 
-Chapitre 5 du livre. Aucune solution n'est fournie : vous travaillez dans `my-agent/`.
+Chapitre 5 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
-## Intention
+## Ce que vous allez construire
 
 L'agent gagne deux outils de lecture : chercher un client par son nom et lister ses
 commandes. La question du chapitre est : qui décide de l'étape suivante ? Quand le chemin
@@ -10,97 +10,42 @@ est connu d'avance, le programme enchaîne les étapes (un *workflow*). Quand il
 pas, le modèle décide (un agent). Entre les deux s'étend un continuum d'autonomie. Un
 enchaînement stable, comme lister puis filtrer, gagne à être enfermé dans un outil.
 
-## Critère de réussite
+## C'est réussi quand…
 
-Face à un homonyme, l'agent présente les clients trouvés et demande lequel est visé, sans
-choisir à la place de l'utilisateur. Pour compter les commandes en retard d'un client,
-il fait filtrer et compter par la source, puis donne le nombre exact.
-
-## Ce que lisent les tests
-
-Les tests lisent `tools` dans la trace (`name`, `arguments`, `result.status`, `result`).
-Sont imposés :
-
-- « Quelles sont les commandes de Léa Martin ? » : les résultats `ok` contiennent
-  `C-MARTIN-LILLE` et `C-MARTIN-LYON` ; la réponse cite Lille et Lyon ; elle ne contient
-  pas `CMD-2010` (la commande d'une seule des deux clientes) ;
-- jeu de données `volume`, « Combien de commandes en retard a Transports Morel ? » :
-  un appel d'outil avec `arguments.filter == "late"` ; `result.total` ou `result.count`
-  vaut 60 ; la réponse contient « 60 ».
-
-Le test compare 60 au décompte calculé par l'API métier : le nombre doit venir de la
-source, pas d'un comptage fait par le modèle.
-
-Restent libres : les noms des outils, leurs descriptions, la forme des autres arguments
-et la façon d'enchaîner recherche et liste. Cet atelier n'a pas de rubrique *k sur n*.
+- face à deux clients qui portent le même nom, l'agent présente les deux et demande
+  lequel est visé, sans choisir à la place de l'utilisateur ;
+- pour compter les commandes en retard d'un client, il fait filtrer et compter par la
+  source, puis donne le nombre exact ;
+- le filtre « en retard » est demandé à l'outil, et non appliqué par le modèle sur une
+  liste complète.
 
 ## Exemples
 
-### Questions à essayer
+| Question posée à l'agent | Ce que l'agent doit faire |
+|---|---|
+| « Quelles sont les commandes de Léa Martin ? » | Il trouve deux clientes, l'une à Lille, l'autre à Lyon, et demande laquelle est visée, sans lister les commandes de l'une d'elles. |
+| « Combien de commandes en retard a Transports Morel ? » | Il fait compter les retards par l'outil et donne le nombre exact (60 avec les données utilisées par les tests). |
 
-- « Quelles sont les commandes de Léa Martin ? » → « Deux clientes portent ce nom, l'une
-  à Lille, l'autre à Lyon. Laquelle souhaitez-vous ? » Extrait de trace :
+## À éviter
 
-  ```json
-  {"name": "search_customers", "arguments": {"name": "Léa Martin"},
-   "result": {"status": "ok", "customers": [{"id": "C-MARTIN-LILLE"}, {"id": "C-MARTIN-LYON"}]}}
-  ```
-
-- « Combien de commandes en retard a Transports Morel ? » (jeu `volume`) → « Transports
-  Morel a 60 commandes en retard. »
-
-  ```json
-  {"name": "list_customer_orders", "arguments": {"customer_id": "C-VOLUMEX", "filter": "late"},
-   "result": {"status": "ok", "total": 60}}
-  ```
-
-  Événements SSE : des `text`, puis `end` avec `ok: true`.
-
-### Contre-exemples
-
-- Choisir la cliente de Lille et lister CMD-2010 : l'agent a tranché à la place de
+- Choisir la cliente de Lille et lister ses commandes : l'agent a tranché à la place de
   l'utilisateur.
-- Lister toutes les commandes et laisser le modèle compter les retards : le nombre est
-  fragile et l'argument `filter` manque.
+- Lister toutes les commandes et laisser le modèle compter les retards : le nombre est fragile.
 - Donner « environ 60 » ou un nombre tiré d'une page partielle.
-
-### Essayer soi-même
-
-```powershell
-uv run --project workshop_kit/bootstrap workshop serve
-```
-
-Ouvrez http://127.0.0.1:8080, posez les questions ci-dessus, puis lisez la dernière ligne
-de `traces/turns.jsonl`. Le jeu `standard` compte 4 retards pour Transports Morel ; le
-test charge le jeu `volume` (60 retards). Lancez enfin `workshop check 05`.
 
 ## Pistes
 
-- `GET /customers?name=` cherche par nom ; `GET /customers/{id}/orders?filter=late`
-  renvoie `orders`, `total`, `truncated` et `limit` (voir
-  `workshop_kit/apps/business_api/app.py` et `services.py`).
-- Prenez `total` dans la réponse de l'API, pas la longueur de la liste.
-- Le chemin « chercher le client, puis lister ses commandes » est connu d'avance : il
-  peut être enchaîné par le programme dans un même tour.
-- Un homonyme n'est pas une erreur : renvoyez les candidats et laissez le modèle demander.
-- Les données sont dans `workshop_kit/apps/business_api/seed_data.py` ; les assertions
-  détaillées sont dans [tests/](tests/).
+- Le nombre doit venir de la source : prenez le total qu'elle annonce, pas la longueur de
+  la liste reçue.
+- Le chemin « chercher le client, puis lister ses commandes » est connu d'avance : le
+  programme peut l'enchaîner lui-même dans un même tour.
+- Un homonyme n'est pas une erreur : renvoyez les candidats et laissez le modèle poser la
+  question.
+- Demandez-vous quelle part de décision vous laissez au modèle, et laquelle vous gardez
+  dans le programme.
 
-## Vérifier
+## Pour aller plus loin
 
-Le mode live est nécessaire : `PROXY_MODE=live`, `MODEL_MODE=live`,
-`AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`.
-
-Les tests restent rouges tant que le critère n'est pas atteint. Les contrôles de code
-passent d'abord, puis les rubriques. Le juge utilise `JUDGE_MODE`, `JUDGE_BASE_URL`,
-`JUDGE_API_KEY` et `AZURE_OPENAI_JUDGE_DEPLOYMENT` pour sa couche de sens. Les
-rubriques sont répétées *k sur n*.
-
-La non-régression rejoue les ateliers 03 à 05 : l'outil de l'atelier 04 doit toujours
-fonctionner. Les tests de l'atelier 03 marqués `superseded_by("04")` sont sautés.
-
-```powershell
-workshop start 05
-workshop check 05
-workshop check 05 --non-regression   # ateliers 03 à 05
-```
+Le détail de ce que vérifient les tests (noms attendus dans la trace, événements, rubriques)
+est dans [contrat.md](contrat.md). Pour lancer l'atelier et ses tests, voir le
+[guide de démarrage](../../GETTING_STARTED.md).

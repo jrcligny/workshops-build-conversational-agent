@@ -55,7 +55,7 @@ One trace per turn, in a JSONL file (`turns.jsonl`) in the configured folder (`t
 - `tools`: empty list in workshop 03;
 - no secret (Azure key, token).
 
-Later workshops add fields; the table [Names read by the tests](#names-read-by-the-tests) lists them, and each workshop guide (section « Ce que lisent les tests ») and the docstring of its test file name the fields they read.
+Later workshops add fields; the table [Names read by the tests](#names-read-by-the-tests) lists them, and each workshop's `contrat.md` (section « Ce que lisent les tests ») and the docstring of its test file name the fields they read.
 
 If you go through the client `workshop_kit.shell.model_client.ModelClient`, the model calls can be complemented by your own trace writes (`workshop_kit.shell.tracer.write`).
 
