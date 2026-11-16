@@ -12,12 +12,14 @@ From the repository root, prepare both environments with
 delegates checks to the test project's environment and pytest configuration;
 `python start.py` starts services only and never installs test dependencies.
 
-1. Empty shell: `uv run --project workshop_kit/bootstrap workshop check-shell` must succeed (every workshop test fails, none passes).
+1. Empty shell and inert agent: `uv run --project workshop_kit/bootstrap workshop check-shell` and `workshop check-inert` must succeed (every workshop test fails, none passes).
 2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project workshop_kit/bootstrap workshop check N --non-regression`).
 3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
 4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests`.
 
 The CI replays points 1 and 4 on every commit.
+
+From workshop 04 on, the live mode is the reference for students (the simulated model does not call tools); the simulated mode stays the one of the CI, `check-shell` and `check-inert`.
 
 ## Phase B — Calibration, once Azure OpenAI is available
 
@@ -33,6 +35,6 @@ Only then does the team:
 6. Record real trajectories that will complement the hand-written replays in CI.
 7. Archive the calibration report. The validation *harness* is not distributed.
 
-Until phase B has taken place, the qualitative items stay "to calibrate" and are not blocking in CI.
+The judge already applies the k out of n rule (`JUDGE_K`, `JUDGE_N`) and, when a judge model is configured, a failed semantic verdict fails the test. Phase B tunes the rubrics and the threshold; it does not change this rule.
 
 The provisional defaults (compaction threshold, corpus metadata schema, Azure deployment names) are listed in [decisions.md](decisions.md).

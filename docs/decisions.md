@@ -51,12 +51,16 @@ The `AZURE_OPENAI_API_KEY` key stays on the server, never committed.
 
 ## Language
 
-Rule: **code and docs in English, the agent converses in French.**
+Rule: **code and technical docs in English; workshop guides and the agent in French.**
 
-- English: code, identifiers, comments, documentation, workshop guides, test
+- English: code, identifiers, comments, technical documentation (`docs/`), test
   names, assertion messages, log and error messages of the kit, YAML keys,
   trace fields, API routes and field names, business codes (`delivered`,
   `pending`, `customer_service`...).
+- French: the workshop guides (`workshops/*/README.md`, `workshops/17-evaluation/routes/README.md`),
+  written for the French-speaking reader of the book and using its terms as they are
+  ("borner et déclarer", "mention", "harnais", "boucle d'agent"...). The names they quote
+  (trace fields, events, tools, parameters) stay English, as in the code.
 - French: everything the agent's user reads or types. In the tests, that is
   the user turns sent to the agent, the expected phrases and keywords in its
   answers, the simulated proxy replies, the attachment fixture of workshop 15
@@ -81,5 +85,34 @@ Rule: **code and docs in English, the agent converses in French.**
 - Student-side choice: the system prompt and tool descriptions the student
   writes may be in either language; only the answers must be French.
 
-The book itself is written in French; the workshop guides refer to it by
-chapter number. The expected French patterns are calibrated again in phase B.
+The book itself is written in French; the workshop guides, in the same language, refer to it by
+chapter number and reuse its terms. The expected French patterns are calibrated again in phase B.
+
+## Judge: facts first, then meaning, repeated
+
+- **Order:** what code can check (application state, traces, logs, interface events) is
+  asserted first; a rubric then judges the meaning (`workshop_tests/evaluation/judge.py`):
+  a structural layer (required or forbidden patterns) always, then a semantic layer by a
+  judge model when `JUDGE_MODE` is `auto` and `JUDGE_BASE_URL` is set, or always when
+  `JUDGE_MODE=semantic`. A failed semantic verdict fails the test.
+- **Repetition:** a rubric applied to a fresh conversation is replayed with
+  `apply_rubric_repeatedly` and passes when `JUDGE_K` runs out of at most `JUDGE_N` pass
+  (3 out of 5 by default); it stops as soon as the outcome is known. Rubrics on an answer
+  that cannot be replayed (a continuation of a conversation) are applied once.
+- **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
+  answers a cautious French sentence without calling the model nor any tool, and fakes the
+  file deliverables; every test must fail. It guards against tests passed by doing nothing.
+
+## Superseded tests
+
+A workshop sometimes deliberately reverses an earlier one (workshop 03 has no tool, workshop
+04 adds one). Such a test is marked `@pytest.mark.superseded_by("04")`
+(`workshop_tests/testing/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
+and the test is skipped, with an explicit reason, once the target reaches the marker.
+
+## Simulated and live modes
+
+The live mode is the reference from workshop 04 on: the simulated model does not call tools
+on its own, so a test passed in simulated mode from workshop 04 on would reward a hard-coded
+workflow. The simulated mode stays the default for workshop 03, the CI, `check-shell` and
+`check-inert`.
