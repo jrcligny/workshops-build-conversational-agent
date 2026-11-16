@@ -61,6 +61,12 @@ SYSTEM_PROMPT = (
     "applique-la dans cette conversation seulement et dis clairement qu'elle ne sera pas conservée ensuite ; "
     "ne promets jamais de t'en souvenir. Si l'utilisateur évoque un échange passé (« comme la dernière fois »), "
     "ne suppose aucune conclusion antérieure : relis l'application avec tes outils.\n"
+    "Pour une procédure, une définition ou une règle interne, utilise search_documents. Dans ta réponse, "
+    "distingue toujours ce qui vient de la documentation (« Selon la procédure … », avec titre et version) de "
+    "ce qui vient des données de l'application (« D'après les données … »). Si search_documents ne renvoie "
+    "aucun passage, ou si les passages renvoyés ne traitent pas la question, dis que tu n'as rien trouvé dans "
+    "la documentation accessible ; n'invente rien. "
+    "Ne cite pas toi-même d'adresse de source : l'interface affiche les sources.\n"
     "Sans résultat d'outil, tu n'as aucune information : n'affirme jamais l'état d'une commande, "
     "même si l'utilisateur insiste ou propose lui-même la réponse ; dis simplement "
     "« Je n'ai pas cette information » sans reprendre son affirmation."
@@ -326,6 +332,7 @@ class Harness:
                 )
         if submission and submission["outcome"].get("status") == "submitted":
             mentions.append("Soumission effectuée après votre confirmation, en votre nom.")
+        sources = _sources(tool_calls_done)
 
         last = model_calls[-1] if model_calls else {"id": None, "usage": {}, "stop_reason": None}
         tracer.write(
@@ -362,6 +369,7 @@ class Harness:
                 "permissions": {"role": user.role, "write_tools": sorted(allowed_writes)},
                 "confirmation": bool(confirmation),
                 "pending_draft": self.drafts.get(conversation_id),
+                "sources": sources,
                 **({"submission": submission} if submission else {}),
                 **({"compaction": compacted} if compacted else {}),
             }
@@ -375,6 +383,9 @@ class Harness:
             yield Event(type="mention", data={"content": mention})
         for chunk in _split(text):
             yield Event(type="text", data={"content": chunk})
+        if sources:
+            # The displayed sources come from the passages the tool returned, never from the model's text.
+            yield Event(type="sources", data={"sources": sources})
         if confirmation_request:
             yield Event(type="confirmation_requested", data=confirmation_request)
         yield Event(type="end", data={"ok": True})
@@ -385,6 +396,28 @@ _WRITE_LABELS = {
     "prepare_purchase_request": "préparer une demande d'achat",
     "prepare_invoice_approval": "préparer l'approbation d'une facture",
 }
+
+
+def _sources(tool_calls_done: list[dict]) -> list[dict]:
+    """Documentation sources actually returned by search_documents in this turn, deduplicated."""
+    seen: dict[tuple, dict] = {}
+    for call in tool_calls_done:
+        if call["name"] != "search_documents":
+            continue
+        for passage in call["result"].get("passages") or []:
+            key = (passage.get("document_id"), passage.get("version"), passage.get("section"))
+            seen.setdefault(
+                key,
+                {
+                    "document_id": passage.get("document_id"),
+                    "title": passage.get("title"),
+                    "section": passage.get("section"),
+                    "version": passage.get("version"),
+                    "address": passage.get("address"),
+                    "passage_id": passage.get("id"),
+                },
+            )
+    return list(seen.values())
 
 
 def _tokens_used(model_calls: list[dict]) -> int:
@@ -441,6 +474,7 @@ def _step_label(name: str, arguments: dict) -> str:
         "describe_source": "Description de la source {source}",
         "query": "Lecture de la source {source}",
         "fetch_url": "Récupération de {url}",
+        "search_documents": "Recherche dans la documentation : {query}",
         "prepare_purchase_request": "Préparation du brouillon de demande d'achat",
         "prepare_invoice_approval": "Préparation du brouillon d'approbation de la facture {invoice}",
     }
