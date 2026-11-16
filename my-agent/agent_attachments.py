@@ -9,7 +9,7 @@ user is ever served to another.
 
 from __future__ import annotations
 
-from workshop_kit.services.attachments.registry import folder, list_attachments
+from agent_sdk.attachments import folder, list_attachments
 
 READ_ATTACHMENT = "read_attachment"
 MAX_CHARS = 6000

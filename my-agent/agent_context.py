@@ -6,7 +6,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 KEEP_RECENT_MESSAGES = 4
 
