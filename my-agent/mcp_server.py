@@ -255,7 +255,7 @@ def _normalize_filters(filters: Any, meta: dict, source: str) -> tuple[dict | No
 # ------------------------------------------------------------------------------------------------- tools
 
 
-ORDER_REFERENCE = re.compile(r"CMD-[A-Z0-9]{4,8}")
+ORDER_REFERENCE = re.compile(r"CMD-[A-Z0-9]+(?:-[A-Z0-9]+)*")
 
 
 def get_order(reference: str, ctx: Context) -> dict:
@@ -271,7 +271,7 @@ def get_order(reference: str, ctx: Context) -> dict:
     if not ORDER_REFERENCE.fullmatch(reference):
         return {
             "status": "error",
-            "error": f"invalid reference {reference!r}: an order reference is CMD- followed by 4 to 8 letters or digits",
+            "error": f"invalid reference {reference!r}: an order reference is CMD- followed by letters or digits, optionally in hyphenated groups (CMD-1042, CMD-B-100)",
             "fix": "ask the user for a reference such as CMD-1042",
         }
     meta, _ = _source(api, "orders")
@@ -371,10 +371,11 @@ def query(
     filters: object {field: value} with equality semantics; coded values accept the code or the business label.
     On orders, {"late": true} keeps only late deliveries (applied here, never filter a list yourself).
     aggregate: 'count', 'total' or 'average' (amount); group_by: a field. Without aggregate, at most 20 rows
-    are returned together with the total; use aggregate='count' when only the number is wanted.
+    are returned together with the total; a number of rows (orders of a customer included) is
+    aggregate='count', counted exactly by the application; mode='count' is for late orders (filter 'late').
     Orders of one customer (filters {customer_id[, late]}) come back as a summarized portion: `orders`,
     `returned`, `total`, `total_status` ('exact' or 'minimum' at the application's retrieval cap), `truncated`
-    and `next_offset`; pass offset=next_offset for the following portion, mode='count' for the number only.
+    and `next_offset`; pass offset=next_offset for the following portion.
     filter: 'late' (orders only) keeps only late deliveries, selected by the application, never by you.
     The detail of one order (amount, delivery) comes from get_order.
     Every coded value comes back with its business label (field_label).
@@ -393,8 +394,11 @@ def query(
         late_only = True
     if mode not in (None, "", "list", "count"):
         return {"status": "error", "error": f"unknown mode {mode!r}", "fix": "mode is 'list' (default) or 'count'"}
+    if mode == "count" and not late_only and not group_by:
+        # A plain number is counted by the application itself: exact, not bounded by the retrieval cap.
+        aggregate = "count"
     if source == "orders" and set(api_filters) == {"customer_id"} and not group_by and (
-        aggregate is None or (mode == "count" and aggregate == "count")
+        aggregate is None or (mode == "count" and aggregate == "count" and late_only)
     ):
         return _customer_orders(api, meta, str(api_filters["customer_id"]), late_only,
                                 "count" if mode == "count" else "list", limit, offset)
