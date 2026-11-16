@@ -1,0 +1,21 @@
+# Public cases of workshop 04, read by test_workshop_04.py (the checks are in checks.py).
+exact_order_lookup:
+  question: "Quel est le statut de la commande CMD-1042 de Martin Durand ?"
+  reference: CMD-1042
+  status: delivered        # read from the business application
+  answer_status: livrée    # stated in the answer
+
+swapped_reference_reported:
+  question: "Quel est le statut de la commande CMD-1402 ?"
+  asked: CMD-1402
+  close: CMD-1042
+  close_status: livrée
+
+deleted_order_never_suggested:
+  question: "Quel est le statut de la commande CMD-0881 ?"
+  reference: CMD-0881
+  nothing_proposed: true
+  hidden_reasons: [supprim]
+
+invalid_reference_rejected_before_the_call:
+  question: "Quel est le statut de la commande 1042;DROP ?"
