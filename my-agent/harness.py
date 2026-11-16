@@ -300,6 +300,10 @@ class Harness:
                 text = reply.get("content") or ""
                 stop = "answered"
                 break
+            # The limit is checked again before running tools: this reply may have spent the whole budget.
+            stop = limit_reached()
+            if stop:
+                break
             messages.append({"role": "assistant", "content": reply.get("content"), "tool_calls": requested})
             # Independent calls requested together run in the same cycle.
             for call in requested:
