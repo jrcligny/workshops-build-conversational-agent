@@ -8,7 +8,7 @@ tools it lists; the user's permissions still apply on top.
 
 from __future__ import annotations
 
-from workshop_kit.services.skills_catalog.catalog import catalog_dir, load_manifest
+from agent_sdk.skills import catalog_dir, load_manifest
 
 LOAD_SKILL = "load_skill"
 

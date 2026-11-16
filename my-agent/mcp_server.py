@@ -8,13 +8,19 @@ from __future__ import annotations
 
 import os
 import re
+import sys
+from pathlib import Path
 from typing import Any
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 
 # The SDK is installed in this environment: `agent_sdk.http_client` and `agent_sdk.tool_schema` help here.
-import agent_sandbox
+# Loaded by path by the gateway and the tests: its sibling module agent_sandbox must stay importable.
+if str(Path(__file__).resolve().parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import agent_sandbox  # noqa: E402
 
 NAME = "workshop-tools"
 VERSION = "0.2.0"
@@ -45,8 +51,8 @@ def exchange(authorization: str | None) -> tuple[str, dict]:
 
     import jwt
 
-    from workshop_kit.apps.business_api.auth import ALGORITHM, ROLES
-    from workshop_kit.shell.config import settings
+    from business_api.auth import ALGORITHM, ROLES
+    from workshop_config import settings
 
     if not authorization or not authorization.lower().startswith("bearer "):
         raise IdentityRefused("missing identity: the request carries no user token")
@@ -81,7 +87,7 @@ class BusinessAPI:
 
     @staticmethod
     def _local_app():
-        from workshop_kit.apps.business_api.app import app
+        from business_api.app import app
 
         return app
 
@@ -123,7 +129,7 @@ class DocsSearch(BusinessAPI):
 
     @staticmethod
     def _local_app():
-        from workshop_kit.apps.docs_search.app import app
+        from docs_search.app import app
 
         return app
 

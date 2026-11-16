@@ -23,9 +23,9 @@ import agent_sandbox  # noqa: E402
 import agent_skills  # noqa: E402
 import mcp_server  # noqa: E402
 
-from workshop_kit.shell import tracer  # noqa: E402
-from workshop_kit.shell.harness_contract import Event, Message, TestUser  # noqa: E402
-from workshop_kit.shell.model_client import ModelClient, ModelUnavailable, _split, model_unavailable  # noqa: E402
+from agent_sdk import trace_store as tracer  # noqa: E402
+from agent_sdk.contract import Event, Message, TestUser  # noqa: E402
+from agent_sdk.model_client import ModelClient, ModelUnavailable, _split, model_unavailable  # noqa: E402
 
 SYSTEM_PROMPT_FILE = Path(__file__).with_name("system_prompt.md")
 
@@ -66,7 +66,7 @@ class _InProcessModelClient(ModelClient):
         super().__init__("http://proxy", token)
         from fastapi.testclient import TestClient
 
-        from workshop_kit.llm_proxy.app import app
+        from model_gateway.app import app
 
         self._http = TestClient(app)
 

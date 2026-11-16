@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from urllib.parse import urlsplit
 
-from workshop_kit.services.sandbox.interface import is_egress_allowed, policy
+from agent_sdk.sandbox import is_egress_allowed, policy
 
 DEFAULT_LIMITS = {"duration_s": 120, "token_budget": 60000}
 
