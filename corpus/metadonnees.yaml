@@ -1,0 +1,52 @@
+
+documents:
+  - id: proc-livraisons-incompletes
+    fichier: organisation-a/proc-livraisons-incompletes.txt
+    titre: Procédure — Livraisons incomplètes
+    version: "2.1"
+    organisation: organisation-a
+    public_vise: charge_clientele
+    adresse: /docs/organisation-a/livraisons-incompletes/2.1
+  - id: proc-livraisons-incompletes-v1
+    fichier: organisation-a/archives/proc-livraisons-incompletes-v1.txt
+    titre: Procédure — Livraisons incomplètes
+    version: "1.0"
+    organisation: organisation-a
+    public_vise: charge_clientele
+    adresse: /docs/organisation-a/livraisons-incompletes/1.0
+    retire: true
+  - id: delai-reclamation
+    fichier: organisation-a/delai-reclamation.txt
+    titre: Délai de traitement d'une réclamation
+    version: "1.3"
+    organisation: organisation-a
+    public_vise: charge_clientele
+    adresse: /docs/organisation-a/reclamation/1.3
+  - id: circuit-demande-achat
+    fichier: organisation-a/circuit-demande-achat.txt
+    titre: Circuit de validation d'une demande d'achat
+    version: "3.0"
+    organisation: organisation-a
+    public_vise: acheteur
+    adresse: /docs/organisation-a/achats/circuit/3.0
+  - id: statuts-facture
+    fichier: organisation-a/statuts-facture.txt
+    titre: Définition des statuts de facture
+    version: "2.0"
+    organisation: organisation-a
+    public_vise: comptable
+    adresse: /docs/organisation-a/factures/statuts/2.0
+  - id: accueil-maison-claire
+    fichier: organisation-a/accueil.txt
+    titre: Accueil — documentation Maison Claire
+    version: "1.0"
+    organisation: organisation-a
+    public_vise: tous
+    adresse: /docs/organisation-a/accueil/1.0
+  - id: procedure-interne-b
+    fichier: organisation-b/procedure-interne.txt
+    titre: Procédure interne des Ateliers du Midi
+    version: "1.0"
+    organisation: organisation-b
+    public_vise: tous
+    adresse: /docs/organisation-b/interne/1.0

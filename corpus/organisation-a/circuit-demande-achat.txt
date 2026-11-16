@@ -1,0 +1,13 @@
+
+# Circuit de validation d'une demande d'achat
+Version 3.0 — public : acheteurs — Maison Claire
+
+## Préparation
+L'acheteur prépare un brouillon de demande d'achat : objet, fournisseur, montant estimé. Le brouillon n'a aucun effet tant qu'il n'est pas soumis.
+
+## Validation
+- Jusqu'à 1 000 euros : l'acheteur soumet la demande, qui est attribuée à l'agent s'il a préparé le brouillon, pour le compte de l'acheteur.
+- Au-delà de 1 000 euros : un second regard d'un responsable achats est requis après la soumission.
+
+## Interdiction
+Un chargé de clientèle ou un utilisateur sans droit d'écriture ne prépare pas et ne soumet pas de demande d'achat.

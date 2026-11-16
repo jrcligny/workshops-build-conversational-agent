@@ -1,0 +1,12 @@
+
+# Délai de traitement d'une réclamation
+Version 1.3 — public : chargés de clientèle — Maison Claire
+
+## Délai standard
+Une réclamation simple (livraison incomplète, erreur de quantité, colis endommagé) est traitée en dix jours ouvrés à compter de son ouverture.
+
+## Délai d'une réclamation pour retard
+Lorsqu'il y a également un retard de livraison, le délai reste de dix jours ouvrés, mais un accusé intermédiaire est envoyé au client dans les quarante-huit heures.
+
+## Ce que cette fiche ne dit pas
+Cette fiche décrit ce qui devrait se passer. L'état réel d'une commande ou d'une réclamation se lit dans l'application de gestion, pas dans cette documentation.

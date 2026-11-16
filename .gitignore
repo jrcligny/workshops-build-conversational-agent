@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.env
+*.db
+*.sqlite
+/traces/
+.DS_Store
+dist/
+*.egg-info/
+.mypy_cache/
+.pytest_coquille.xml
+.pytest_coquille.json
