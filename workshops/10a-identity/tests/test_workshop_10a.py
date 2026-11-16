@@ -101,7 +101,7 @@ def _call_generic_tool(url: str, authorization: str | None):
                 async with ClientSession(streams[0], streams[1]) as session:
                     await session.initialize()
                     tools_ = (await session.list_tools()).tools
-                    generic = [t for t in tools_ if {"source", "filters"} <= set((t.inputSchema or {}).get("properties", {}))]
+                    generic = [t for t in tools_ if {"source", "filters"} <= set((getattr(t, "inputSchema", None) or getattr(t, "input_schema", None) or {}).get("properties", {}))]
                     assert generic, "the MCP server exposes the generic query tool of workshop 09"
                     return await session.call_tool(generic[0].name, {"source": "orders", "filters": {"id": "CMD-1042"}})
 
