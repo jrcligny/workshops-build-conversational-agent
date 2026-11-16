@@ -63,7 +63,7 @@ def _refuse_live_mode() -> None:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "mode": _mode(), "azure_key_present": bool(settings.azure_openai_api_key)}
+    return {"status": "ok", "mode": _mode()}
 
 
 @app.post("/v1/chat/completions")
