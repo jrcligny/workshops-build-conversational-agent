@@ -1,6 +1,6 @@
 
-# Procedure — Incomplete deliveries
-Version 1.0 (retired) — Maison Claire
+# Procédure — Livraisons incomplètes
+Version 1.0 (retirée) — Maison Claire
 
-## Former deadline
-In this retired version, the claim had to be opened within two working days. This rule is no longer in force. Version 2.1 replaces it.
+## Ancien délai
+Dans cette version retirée, la réclamation devait être ouverte dans un délai de deux jours ouvrés. Cette règle n'est plus en vigueur. La version 2.1 la remplace.

@@ -26,7 +26,7 @@ def test_index_rebuilt(session_dir):
 
 def test_incomplete_delivery_search_with_source(observation, services):
     token = observation.token("camille-renard")["app_token"]
-    r = _search(services, token, {"query": "What does the procedure say when a delivery arrives incomplete?", "k": 5})
+    r = _search(services, token, {"query": "Que dit la procédure quand une livraison arrive incomplète ?", "k": 5})
     assert r.status_code == 200
     data = r.json()
     assert data["no_passage"] is False
@@ -36,12 +36,12 @@ def test_incomplete_delivery_search_with_source(observation, services):
     assert first["section"]
     assert first["version"] == "2.1"
     assert first["address"]
-    assert "incomplete" in first["text"].lower() or "incomplete" in first["title"].lower()
+    assert "incomplète" in first["text"].lower() or "incomplètes" in first["title"].lower()
 
 
 def test_organization_filtering(observation, services):
     token_a = observation.token("camille-renard")["app_token"]
-    r = _search(services, token_a, {"query": "Ateliers du Midi supplier reminder three days", "k": 8, "threshold": 0.0})
+    r = _search(services, token_a, {"query": "Ateliers du Midi relance fournisseur trois jours", "k": 8, "threshold": 0.0})
     assert r.status_code == 200
     organizations = {p["organization"] for p in r.json()["passages"]}
     assert "organization-b" not in organizations
@@ -49,7 +49,7 @@ def test_organization_filtering(observation, services):
 
 def test_accountant_audience_filtering(observation, services):
     token = observation.token("camille-renard")["app_token"]
-    r = _search(services, token, {"query": "invoice statuses paid pending", "k": 8, "threshold": 0.0})
+    r = _search(services, token, {"query": "statuts de facture paid pending", "k": 8, "threshold": 0.0})
     assert r.status_code == 200
     audiences = {p["audience"] for p in r.json()["passages"]}
     assert "accountant" not in audiences
@@ -75,7 +75,7 @@ def test_reindexing_removes_old_version(session_dir):
 
 def test_lexical_branch_status_code(observation, services):
     token = observation.token("nina-accountant")["app_token"]
-    r = _search(services, token, {"query": "status paid", "k": 5, "threshold": 0.0})
+    r = _search(services, token, {"query": "statut paid", "k": 5, "threshold": 0.0})
     assert r.status_code == 200
     texts = " ".join(p["text"] + p["title"] for p in r.json()["passages"]).lower()
     assert "paid" in texts

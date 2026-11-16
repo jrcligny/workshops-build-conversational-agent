@@ -21,7 +21,7 @@ The contract already provides the entry point, with no file in the shell:
 
 | Element | Contract |
 |---|---|
-| List | `GET /attachments` returns `{ "attachments": [...] }` from the area `workshop_kit/services/attachments/`. In the shell, the list is empty. |
+| List | `GET /attachments` returns `{ "attachments": [...] }` from the area `my-agent/attachments/` (setting `attachments_dir`). In the shell, the list is empty. |
 | Turn | The body of `POST /conversations/{id}/messages` accepts an optional `attachments` field (list of ids). It is passed to the *harness* (`turn(..., attachments=...)`). |
 | Reserved event | `attachment` may report that an attached document was read. |
 
@@ -60,9 +60,9 @@ In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, messa
 
 | Location | Role | State in the shell |
 |---|---|---|
-| `workshop_kit/services/sandbox/` | Sandbox interface and policy (workshop 10d) | Present, policy inactive, empty allowlist |
-| `workshop_kit/services/skills_catalog/` | Versioned skills catalog (workshop 14) | Valid manifest, zero *skill* |
-| `workshop_kit/services/attachments/` | Read-only area for attached documents (workshop 15) | Empty |
+| `my-agent/sandbox/policy.yaml` | Sandbox policy (workshop 10d), read by `workshop_kit/services/sandbox/interface.py` (setting `sandbox_policy_file`) | Present, policy inactive, empty allowlist |
+| `my-agent/skills/` | Versioned skills catalog (workshop 14): `manifest.yaml` + `<id>/SKILL.md`, read by `workshop_kit/services/skills_catalog/catalog.py` (setting `skills_dir`) | Valid manifest, zero *skill* |
+| `my-agent/attachments/` | Read-only area for attached documents (workshop 15), read by `workshop_kit/services/attachments/registry.py` (setting `attachments_dir`) | Empty |
 | `workshops/17-evaluation/routes/` | Evaluation routes and their checksum (workshops 17 and 19) | Empty set, checksum present |
 | `my-agent/local-mode/` | Development mode landing (workshop 19, *coding agent* optional) | Empty structure (`specifications/`, `controls/`) |
 

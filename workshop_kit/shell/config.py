@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -29,8 +33,11 @@ class Settings(BaseSettings):
     business_api_db: str = "business_api.db"
     docs_search_db: str = "docs_search.db"
     traces_dir: str = "traces"
+    # Everything a student edits lives in my-agent/. Relative paths resolve against the repository root.
     my_agent_dir: str = "my-agent"
-    attachments_dir: str = "workshop_kit/services/attachments"
+    sandbox_policy_file: str = "my-agent/sandbox/policy.yaml"
+    skills_dir: str = "my-agent/skills"
+    attachments_dir: str = "my-agent/attachments"
 
     # Frozen clock of the dataset (Europe/Paris, conventional repository date)
     frozen_clock: str = "2026-03-15T10:00:00"
@@ -42,3 +49,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def repo_path(value: str | Path) -> Path:
+    """Resolves a configured path: absolute as is, relative against the repository root."""
+    path = Path(value)
+    return path if path.is_absolute() else REPO_ROOT / path

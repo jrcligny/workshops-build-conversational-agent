@@ -8,37 +8,37 @@ pytestmark = pytest.mark.workshop
 
 
 def test_document_search_and_sources(chat_client):
-    turn, trace = successful_turn(chat_client, "What does the procedure say when a delivery arrives incomplete?")
+    turn, trace = successful_turn(chat_client, "Que dit la procédure quand une livraison arrive incomplète ?")
     assert "sources" in turn.types, "the displayed sources are established by the program (sources event)"
     assert tools(trace)
-    assert "procedure" in turn.text.lower() or "incomplete" in turn.text.lower()
+    assert "procédure" in turn.text.lower() or "incomplète" in turn.text.lower()
 
 
 def test_empty_result_declared(chat_client):
-    turn, _ = successful_turn(chat_client, "What does the documentation say about space travel of xyzzy-42 invoices?")
+    turn, _ = successful_turn(chat_client, "Que dit la documentation sur le voyage spatial des factures xyzzy-42 ?")
     text = turn.text.lower()
-    assert "no " in text or "not found" in text or "nothing" in text or "empty" in text or "none" in text
+    assert "aucun" in text or "pas trouvé" in text or "rien" in text or "introuvable" in text or " pas " in text
 
 
 def test_permission_filtering(chat_client):
-    turn, trace = successful_turn(chat_client, "Give me the internal definition of the invoice statuses, in particular \"paid\".")
+    turn, trace = successful_turn(chat_client, "Donnez-moi la définition interne des statuts de facture, en particulier « réglée ».")
     flat_t = (turn.text + flat(tools(trace))).lower()
     # camille works in customer service: the accounting document must not be served to her
-    assert "accountant" not in flat_t or "not allowed" in flat_t or "no access" in flat_t or "permission" in flat_t or "no " in flat_t
+    assert "accountant" not in flat_t or "autoris" in flat_t or "pas accès" in flat_t or "droit" in flat_t or "aucun" in flat_t
 
 
 def test_retired_version_absent(chat_client):
-    turn, trace = successful_turn(chat_client, "What is the current version of the incomplete deliveries procedure?")
+    turn, trace = successful_turn(chat_client, "Quelle est la version en vigueur de la procédure des livraisons incomplètes ?")
     flat_t = (turn.text + flat(tools(trace))).lower()
     assert "2.1" in flat_t or "version" in flat_t
-    assert "1.0" not in flat_t or "retired" in flat_t
+    assert "1.0" not in flat_t or "retired" in flat_t or "retiré" in flat_t
 
 
 def test_documentation_distinguished_from_data(chat_client):
     turn, _ = successful_turn(
         chat_client,
-        "What does the procedure say for an incomplete delivery, and what is the status of CMD-1042?",
+        "Que dit la procédure pour une livraison incomplète, et quel est le statut de CMD-1042 ?",
     )
     text = turn.text.lower()
-    assert "documentation" in text or "procedure" in text or "sources" in turn.types
-    assert "cmd-1042" in text or "order" in text or "deliver" in text
+    assert "documentation" in text or "procédure" in text or "sources" in turn.types
+    assert "cmd-1042" in text or "commande" in text or "livr" in text

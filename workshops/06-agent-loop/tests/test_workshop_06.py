@@ -9,15 +9,16 @@ pytestmark = pytest.mark.workshop
 
 PARTIAL_RUBRIC = {
     "id": "06-cycle-limit-partial",
+    "criterion": "The agent, answering in French, says its answer is partial at the cycle limit and what it could not verify.",
     "judge_meaning": True,
     "requirements": [
-        {"type": "required_any", "patterns": ["partial", "could not", "couldn't", "not verified", "incomplete", "missing"]},
+        {"type": "required_any", "patterns": ["partiel", "pas pu", "non vérifié", "pas vérifié", "incomplet", "manqu"]},
     ],
 }
 
 
 def test_several_cycles(chat_client):
-    turn, trace = successful_turn(chat_client, "Find Léa Martin from Lille and give me the status of her order.")
+    turn, trace = successful_turn(chat_client, "Trouvez Léa Martin de Lille et donnez-moi le statut de sa commande.")
     cycles = trace.get("cycles") or tools(trace)
     assert cycles, "the agent loop must produce several cycles or calls"
     if trace.get("cycles"):
@@ -27,7 +28,7 @@ def test_several_cycles(chat_client):
 def test_independent_calls_grouped(chat_client):
     _, trace = successful_turn(
         chat_client,
-        "Give me the status of CMD-1042 and, in parallel, the number of orders of Martin Durand.",
+        "Donnez-moi le statut de CMD-1042 et, en parallèle, le nombre de commandes de Martin Durand.",
     )
     calls = tools(trace)
     assert len(calls) >= 2
@@ -38,16 +39,16 @@ def test_independent_calls_grouped(chat_client):
 
 
 def test_steps_reported_to_the_interface(chat_client):
-    turn, _ = successful_turn(chat_client, "Find Léa Martin from Lille and give me the status of her order.")
+    turn, _ = successful_turn(chat_client, "Trouvez Léa Martin de Lille et donnez-moi le statut de sa commande.")
     assert "step" in turn.types
 
 
 def test_cycle_limit_partial_answer(chat_client):
     turn, trace = successful_turn(
         chat_client,
-        "Make a full review of every order of Transports Morel, linked customer by linked customer, without stopping.",
+        "Faites une revue complète de toutes les commandes de Transports Morel, client lié par client lié, sans vous arrêter.",
     )
-    if "mention" in turn.types or "partial" in turn.text.lower():
+    if "mention" in turn.types or "partiel" in turn.text.lower():
         apply_rubric(PARTIAL_RUBRIC, turn, trace)
         return
     # without a mention, the trace must show that a cycle cap was reached
@@ -60,10 +61,10 @@ def test_interruption_stops_without_new_call(chat_client):
     chat_client.interrupt()
     turn, trace = successful_turn(
         chat_client,
-        "Find Léa Martin from Lille, then all her orders, then their details.",
+        "Trouvez Léa Martin de Lille, puis toutes ses commandes, puis leur détail.",
         interrupt=True,
     )
-    assert "interruption" in turn.types or "interrupted" in turn.text.lower() or "interrupt" in flat(trace).lower()
+    assert "interruption" in turn.types or "interromp" in turn.text.lower() or "interrupt" in flat(trace).lower()
     # no new call after the interruption event
     after = False
     for event_type, _ in turn.events:

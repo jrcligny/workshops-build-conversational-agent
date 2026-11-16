@@ -17,7 +17,7 @@ def test_health_simulated_mode(services):
 def test_no_token_refused(services):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
-        json={"messages": [{"role": "user", "content": "hello"}]},
+        json={"messages": [{"role": "user", "content": "bonjour"}]},
         timeout=5,
     )
     assert r.status_code == 401
@@ -27,7 +27,7 @@ def test_made_up_token_refused(services, reset_state):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
         headers={"Authorization": "Bearer made-up-token"},
-        json={"messages": [{"role": "user", "content": "hello"}]},
+        json={"messages": [{"role": "user", "content": "bonjour"}]},
         timeout=5,
     )
     assert r.status_code == 401
@@ -37,7 +37,7 @@ def test_simulated_chat(services, reset_state):
     r = httpx.post(
         f"{services['proxy']}/v1/chat/completions",
         headers=STUDENT,
-        json={"messages": [{"role": "user", "content": "What is the status of order CMD-1042?"}]},
+        json={"messages": [{"role": "user", "content": "Quel est le statut de la commande CMD-1042 ?"}]},
         timeout=5,
     )
     assert r.status_code == 200
@@ -55,7 +55,7 @@ def test_deterministic_embeddings(services, reset_state):
         return httpx.post(
             f"{services['proxy']}/v1/embeddings",
             headers=STUDENT,
-            json={"input": "incomplete delivery"},
+            json={"input": "livraison incomplète"},
             timeout=5,
         ).json()["data"][0]["embedding"]
 

@@ -8,7 +8,7 @@ from workshop_kit.apps.docs_search.vectors import DIM, vector
 
 
 def complete(messages: list[dict[str, Any]], scripts: list[dict] | None = None) -> dict[str, Any]:
-    """Returns a scripted response when a script matches, otherwise a cautious generic response."""
+    """Returns a scripted response when a script matches, otherwise a cautious generic response (in French, the agent's language)."""
     user_text = ""
     for msg in reversed(messages):
         if msg.get("role") == "user":
@@ -18,7 +18,7 @@ def complete(messages: list[dict[str, Any]], scripts: list[dict] | None = None) 
         if _match(script, messages, user_text):
             return _response(script.get("content", ""), script.get("tool"))
     return _response(
-        "I have no access to the application data and cannot state the status of a specific order."
+        "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer l'état d'une commande précise."
     )
 
 

@@ -14,7 +14,7 @@ def test_interface_health(services):
 
 
 def test_shell_returns_an_explicit_error(chat_client):
-    turn = chat_client.turn("What is the status of order CMD-1042 for Martin Durand?")
+    turn = chat_client.turn("Quel est le statut de la commande CMD-1042 de Martin Durand ?")
     assert turn.ok is False
     assert turn.error
     assert "workshop 03" in turn.error.lower() or "system prompt" in turn.error.lower()
@@ -29,5 +29,5 @@ def test_every_workshop_folder_exists():
 
 
 def test_no_trace_on_the_shell(chat_client, traces):
-    chat_client.turn("hello")
+    chat_client.turn("bonjour")
     assert traces.all() == []

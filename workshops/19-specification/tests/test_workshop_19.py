@@ -26,7 +26,7 @@ def test_specification_implementation_and_check_against_wrong_output():
     texts = "\n".join(p.read_text(encoding="utf-8", errors="ignore").lower() for p in checks)
     assert any(
         pattern in texts
-        for pattern in ("wrong output", "deliberately wrong", "wrong_output", "false_output", "fake output")
+        for pattern in ("wrong output", "deliberately wrong", "wrong_output", "false_output", "fake output", "sortie fausse", "volontairement fausse")
     ), "at least one check must feed the harness a deliberately wrong model output"
 
     assert routes_digest() == expected_digest(), "the evaluation routes were modified; they must stay intact"

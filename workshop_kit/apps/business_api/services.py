@@ -130,12 +130,14 @@ def resolve_name(entity_type: str, name: str, identity: dict) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# Codes and field names are English (API contract). The labels of coded values are
+# French: they are what the agent shows to its French-speaking users.
 SOURCES = {
     "orders": {
         "description": "Orders and deliveries",
         "fields": {
             "reference": "order reference",
-            "status": "status code (labels: delivered, shipped, in preparation, rejected, deleted)",
+            "status": "status code (French display labels in coded_values: livrée, expédiée, en préparation, rejetée, supprimée)",
             "amount": "amount including tax",
             "promised_date": "promised delivery date",
             "customer_id": "customer identifier",
@@ -143,12 +145,12 @@ SOURCES = {
         "relations": {"customer_id": "customers.id"},
         "coded_values": {
             "status": {
-                "delivered": "delivered",
-                "shipped": "shipped",
-                "in_preparation": "in preparation",
-                "rejected": "rejected",
-                "deleted": "deleted",
-                "confirmed": "confirmed",
+                "delivered": "livrée",
+                "shipped": "expédiée",
+                "in_preparation": "en préparation",
+                "rejected": "rejetée",
+                "deleted": "supprimée",
+                "confirmed": "confirmée",
             }
         },
         "aggregates": ["count", "total", "average"],
@@ -165,7 +167,7 @@ SOURCES = {
         "fields": {"reference": "reference", "status": "status", "amount": "amount", "duplicate_of": "original invoice when duplicated"},
         "relations": {"order_id": "orders.id"},
         "coded_values": {
-            "status": {"paid": "paid", "pending": "pending approval", "approved": "approved"}
+            "status": {"paid": "réglée", "pending": "en attente d'approbation", "approved": "approuvée"}
         },
         "aggregates": ["count", "total", "average"],
     },

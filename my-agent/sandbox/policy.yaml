@@ -1,6 +1,6 @@
 # Sandbox policy — empty base (workshop 10d).
 # No policy is enforced yet: the allowlist is empty and the "active" flag
-# stays false. The student fills it in during workshop 10d.
+# stays false. Read by workshop_kit (setting `sandbox_policy_file`). The student fills it in during workshop 10d.
 active: false
 allowlist: []
 limits:

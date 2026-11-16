@@ -8,17 +8,17 @@ pytestmark = pytest.mark.workshop
 
 
 def test_namesakes_several_candidates(chat_client):
-    turn, trace = successful_turn(chat_client, "What are the orders of Léa Martin?")
+    turn, trace = successful_turn(chat_client, "Quelles sont les commandes de Léa Martin ?")
     text = turn.text.lower()
     assert "lille" in text and "lyon" in text
     # the agent does not pick one of the two on behalf of the user
-    assert "which" in text or "several" in text or "namesake" in text or "two" in text or "?" in turn.text
+    assert "laquelle" in text or "plusieurs" in text or "homonym" in text or "deux" in text or "?" in turn.text
     assert tools(trace)
 
 
 def test_late_filter_applied_by_the_tool(chat_client, observation):
     observation.reset("volume")
-    turn, trace = successful_turn(chat_client, "What are the late orders of Transports Morel?")
+    turn, trace = successful_turn(chat_client, "Quelles sont les commandes en retard de Transports Morel ?")
     assert turn.text
     assert tools(trace)
     assert "late" in str(tools(trace)).lower()

@@ -1,5 +1,5 @@
 
-# Welcome — Maison Claire documentation
-Version 1.0 — audience: all users of organization A
+# Accueil — documentation Maison Claire
+Version 1.0 — public : tous les utilisateurs de l'organisation A
 
-This base gathers the internal procedures of Maison Claire: deliveries, claims, purchasing and invoices. It says what should happen. The application data says what did happen.
+Cette base rassemble les procédures internes de Maison Claire : livraisons, réclamations, achats et factures. Elle dit ce qui devrait se passer. Les données de l'application disent ce qui s'est passé.

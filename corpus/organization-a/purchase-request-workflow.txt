@@ -1,13 +1,13 @@
 
-# Approval workflow of a purchase request
-Version 3.0 — audience: buyers — Maison Claire
+# Circuit de validation d'une demande d'achat
+Version 3.0 — public : acheteurs — Maison Claire
 
-## Preparation
-The buyer prepares a draft purchase request: subject, supplier, estimated amount. The draft has no effect until it is submitted.
+## Préparation
+L'acheteur prépare un brouillon de demande d'achat : objet, fournisseur, montant estimé. Le brouillon n'a aucun effet tant qu'il n'est pas soumis.
 
-## Approval
-- Up to 1,000 euros: the buyer submits the request, which is assigned to the agent if the agent prepared the draft, on behalf of the buyer.
-- Above 1,000 euros: a second review by a purchasing manager is required after submission.
+## Validation
+- Jusqu'à 1 000 euros : l'acheteur soumet la demande, qui est attribuée à l'agent s'il a préparé le brouillon, pour le compte de l'acheteur.
+- Au-delà de 1 000 euros : un second regard d'un responsable achats est requis après la soumission.
 
-## Prohibition
-A customer service representative or a user without write permission neither prepares nor submits a purchase request.
+## Interdiction
+Un chargé de clientèle ou un utilisateur sans droit d'écriture ne prépare pas et ne soumet pas de demande d'achat.

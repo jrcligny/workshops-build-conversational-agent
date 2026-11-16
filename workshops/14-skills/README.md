@@ -1,6 +1,6 @@
 # Workshop 14 — Skills
 
-Chapter 14 of the book. No solution is provided: you work in `my-agent/`.
+Chapter 14 of the book. No solution is provided: you work in `my-agent/`. The versioned catalog is `my-agent/skills/`: `manifest.yaml` plus one folder per *skill* (read by the kit through the `skills_dir` setting).
 
 ## Goal
 

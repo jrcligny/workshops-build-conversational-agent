@@ -7,6 +7,9 @@ The contract to implement: the Harness class exposes a turn(...) method that
 receives the conversation id, the user's message, the test user and the
 history, then yields events (text, then end) and writes a trace. Use the
 kit's model client (wired to the proxy) and the trace helpers.
+
+Your agent converses in French: the tests send French user turns and expect
+French answers (code, comments and identifiers stay English).
 """
 
 from __future__ import annotations

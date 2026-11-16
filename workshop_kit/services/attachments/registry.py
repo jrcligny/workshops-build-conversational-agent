@@ -1,16 +1,16 @@
-"""Read-only attachments area — empty base (workshop 15)."""
+"""Read-only attachments area (workshop 15). The area itself lives in my-agent/attachments/."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from workshop_kit.shell.config import settings
+from workshop_kit.shell.config import repo_path, settings
 
 EXTENSIONS = {".txt", ".md", ".pdf", ".csv"}
 
 
 def folder() -> Path:
-    return Path(settings.attachments_dir)
+    return repo_path(settings.attachments_dir)
 
 
 def list_attachments() -> list[dict]:

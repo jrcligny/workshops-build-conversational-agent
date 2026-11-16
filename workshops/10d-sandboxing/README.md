@@ -1,6 +1,6 @@
 # Workshop 10d — Sandboxing
 
-Chapter 10 of the book. No solution is provided: you work in `my-agent/`.
+Chapter 10 of the book. No solution is provided: you work in `my-agent/`. The sandbox policy to fill in is `my-agent/sandbox/policy.yaml` (read by the kit through the `sandbox_policy_file` setting).
 
 ## Goal
 

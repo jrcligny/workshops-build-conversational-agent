@@ -1,6 +1,8 @@
 # Workshops — Build a Conversational Agent
 
-Companion repository for the workshops of the book *De l'assistant à l'agent : anatomie d'un agent conversationnel* (written in French; this repository is in English).
+Companion repository for the workshops of the book *De l'assistant à l'agent : anatomie d'un agent conversationnel* (written in French).
+
+**Languages: code and docs in English, the agent converses in French.** Everything in this repository is in English except what the agent's user reads or types: the user turns and expected answers in the tests, the simulated model replies, the corpus texts and the display labels of business values. Details in [docs/decisions.md](docs/decisions.md#language).
 
 It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 19, chapter 10 being split into 10a to 10d). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal shell (chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The shell includes neither the conversational loop nor the *system prompt*.
 
@@ -11,9 +13,12 @@ Main target: **Windows**, with Python **3.15** (latest stable release on [python
 ```
 README.md            this file
 GETTING_STARTED.md   what is provided, what you write
-my-agent/            the ONLY place where you write code
+my-agent/            the ONLY folder students edit
   harness.py         empty shell of your agent
   mcp_server.py      empty MCP server (wired in workshop 09)
+  sandbox/           sandbox policy (policy.yaml, workshop 10d)
+  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
+  attachments/       read-only attachments area (workshop 15)
   local-mode/        landing structure of workshop 19 (specifications/, controls/)
 workshops/           one folder per workshop: README.md (guide), state.yaml, tests/
 workshop_kit/        provided infrastructure (Python package), never edited by students
@@ -21,7 +26,7 @@ workshop_kit/        provided infrastructure (Python package), never edited by s
   llm_proxy/         OpenAI-compatible proxy (simulated / replay; live Azure OpenAI later)
   apps/business_api/ business API test app (FastAPI + SQLite)
   apps/docs_search/  document search test app (SQLite FTS5 + sqlite-vec)
-  services/          empty bases: sandbox, skills_catalog, attachments
+  services/          readers for my-agent/sandbox, my-agent/skills, my-agent/attachments
   evaluation/        LLM judge and evaluation-route checksum
   testing/           shared test helpers and pytest fixtures
   cli.py             the `workshop` command
@@ -35,7 +40,7 @@ Two kinds of tests live in this repository:
 - `workshops/*/tests/`: the success criteria of each workshop. **They fail until the workshop is done** (red, then green).
 - `tests/kit/`: the tests of the provided infrastructure, which must always pass.
 
-Students do not edit the Python code of `workshop_kit/`. A few workshops ask you to fill in data files that the kit reads: the sandbox policy (`workshop_kit/services/sandbox/policy.yaml`, workshop 10d), the skills catalog (`workshop_kit/services/skills_catalog/`, workshop 14) and the attachments area (`workshop_kit/services/attachments/`, workshop 15).
+Students only touch `my-agent/`. There is no exception: the files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live in `my-agent/` too, and `workshop_kit/` loads them through configurable paths (`sandbox_policy_file`, `skills_dir`, `attachments_dir` in `workshop_kit/shell/config.py`, overridable from `.env`). `workshop_kit/` contains only Python code; a kit test checks it.
 
 ## Quick start
 

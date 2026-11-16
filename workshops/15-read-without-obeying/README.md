@@ -1,6 +1,6 @@
 # Workshop 15 — Read without obeying
 
-Chapter 15 of the book. No solution is provided: you work in `my-agent/`.
+Chapter 15 of the book. No solution is provided: you work in `my-agent/`. Attached documents go to `my-agent/attachments/` (read by the kit through the `attachments_dir` setting); the tests use their own fixture in `tests/fixtures/`.
 
 ## Goal
 

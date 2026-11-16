@@ -10,13 +10,14 @@ pytestmark = pytest.mark.workshop
 
 PARTIAL_RUBRIC = {
     "id": "07-partial-result-announced",
+    "criterion": "The agent, answering in French, announces that it shows only part of the result and gives the total.",
     "judge_meaning": True,
     "requirements": [
-        {"type": "required_any", "patterns": ["part of", "partial", "excerpt", "limited", "limit", "total"]},
+        {"type": "required_any", "patterns": ["une partie", "partiel", "extrait", "limité", "limite", "total"]},
     ],
 }
 
-INITIAL_REQUEST = "I am handling the file of Martin Durand, order CMD-1042, delivered orders only."
+INITIAL_REQUEST = "Je traite le dossier de Martin Durand, commande CMD-1042, commandes livrées uniquement."
 
 
 def _compaction(trace) -> dict | None:
@@ -37,7 +38,7 @@ def test_bounded_list_and_declared_total(chat_client, observation):
     observation.reset("volume")
     turn, trace = successful_turn(
         chat_client,
-        "What are the late orders of Transports Morel, and how many are there?",
+        "Quelles sont les commandes en retard de Transports Morel, et combien y en a-t-il ?",
     )
     assert tools(trace)
     flat_tools = flat(tools(trace)).lower()
@@ -51,22 +52,22 @@ def test_count_mode(chat_client, observation):
     observation.reset("volume")
     turn, trace = successful_turn(
         chat_client,
-        "How many late orders does Transports Morel have? I only want the number, not the lines.",
+        "Combien de commandes en retard a Transports Morel ? Je veux seulement le nombre, pas les lignes.",
     )
     flat_tools = flat(tools(trace)).lower()
-    assert "count" in flat_tools or "total" in flat_tools or "how many" in turn.text.lower() or any(ch.isdigit() for ch in turn.text)
+    assert "count" in flat_tools or "total" in flat_tools or "combien" in turn.text.lower() or any(ch.isdigit() for ch in turn.text)
 
 
 def test_cap_reached_total_is_a_minimum(chat_client, observation):
     observation.reset("volume")
-    turn, trace = successful_turn(chat_client, "List all late orders of Transports Morel, I want the exact total.")
+    turn, trace = successful_turn(chat_client, "Listez toutes les commandes en retard de Transports Morel, je veux le total exact.")
     flat_all = (turn.text + flat(tools(trace))).lower()
-    assert "minimum" in flat_all or "at least" in flat_all or "lower bound" in flat_all or "cap" in flat_all or "partial" in flat_all
+    assert "minimum" in flat_all or "au moins" in flat_all or "borne inférieure" in flat_all or "plafond" in flat_all or "partiel" in flat_all or "cap" in flat_all
 
 
 def test_no_compaction_below_threshold(chat_client):
     _, trace = successful_turn(chat_client, INITIAL_REQUEST)
-    _, trace = successful_turn(chat_client, "Can you just confirm the current customer?")
+    _, trace = successful_turn(chat_client, "Pouvez-vous simplement confirmer le client en cours ?")
     assert _compaction(trace) is None
     assert "compaction" not in flat(trace).lower()
 
@@ -76,7 +77,7 @@ def test_compaction_above_threshold_keeps_user_messages(chat_client):
     _, trace = successful_turn(chat_client, INITIAL_REQUEST)
     threshold = int(settings.compaction_message_threshold)
     for i in range(threshold + 2):
-        msg = f"Detail number {i}: I only want the delivered orders of CMD-1042."
+        msg = f"Détail numéro {i} : je veux seulement les commandes livrées de CMD-1042."
         user_messages.append(msg)
         turn, trace = successful_turn(chat_client, msg)
     event = _compaction(trace)
@@ -93,9 +94,9 @@ def test_compaction_reported_in_the_interface(chat_client):
     successful_turn(chat_client, INITIAL_REQUEST)
     turn = None
     for i in range(int(settings.compaction_message_threshold) + 2):
-        turn, _ = successful_turn(chat_client, f"Next step on the Martin Durand file CMD-1042 ({i}).")
+        turn, _ = successful_turn(chat_client, f"Étape suivante sur le dossier Martin Durand CMD-1042 ({i}).")
     reported = "compaction" in turn.types or any(
-        ev[0] in {"compaction", "mention"} and ("summar" in str(ev[1]).lower() or ev[0] == "compaction")
+        ev[0] in {"compaction", "mention"} and ("résum" in str(ev[1]).lower() or "summar" in str(ev[1]).lower() or ev[0] == "compaction")
         for ev in turn.events
     )
     assert reported, "the interface must report that the older part of the conversation was summarized"

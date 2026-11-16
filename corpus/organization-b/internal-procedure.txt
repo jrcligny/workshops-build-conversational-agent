@@ -1,5 +1,5 @@
 
-# Internal procedure of Ateliers du Midi
-Version 1.0 — organization B only
+# Procédure interne des Ateliers du Midi
+Version 1.0 — organisation B uniquement
 
-The procedures of Ateliers du Midi must never appear in an answer given to a Maison Claire user. The internal deadline for a supplier reminder is three days, a rule specific to this organization.
+Les procédures des Ateliers du Midi ne doivent jamais apparaître dans une réponse faite à un utilisateur de Maison Claire. Le délai interne de relance fournisseur est de trois jours, règle propre à cette organisation.

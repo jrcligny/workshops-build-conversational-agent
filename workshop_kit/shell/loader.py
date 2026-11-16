@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from pathlib import Path
-
-from workshop_kit.shell.config import settings
+from workshop_kit.shell.config import repo_path, settings
 from workshop_kit.shell.harness_contract import HarnessNotImplemented
 
 
 def load_harness():
-    folder = Path(settings.my_agent_dir)
+    folder = repo_path(settings.my_agent_dir)
     path = folder / "harness.py"
     if not path.exists():
         raise HarnessNotImplemented(
@@ -30,7 +28,7 @@ def load_harness():
 
 def load_my_agent_module(file_name: str, module_name: str):
     """Loads a module from the my-agent/ shell (harness, MCP server, ...)."""
-    path = Path(settings.my_agent_dir) / file_name
+    path = repo_path(settings.my_agent_dir) / file_name
     if not path.exists():
         raise FileNotFoundError(f"File missing from the shell: {path}")
     spec = importlib.util.spec_from_file_location(module_name, path)

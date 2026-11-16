@@ -5,7 +5,9 @@ file access, duration and budget limits.
 
 In this shell:
 
-- `interface.py` exposes the contract (`policy()`, `is_egress_allowed()`);
+- `workshop_kit/services/sandbox/interface.py` exposes the contract
+  (`policy()`, `is_egress_allowed()`) and reads this folder's `policy.yaml`
+  (setting `sandbox_policy_file`, default `my-agent/sandbox/policy.yaml`);
 - `policy.yaml` exists, with `active: false` and an empty allowlist;
 - **no policy is enforced**.
 

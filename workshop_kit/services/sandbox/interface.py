@@ -2,7 +2,8 @@
 
 In workshop 10d, the tool server will run in a container (unprivileged user,
 read-only file system, egress proxy with an allowlist). This shell only exposes
-the contract and the location of the files; it enforces no policy.
+the contract; the policy file itself lives in my-agent/sandbox/policy.yaml
+(setting `sandbox_policy_file`). It enforces no policy.
 """
 
 from __future__ import annotations
@@ -11,17 +12,20 @@ from pathlib import Path
 
 import yaml
 
-FOLDER = Path(__file__).resolve().parent
-POLICY_FILE = FOLDER / "policy.yaml"
+from workshop_kit.shell.config import repo_path, settings
+
+
+def policy_file() -> Path:
+    return repo_path(settings.sandbox_policy_file)
 
 
 def policy() -> dict:
-    data = yaml.safe_load(POLICY_FILE.read_text(encoding="utf-8")) or {}
+    data = yaml.safe_load(policy_file().read_text(encoding="utf-8")) or {}
     return {
         "active": bool(data.get("active")),
         "allowlist": list(data.get("allowlist") or []),
         "limits": dict(data.get("limits") or {}),
-        "location": str(POLICY_FILE),
+        "location": str(policy_file()),
     }
 
 

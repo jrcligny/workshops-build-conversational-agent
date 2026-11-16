@@ -6,7 +6,9 @@ Main target: Windows, with Python 3.15 (latest stable release from python.org). 
 
 ## What is provided
 
-Two test applications (business API and document search), a model proxy in simulated mode, a chat interface, traces, an empty MCP server, and one set of end-to-end tests per workshop, stored next to its guide in `workshops/<id>-<topic>/tests/`. The shell also provides the locations of the sandbox, of the skills catalog, of the attachments and of the local development mode, without their business content. All of this lives in `workshop_kit/`, which you do not edit.
+The agent you build answers in French (code and docs stay English; see `docs/decisions.md`).
+
+Two test applications (business API and document search), a model proxy in simulated mode, a chat interface, traces, an empty MCP server, and one set of end-to-end tests per workshop, stored next to its guide in `workshops/<id>-<topic>/tests/`. All of this lives in `workshop_kit/`, which you do not edit. The shell also provides, in `my-agent/`, the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
 
 ## What you write
 

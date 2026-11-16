@@ -12,7 +12,7 @@ pytestmark = pytest.mark.workshop
 def test_token_exchange(chat_client, observation, services):
     token = observation.token("camille-renard")
     chat_client.open(app_token=token["app_token"])
-    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042?")
+    turn, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
     log = business_log(observation)
     assert log, "the application must receive a call on behalf of the user"
     flat_log = flat(log).lower()
@@ -27,8 +27,8 @@ def test_request_without_identity_refused(services, observation):
     wrong = issue_token("camille-renard", "customer_service", "organization-a", typ="entry")
     client = ChatClient(services["interface"])
     client.open(app_token=wrong)
-    turn, trace = successful_turn(client, "What is the status of order CMD-1042?")
+    turn, trace = successful_turn(client, "Quel est le statut de la commande CMD-1042 ?")
     log = business_log(observation)
     # either no business call went through (refused upstream), or the API answered 401
     codes = [e.get("code") or e.get("status") for e in log]
-    assert (not log) or any(c in {401, 403, "401", "403"} for c in codes) or "refus" in flat(trace).lower() or "identity" in turn.text.lower()
+    assert (not log) or any(c in {401, 403, "401", "403"} for c in codes) or "refus" in flat(trace).lower() or "identit" in turn.text.lower()

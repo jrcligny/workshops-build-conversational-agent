@@ -18,6 +18,14 @@ ROLES = {
     "financial_controller",
     "read_only",
 }
+# French display labels of the roles (the agent converses in French; codes stay English).
+ROLE_LABELS = {
+    "customer_service": "chargé de clientèle",
+    "buyer": "acheteur",
+    "accountant": "comptable",
+    "financial_controller": "contrôleur de gestion",
+    "read_only": "lecture seule",
+}
 
 
 def issue_token(

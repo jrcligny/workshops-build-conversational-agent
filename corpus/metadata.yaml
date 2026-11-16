@@ -1,14 +1,15 @@
+# Keys and identifiers are English; titles are French because the agent quotes them to French-speaking users.
 documents:
   - id: proc-incomplete-deliveries
     file: organization-a/proc-incomplete-deliveries.txt
-    title: Procedure — Incomplete deliveries
+    title: Procédure — Livraisons incomplètes
     version: "2.1"
     organization: organization-a
     audience: customer_service
     address: /docs/organization-a/incomplete-deliveries/2.1
   - id: proc-incomplete-deliveries-v1
     file: organization-a/archives/proc-incomplete-deliveries-v1.txt
-    title: Procedure — Incomplete deliveries
+    title: Procédure — Livraisons incomplètes
     version: "1.0"
     organization: organization-a
     audience: customer_service
@@ -16,35 +17,35 @@ documents:
     retired: true
   - id: claim-deadline
     file: organization-a/claim-deadline.txt
-    title: Processing time of a claim
+    title: Délai de traitement d'une réclamation
     version: "1.3"
     organization: organization-a
     audience: customer_service
     address: /docs/organization-a/claims/1.3
   - id: purchase-request-workflow
     file: organization-a/purchase-request-workflow.txt
-    title: Approval workflow of a purchase request
+    title: Circuit de validation d'une demande d'achat
     version: "3.0"
     organization: organization-a
     audience: buyer
     address: /docs/organization-a/purchasing/workflow/3.0
   - id: invoice-statuses
     file: organization-a/invoice-statuses.txt
-    title: Definition of invoice statuses
+    title: Définition des statuts de facture
     version: "2.0"
     organization: organization-a
     audience: accountant
     address: /docs/organization-a/invoices/statuses/2.0
   - id: welcome-maison-claire
     file: organization-a/welcome.txt
-    title: Welcome — Maison Claire documentation
+    title: Accueil — documentation Maison Claire
     version: "1.0"
     organization: organization-a
     audience: all
     address: /docs/organization-a/welcome/1.0
   - id: internal-procedure-b
     file: organization-b/internal-procedure.txt
-    title: Internal procedure of Ateliers du Midi
+    title: Procédure interne des Ateliers du Midi
     version: "1.0"
     organization: organization-b
     audience: all

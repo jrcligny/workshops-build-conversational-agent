@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_masked_traces(chat_client, traces):
-    successful_turn(chat_client, "What is the status of order CMD-1042?")
+    successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
     flat_t = flat(traces.last()).lower()
     assert "authorization" not in flat_t and "bearer " not in flat_t
     assert "azure_openai_api_key" not in flat_t
@@ -47,5 +47,5 @@ def test_route_set_and_report():
         assert any(v in text for v in variants), (
             f"the route set must cover the edge case {case!r} and the report must account for it"
         )
-    assert "repeat" in text or "k/" in text or "runs" in text
-    assert "fact" in text or "deterministic" in text
+    assert "repeat" in text or "répét" in text or "k/" in text or "runs" in text
+    assert "fact" in text or "fait" in text or "deterministic" in text or "déterministe" in text

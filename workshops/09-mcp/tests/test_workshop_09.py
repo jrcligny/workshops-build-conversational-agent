@@ -36,7 +36,7 @@ def _catalog(url: str) -> list:
 
 
 def test_tools_served_by_mcp(chat_client, observation):
-    turn, trace = successful_turn(chat_client, "What is the total of the orders of Martin Durand?")
+    turn, trace = successful_turn(chat_client, "Quel est le total des commandes de Martin Durand ?")
     assert "mcp" in flat(trace).lower() or trace.get("transport") == "mcp"
     log = business_log(observation)
     assert log, "the application must be called, through the MCP server, not from a silent local tool"
@@ -54,16 +54,16 @@ def test_two_clients_get_the_same_catalog(mcp_server_url):
 
 
 def test_malformed_filter_actionable_error(chat_client):
-    turn, trace = successful_turn(chat_client, "Query the orders with the filter status==DELIV (this is not a valid status).")
+    turn, trace = successful_turn(chat_client, "Interrogez les commandes avec le filtre status==DELIV (ce n'est pas un statut valide).")
     text = (turn.text + flat(tools(trace))).lower()
-    assert "error" in text or "invalid" in text or "fix" in text or "status" in text
-    assert "deliver" in text or "label" in text or "values" in text
+    assert "error" in text or "erreur" in text or "invalid" in text or "corrig" in text or "statut" in text or "status" in text
+    assert "deliver" in text or "livr" in text or "libellé" in text or "valeurs" in text or "values" in text
 
 
 def test_accountant_question_through_the_generic_query(chat_client, observation):
     accountant = ChatClient(chat_client.base_url)
     accountant.open(user_id="nina-accountant", role="accountant", organization="organization-a")
-    turn, trace = successful_turn(accountant, "What is the total of the pending invoices?")
+    turn, trace = successful_turn(accountant, "Quel est le total des factures en attente d'approbation ?")
     assert tools(trace)
     flat_tools = flat(tools(trace)).lower()
     assert "query" in flat_tools or "generic" in flat_tools or "aggregat" in flat_tools or "total" in flat_tools

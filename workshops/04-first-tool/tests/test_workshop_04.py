@@ -16,27 +16,27 @@ def _tool_statuses(trace) -> list[str]:
 
 
 def test_exact_order_lookup(chat_client):
-    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1042 for Martin Durand?")
+    turn, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 de Martin Durand ?")
     assert any("order" in str(t).lower() for t in tools(trace))
-    assert "deliver" in turn.text.lower()
+    assert "livr" in turn.text.lower()
     assert len(tools(trace)) <= 1, "at most one tool call per message"
     statuses = _tool_statuses(trace)
     assert any("ok" in s or "success" in s or "found" in s for s in statuses)
 
 
 def test_swapped_reference_reported(chat_client):
-    turn, trace = successful_turn(chat_client, "What is the status of order CMD-1402?")
+    turn, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1402 ?")
     assert "1042" in turn.text
     text = turn.text.lower()
-    assert "1402" in text or "differ" in text or "closest" in text or "nearest" in text or "approxim" in text
+    assert "1402" in text or "différ" in text or "proche" in text or "voulez-vous dire" in text or "approxim" in text
     assert tools(trace)
     assert len(tools(trace)) <= 1
 
 
 def test_deleted_order_never_suggested(chat_client):
-    turn, trace = successful_turn(chat_client, "What is the status of order CMD-0881?")
+    turn, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-0881 ?")
     text = turn.text.lower()
-    assert "0881" not in text or ("not" in text and "suggest" not in text)
+    assert "0881" not in text or (("introuvable" in text or "aucune" in text or " pas " in text) and "suggér" not in text)
     # neither a suggestion of an excluded order nor a presentation as found
     for call in tools(trace):
         flat_call = str(call).lower()
@@ -46,4 +46,4 @@ def test_deleted_order_never_suggested(chat_client):
     assert any(
         "absent" in s or "error" in s or "exclu" in s or "not_found" in s or "not found" in s or "none" in s or "empty" in s
         for s in statuses
-    ) or "not" in text
+    ) or "introuvable" in text or "aucune" in text or " pas " in text
