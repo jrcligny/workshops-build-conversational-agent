@@ -63,7 +63,7 @@ event: sources   data: {"sources": [{"title": "…", "version": "2.1", "address"
 
 ## Pistes techniques
 
-- Lisez `workshop_kit/apps/docs_search/app.py` et `search.py` : recherche hybride (texte intégral et similarité), découpage par titres, seuil `threshold`.
+- Lisez `workshop_kit/apps/docs_search/app.py` et `search.py` : recherche hybride (texte intégral et similarité), découpage par titres, seuil `threshold`. `docs_search(jeton).post("/search", json={...})` de `my-agent/agent_helpers/http_client.py` porte l'appel (`DOCS_SEARCH_URL`).
 - Le jeton à transmettre est celui de l'identité de l'utilisateur mis en place à l'atelier 10a ; le service en déduit organisation et public.
 - Avec le seuil par défaut (0,3), la question « xyzzy-42 » ne renvoie aucun passage (`no_passage`) ; avec `threshold: 0`, mesurez les scores des passages hors sujet face à ceux de la vraie réponse avant de choisir le seuil de votre outil.
 - Les sources se déduisent des passages du tour ; dédoublonnez par adresse.

@@ -76,6 +76,10 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
   `workshop check` (ports différents : lisez-les au moment de l'appel). L'utilisateur remis
   au harnais porte un jeton d'entrée (`TestUser.app_token`) ; jusqu'à l'atelier 10a, vous
   pouvez obtenir un jeton applicatif comme bon vous semble.
+- `my-agent/agent_helpers/http_client.py` porte le transport : `business_api(jeton).get("/orders/CMD-1042")`
+  lit `BUSINESS_API_URL` à l'appel, envoie `Authorization: Bearer`, applique un délai et lève
+  `ServiceError` (`status_code` 404, 401… ou `None` si le service est injoignable). Le choix
+  de la route, la validation et l'interprétation restent à vous.
 - `workshop_kit/shell/tracer.py` montre comment enregistrer les appels d'outils.
 - Les assertions détaillées sont dans [tests/](tests/).
 

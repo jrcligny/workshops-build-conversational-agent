@@ -7,6 +7,8 @@ This is where you build your agent. It is the **only** folder you edit: code, po
 - `mcp_server.py` is an empty MCP server: it starts and answers the handshake, but exposes no business tool. You will wire it in workshop 09.
 - `agent_helpers/` holds the repetitive code, so you can focus on each workshop's goal. None of it does the work of a workshop:
   - `kit.py` (from workshop 03): `model_client()` wired to the model proxy (one call, no loop), `write_trace()`, the contract types, and read access to the sandbox policy (10d), the skills catalog (14) and the attachments (15);
+  - `http_client.py` (from workshop 04): HTTP transport to the business API and the document search (URL read at call time, bearer token, timeout, `ServiceError`); which route to call stays yours;
+  - `mcp_client.py` (from workshop 09): `list_tools()`, `call_tool()` and `as_openai_tool()` against your MCP server (`MCP_URL`), plus the wiring checklist;
 - `sandbox/policy.yaml` is the sandbox policy of workshop 10d (inactive, empty allowlist).
 - `skills/` is the versioned skills catalog of workshop 14 (`manifest.yaml`, zero *skill*).
 - `attachments/` is the read-only attachments area of workshop 15 (empty).
