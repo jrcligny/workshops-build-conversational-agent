@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from collections.abc import Iterator
@@ -169,6 +170,7 @@ class Harness:
         )
         if compacted:
             yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "summary"})
+        self.memory.begin_turn(conversation_id)
         state_before = self.memory.get(conversation_id)
         state_text = self.memory.render(conversation_id)
         # The tools live behind the MCP server; the user's token travels with every call and the tool server
@@ -386,6 +388,13 @@ class Harness:
             mentions.append("Réponse partielle : certaines listes ont été tronquées par l'application.")
             if not any(word in text.lower() for word in ("partiel", "incomplet")):
                 text = "Réponse partielle (liste tronquée par l'application). " + text
+        unverified = _unverified_references(text, tool_calls_done, self.memory.get(conversation_id))
+        if stop == "answered" and unverified:
+            # Control, not instruction: a cited record the application did not return in this turn is flagged.
+            mentions.append(
+                "Non vérifié : " + ", ".join(unverified) + " n'a pas été consulté dans l'application pendant ce tour ; "
+                "ne vous fiez pas à ce qui en est dit."
+            )
 
         # A draft prepared in this turn waits for the user's gesture: ask for it, and never announce it as done.
         new_drafts = [t["result"]["draft"] for t in tool_calls_done if t["result"].get("status") == "draft"]
@@ -460,6 +469,7 @@ class Harness:
                     "writes_removed": writes_removed,
                 },
                 "sources": sources,
+                "unverified": unverified,
                 **({"submission": submission} if submission else {}),
                 **({"compaction": compacted} if compacted else {}),
             }
@@ -486,6 +496,21 @@ _WRITE_LABELS = {
     "prepare_purchase_request": "préparer une demande d'achat",
     "prepare_invoice_approval": "préparer l'approbation d'une facture",
 }
+
+
+_RECORD_REFERENCE = re.compile(r"\b(?:CMD|FAC)-\d+(?:-[A-Z]+)?\b", re.IGNORECASE)
+
+
+def _unverified_references(text: str, tool_calls_done: list[dict], state: dict) -> list[str]:
+    """Order and invoice references cited in the answer but absent from what the application returned."""
+    consulted = json.dumps([t["result"] for t in tool_calls_done], ensure_ascii=False, default=str).upper()
+    consulted += json.dumps(state, ensure_ascii=False, default=str).upper()
+    cited: list[str] = []
+    for match in _RECORD_REFERENCE.findall(text or ""):
+        reference = match.upper()
+        if reference not in cited and not re.search(rf"\b{re.escape(reference)}\b", consulted):
+            cited.append(reference)
+    return cited
 
 
 def _sources(tool_calls_done: list[dict]) -> list[dict]:
