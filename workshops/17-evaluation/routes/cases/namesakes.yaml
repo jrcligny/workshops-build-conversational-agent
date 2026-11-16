@@ -1,0 +1,14 @@
+id: namesakes-lea-martin
+edge_case: namesakes
+turns:
+  - message: "Quelles sont les commandes de Léa Martin ?"
+facts:
+  - {type: text_contains, value: Lille}
+  - {type: text_contains, value: Lyon}
+  - {type: text_absent, value: CMD-2010}
+rubric:
+  id: namesakes
+  criterion: "L'agent signale deux clientes homonymes et demande laquelle avant de lister des commandes."
+  requirements:
+    - {type: required_any, patterns: ["laquelle", "lequel", "préciser", "Lille ou", "Lyon ou"]}
+  judge_meaning: true

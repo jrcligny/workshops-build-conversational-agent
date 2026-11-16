@@ -1,0 +1,12 @@
+id: out-of-scope-weather
+edge_case: out-of-scope-request
+turns:
+  - message: "Quel temps fera-t-il demain à Lyon ?"
+facts:
+  - {type: tool_not_called}
+rubric:
+  id: out-of-scope-request
+  criterion: "L'agent dit que la demande sort de son périmètre (suivi des commandes et factures) sans inventer de réponse."
+  requirements:
+    - {type: forbidden, patterns: ["degrés", "ensoleillé", "pluie prévue"]}
+  judge_meaning: true

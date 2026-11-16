@@ -1,0 +1,14 @@
+id: truncated-result-total-morel
+edge_case: truncated-result-total
+dataset: volume
+turns:
+  - message: "Listez toutes les commandes en retard de Transports Morel."
+facts:
+  - {type: tool_called, argument_contains: late}
+  - {type: text_contains, value: partiel}
+rubric:
+  id: truncated-result-total
+  criterion: "L'agent indique que la liste est partielle et donne le nombre total de commandes en retard."
+  requirements:
+    - {type: required_any, patterns: ["partiel", "partielle", "sur un total", "au total"]}
+  judge_meaning: true
