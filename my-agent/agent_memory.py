@@ -40,24 +40,30 @@ class WorkingMemory:
     def update(self, conversation_id: str, name: str, arguments: dict, result: dict, lookup) -> None:
         state = self._states.setdefault(conversation_id, {})
         status = result.get("status")
-        if name == "search_customers" and status == "ok":
-            customers = result.get("customers") or []
+        if name == "find_by_name" and status == "ok" and result.get("entity_type") == "customer":
+            customers = result.get("matches") or []
             if len(customers) == 1:
                 self._set_customer(state, customers[0])
             elif customers:
                 state["candidates"] = customers
-        elif name == "list_customer_orders" and status == "ok":
-            customer_id = result.get("customer_id")
-            known = {c["id"]: c for c in state.get("candidates") or []}
-            current = state.get("current_customer") or {}
-            customer = known.get(customer_id) or (current if current.get("id") == customer_id else None)
-            self._set_customer(state, customer or lookup(customer_id) or {"id": customer_id, "name": customer_id})
+        elif name == "query" and status == "ok" and result.get("source") == "orders":
+            customer_id = (result.get("filters") or {}).get("customer_id")
+            if customer_id:
+                known = {c["id"]: c for c in state.get("candidates") or []}
+                current = state.get("current_customer") or {}
+                customer = (
+                    result.get("customer")
+                    or known.get(customer_id)
+                    or (current if current.get("id") == customer_id else None)
+                    or lookup(customer_id)
+                )
+                self._set_customer(state, customer or {"id": customer_id, "name": customer_id})
         elif name == "get_order" and status in {"found", "approximate"}:
             order = result.get("order") or {}
             customer_id = order.get("customer_id")
             current = state.get("current_customer") or {}
             if customer_id and current.get("id") != customer_id:
-                customer = lookup(customer_id)
+                customer = order.get("customer") or lookup(customer_id)
                 if customer:
                     self._set_customer(state, customer)
             state["current_order"] = {
