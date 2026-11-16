@@ -98,7 +98,9 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 - **Repetition:** a rubric applied to a fresh conversation is replayed with
   `apply_rubric_repeatedly` and passes when `JUDGE_K` runs out of at most `JUDGE_N` pass
   (3 out of 5 by default); it stops as soon as the outcome is known. Rubrics on an answer
-  that cannot be replayed (a continuation of a conversation) are applied once.
+  that cannot be replayed (a continuation of a conversation) are applied once. Each run starts
+  with a fresh proxy quota (`DAILY_TOKEN_QUOTA`), as each test does; the evaluation routes of
+  workshop 17 run once each (`ROUTE_K` out of `ROUTE_N`, 1 out of 1 by default).
 - **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
   answers a cautious French sentence without calling the model nor any tool, and fakes the
   file deliverables; every test must fail. It guards against tests passed by doing nothing.

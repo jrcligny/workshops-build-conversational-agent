@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import httpx
 
+from workshop_kit.llm_proxy.tokens import reset_usage
 from workshop_kit.shell.config import settings
 from workshop_tests.evaluation.judge import judge
 from workshop_kit.shell.tracer import read_all
@@ -86,13 +87,14 @@ def apply_rubric_repeatedly(rubric: dict, run, k: int | None = None, n: int | No
     """Runs `run()` (which opens a fresh conversation and returns `(turn, trace)`) up to n times.
 
     The rubric passes when at least k runs pass (JUDGE_K out of JUDGE_N by default).
-    Stops as soon as the outcome is known.
+    Stops as soon as the outcome is known. Each run gets the full proxy quota, like a test of its own.
     """
     k = int(k or settings.judge_k)
     n = int(n or settings.judge_n)
     verdicts: list[dict] = []
     passed = 0
     for i in range(n):
+        reset_usage()
         turn, trace = run()
         verdict = judge(rubric, {"response": turn.text, "trace": flat(trace) if trace is not None else ""})
         verdicts.append(verdict)
@@ -111,11 +113,13 @@ def repeatedly(check, k: int | None = None, n: int | None = None, label: str = "
 
     For behaviour the model chooses (grouping calls, how many cycles): one run is not enough to
     conclude, as for the rubrics. Not for safety facts (a replayed write, a leak): those stay strict.
+    Each run gets the full proxy quota, like a test of its own.
     """
     k = int(k or settings.judge_k)
     n = int(n or settings.judge_n)
     passed, failures = 0, []
     for i in range(n):
+        reset_usage()
         try:
             check()
             passed += 1
