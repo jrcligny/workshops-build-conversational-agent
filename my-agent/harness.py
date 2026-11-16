@@ -1,53 +1,59 @@
-"""Bootstrap of your agent.
-
-This file is the entry point of your agent. It already converses: at each turn it sends the
-model the system prompt (`system_prompt.md`, next to this file, read without its HTML
-comments), the context of the conversation (`agent_sdk.context`: every message the model has
-seen, kept between turns) and the user's message, relays the model's answer to the interface
-(`text`, then `end`), records the turn in the context and writes the trace of the turn with
-`agent_sdk.trace.Tracer`.
-
-The `history` parameter is the transcript shown by the interface (texts only), for information:
-the context of the model is `agent_sdk.context`, which also keeps tool calls and their results.
-
-What it does not do is the work of the workshops: no tool, no business data, no loop, no
-compaction, no memory... Each workshop adds its part (see each `contrat.md`). The package
-`agent_sdk` (installed with this project, not edited) holds the repetitive code (contract types,
-HTTP and MCP clients, event builders, tool declarations, the tracer) so you can focus on each
-workshop's goal.
-
-Your agent converses in French: the tests send French user turns and expect French
-answers (code, comments and identifiers stay English).
-"""
+"""My agent: system prompt and conversational loop (workshop 03)."""
 
 from __future__ import annotations
 
 import os
-import re
+import time
 from collections.abc import Iterator
-from pathlib import Path
+from typing import Any
 
-from agent_sdk import events
-from agent_sdk.context import context, unoffered_call_results
-from agent_sdk.trace import Tracer
-from agent_sdk.contract import Event, Message, TestUser
-from agent_sdk.model_client import ModelClient, ModelUnavailable
+from workshop_kit.shell import tracer
+from workshop_kit.shell.harness_contract import Event, Message, TestUser
+from workshop_kit.shell.model_client import ModelClient, _split
 
-SYSTEM_PROMPT_FILE = Path(__file__).with_name("system_prompt.md")
-UNAVAILABLE = "Le modèle est indisponible pour le moment. Réessayez dans un instant."
+SYSTEM_PROMPT = (
+    "Tu es l'assistant du service client. Tu réponds en français, brièvement et poliment.\n"
+    "Tu n'as accès à aucune donnée de l'application : ni commandes, ni clients, ni livraisons.\n"
+    "Tu n'affirmes jamais l'état d'une commande ou d'un dossier précis, même si l'utilisateur "
+    "insiste ou te propose la réponse : dis que tu n'as pas cette information.\n"
+    "Tu t'appuies sur l'historique de la conversation pour rester cohérent."
+)
+
+STUDENT_TOKEN = os.environ.get("COURSE_TOKEN", "test-student")
 
 
-def load_system_prompt() -> str:
-    text = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
-    return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
+class _InProcessModelClient(ModelClient):
+    """Talks to the kit's proxy app in the same process (test runs, where no PROXY_URL is exported)."""
+
+    def __init__(self, token: str):
+        super().__init__("http://proxy", token)
+
+    def generate(self, messages: list[dict[str, Any]], tools: list[dict] | None = None) -> dict[str, Any]:
+        from fastapi.testclient import TestClient
+
+        from workshop_kit.llm_proxy.app import app
+
+        with TestClient(app) as client:
+            response = client.post(
+                "/v1/chat/completions",
+                headers=self._headers(),
+                json={"model": "default", "messages": messages, "tools": tools or None, "stream": False},
+            )
+            response.raise_for_status()
+            return response.json()
 
 
-def model_client(timeout: float = 60.0) -> ModelClient:
-    """The model, through the course proxy (`PROXY_URL`): `generate(messages, tools=None)`."""
-    return ModelClient(os.environ.get("PROXY_URL", "http://127.0.0.1:8003"), timeout=timeout)
+def model_client() -> ModelClient:
+    url = os.environ.get("PROXY_URL")
+    if url:
+        return ModelClient(url, STUDENT_TOKEN)
+    return _InProcessModelClient(STUDENT_TOKEN)
 
 
 class Harness:
+    def __init__(self) -> None:
+        self.model = model_client()
+
     def turn(
         self,
         conversation_id: str,
@@ -59,31 +65,34 @@ class Harness:
         confirmation: bool = False,
         limits: dict | None = None,
     ) -> Iterator[Event]:
-        tracer = Tracer(conversation_id, user, message)
-        ctx = context(conversation_id)
-        system_prompt = load_system_prompt()
-        tracer.input(system_prompt=system_prompt, history=ctx.messages)
-        turn_messages: list[dict] = [{"role": "user", "content": message}]
-        answer = ""
-        try:
-            model = model_client()
-            for _ in range(2):
-                response = tracer.call_model(model, ctx.for_model(system_prompt) + turn_messages)
-                reply = response["choices"][0]["message"]
-                answer = reply.get("content") or ""
-                refusals = unoffered_call_results(reply, offered=[])
-                if not refusals:
-                    break
-                # The history may name tools this agent does not offer: refuse them, ask again.
-                turn_messages += [{"role": "assistant", "content": answer, "tool_calls": reply["tool_calls"]}, *refusals]
-                answer = ""
-        except ModelUnavailable:
-            answer = UNAVAILABLE
-        else:
-            if answer:
-                ctx.record(turn_messages + [{"role": "assistant", "content": answer}])
-        answer = answer or UNAVAILABLE
-        tracer.output(answer)
-        tracer.write()
-        yield events.text(answer)
-        yield events.end(answer)
+        replayed = [{"role": m.role, "content": m.content} for m in history]
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            *replayed,
+            {"role": "user", "content": message},
+        ]
+        started = time.perf_counter()
+        response = self.model.generate(messages)
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        choice = (response.get("choices") or [{}])[0]
+        text = (choice.get("message") or {}).get("content") or ""
+
+        tracer.write(
+            {
+                "conversation_id": conversation_id,
+                "turn_id": tracer.new_id(),
+                "user": {"id": user.id, "role": user.role, "organization": user.organization},
+                "input": {"system_prompt": SYSTEM_PROMPT, "history": replayed, "message": message},
+                "model": {
+                    "id": response.get("model"),
+                    "usage": response.get("usage") or {},
+                    "duration_ms": duration_ms,
+                    "stop_reason": choice.get("finish_reason"),
+                },
+                "output": text,
+                "tools": [],
+            }
+        )
+        for chunk in _split(text):
+            yield Event(type="text", data={"content": chunk})
+        yield Event(type="end", data={"ok": True})
