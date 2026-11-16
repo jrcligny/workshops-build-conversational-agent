@@ -64,7 +64,8 @@ test charge le jeu `volume` (60 retards). Lancez enfin `workshop check 05`.
   `workshop_kit/apps/business_api/app.py` et `services.py`).
 - Prenez `total` dans la réponse de l'API, pas la longueur de la liste.
 - `business_api(jeton).get(chemin, params={...})` de `my-agent/agent_helpers/http_client.py`
-  passe les filtres en paramètres de requête.
+  passe les filtres en paramètres de requête ; `declare(fonction)` de
+  `my-agent/agent_helpers/tool_schema.py` déclare chaque outil (un `Literal` devient un `enum`).
 - Les données sont dans `workshop_kit/apps/business_api/seed_data.py` ; les assertions
   détaillées sont dans [tests/](tests/).
 

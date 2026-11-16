@@ -73,6 +73,7 @@ Extrait de trace d'une conversation suivante :
 - Ajoutez `my-agent/memory/` à vos fichiers ignorés : ce sont des données personnelles, pas du code.
 - La clé de lecture et d'écriture vient de l'utilisateur authentifié (`TestUser`), jamais d'un texte fourni par le modèle.
 - Une rubrique prévue se décrit par un nom et des valeurs permises : c'est le programme qui valide, pas la consigne.
+- `memory(action, rubrique, valeur)` et `mention(texte)` de `my-agent/agent_helpers/events.py` construisent les événements ; la politique de mémoire (quoi retenir, isoler, corriger, oublier) reste à vous.
 - Une préférence chargée se place dans le contexte comme une information datée et d'origine connue ; le message présent l'emporte en cas de contradiction.
 - L'API métier expose des réglages utilisateur (`GET`/`POST /settings`). Le livre rappelle qu'une préférence durable peut aussi devenir un réglage de l'application : comparez les deux voies. Aucun test ne l'exige.
 - Tableau 12-3 du livre : finalité, minimisation, durée de conservation, droits des personnes. Les tests couvrent la consultation, la rectification et l'effacement ; la durée de validité reste à votre jugement.

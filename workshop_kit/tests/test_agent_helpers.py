@@ -76,3 +76,56 @@ def test_mcp_client_lists_and_calls_the_server_tools(helpers, monkeypatch):
         assert result["is_error"] is False and result["text"] == "bonjour"
     finally:
         running.should_exit = True
+
+
+def test_events_carry_the_field_names_the_tests_read(helpers):
+    events = helpers("events")
+    assert (events.step("get_order").type, events.step("get_order").data) == ("step", {"tool": "get_order"})
+    assert events.mention("Réponse partielle").data["content"] == "Réponse partielle"
+    assert events.confirmation_requested("D-1", summary="achat").data == {"draft_id": "D-1", "summary": "achat"}
+    assert events.memory("written", "amount_display", "including_tax").data == {
+        "action": "written", "topic": "amount_display", "value": "including_tax"
+    }
+    assert events.sources([{"title": "Retours"}]).data == {"sources": [{"title": "Retours"}]}
+    assert events.end("ok").data == {"ok": True, "text": "ok"}
+
+
+def test_tool_schema_declares_an_annotated_function(helpers):
+    from typing import Literal
+
+    declare = helpers("tool_schema").declare
+
+    def list_orders(customer_id: str, filter: Literal["late", "all"] = "all", limit: int | None = None,
+                    tags: list[str] | None = None) -> dict:
+        """Lists the orders of a customer.
+
+        More details for humans.
+
+        Args:
+            customer_id: customer identifier,
+                as returned by the customer search.
+            filter: which orders to keep.
+        """
+
+    function = declare(list_orders)["function"]
+    assert function["name"] == "list_orders" and function["description"] == "Lists the orders of a customer."
+    props = function["parameters"]["properties"]
+    assert props["customer_id"] == {
+        "type": "string", "description": "customer identifier, as returned by the customer search."
+    }
+    assert props["filter"]["enum"] == ["late", "all"] and props["limit"] == {"type": "integer"}
+    assert props["tags"] == {"type": "array", "items": {"type": "string"}}
+    assert function["parameters"]["required"] == ["customer_id"]
+
+
+def test_base_trace_has_only_the_base_fields(helpers):
+    from workshop_kit.shell.harness_contract import Message, TestUser
+
+    trace = helpers("trace").base_trace(
+        "c1", TestUser("paul-buyer", "buyer", "organization-a"), "prompt", [Message("user", "bonjour")], "suite"
+    )
+    assert set(trace) == {"turn_id", "conversation_id", "user", "input", "tools", "output"}
+    assert trace["input"] == {
+        "system_prompt": "prompt", "history": [{"role": "user", "content": "bonjour"}], "message": "suite"
+    }
+    assert trace["user"] == {"id": "paul-buyer", "role": "buyer", "organization": "organization-a"}

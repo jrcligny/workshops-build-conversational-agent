@@ -69,6 +69,8 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 - `my-agent/agent_helpers/kit.py` fournit `model_client()`, déjà branché sur le proxy :
   `generate(messages, tools=None)` fait **un** appel et rend la réponse brute ; il ne gère ni
   l'historique ni la boucle. `write_trace()` écrit la trace du tour, sans la composer.
+- L'amorce part de `base_trace(...)` (`my-agent/agent_helpers/trace.py`, champs de base
+  seulement) et émet `text` puis `end` avec `my-agent/agent_helpers/events.py`.
 - L'interface n'ajoute un échange à l'historique que si le tour a produit du texte :
   émettez toujours au moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans

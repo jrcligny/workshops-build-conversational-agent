@@ -29,8 +29,9 @@ from pathlib import Path
 if str(Path(__file__).resolve().parent) not in sys.path:
     sys.path.append(str(Path(__file__).resolve().parent))
 
-from workshop_kit.shell import tracer
-from workshop_kit.shell.harness_contract import Event, Message, TestUser
+from agent_helpers import events  # noqa: E402
+from agent_helpers.kit import Event, Message, TestUser, write_trace  # noqa: E402
+from agent_helpers.trace import base_trace  # noqa: E402
 
 ANSWER = (
     "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer "
@@ -57,13 +58,8 @@ class Harness:
         limits: dict | None = None,
     ) -> Iterator[Event]:
         # One trace line per turn: the tests and your own queries read it.
-        tracer.write({
-            "turn_id": tracer.new_id(),
-            "conversation_id": conversation_id,
-            "user": {"id": user.id, "role": user.role, "organization": user.organization},
-            "input": {"system_prompt": load_system_prompt(), "history": [], "message": message},
-            "tools": [],
-            "output": ANSWER,
-        })
-        yield Event(type="text", data={"content": ANSWER})
-        yield Event(type="end", data={"ok": True, "text": ANSWER})
+        trace = base_trace(conversation_id, user, load_system_prompt(), history, message)
+        trace["output"] = ANSWER
+        write_trace(trace)
+        yield events.text(ANSWER)
+        yield events.end(ANSWER)

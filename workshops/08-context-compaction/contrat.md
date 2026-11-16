@@ -84,7 +84,7 @@ Données : CMD-1042 appartient à Martin Durand (Nantes) et elle est livrée. Il
 ## Pistes techniques
 
 - Le seuil vient de `workshop_kit/shell/config.py` (`compaction_message_threshold`) ; il se règle avec `COMPACTION_MESSAGE_THRESHOLD` dans `.env`.
-- Le contrat de la trace (`state`, `input`) est décrit dans `docs/interface-contract.md` et dans `workshop_kit/shell/harness_contract.py`.
+- Le contrat de la trace (`state`, `input`) est décrit dans `docs/interface-contract.md` et dans `workshop_kit/shell/harness_contract.py`. `compaction(...)` et `mention(...)` de `my-agent/agent_helpers/events.py` construisent l'événement ; le seuil, le résumé et ce qui est conservé restent à vous.
 - Les homonymes viennent de la résolution de noms des ateliers 05 et 06 ; les données sont dans `workshop_kit/apps/business_api/seed_data.py`.
 
 ## Vérifier
