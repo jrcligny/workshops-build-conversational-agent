@@ -8,7 +8,7 @@ from typing import Any
 import jwt
 from fastapi import Depends, Header, HTTPException
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 ALGORITHM = "HS256"
 ROLES = {

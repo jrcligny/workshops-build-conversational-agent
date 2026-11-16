@@ -12,7 +12,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 
 _lock = threading.Lock()
 _active: list[dict] = []

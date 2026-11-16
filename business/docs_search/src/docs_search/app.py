@@ -5,10 +5,10 @@ from __future__ import annotations
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from workshop_kit.apps.business_api.auth import decode_token
-from workshop_kit.apps.docs_search.indexing import rebuild
-from workshop_kit.apps.docs_search.search import get_passage, index_state, search
-from workshop_kit.shell.config import settings
+from business_api.auth import decode_token
+from docs_search.indexing import rebuild
+from docs_search.search import get_passage, index_state, search
+from workshop_config import settings
 
 app = FastAPI(title="Document search of the running example", version="0.1.0")
 

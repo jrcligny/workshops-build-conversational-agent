@@ -3,9 +3,9 @@
 import httpx
 import pytest
 
-from workshop_kit.apps.docs_search.indexing import connect, rebuild
-from workshop_kit.apps.docs_search.search import index_state
-from workshop_kit.shell.config import settings
+from docs_search.indexing import connect, rebuild
+from docs_search.search import index_state
+from workshop_config import settings
 
 pytestmark = pytest.mark.docs_search
 

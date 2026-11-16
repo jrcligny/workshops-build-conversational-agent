@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 
 MANIFEST_FILE = "manifest.yaml"
 

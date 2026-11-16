@@ -7,7 +7,7 @@ Another buyer and organization (omar-buyer-b), another purchase, another order f
 import httpx
 import pytest
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import apply_rubric_repeatedly, business_log, events_of, model_calls, successful_turn
 

@@ -11,7 +11,11 @@ dependencies = [
     "python-dotenv>=1.0",
     "pyyaml>=6.0",
     "uvicorn>=0.32",
+    "workshop-config",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+workshop-config = { path = "../../shared/workshop_config", editable = true }

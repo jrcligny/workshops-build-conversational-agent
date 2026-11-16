@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from workshop_kit.apps.business_api.db import connection
+from business_api.db import connection
 
 DDL = """
 CREATE TABLE IF NOT EXISTS organizations (

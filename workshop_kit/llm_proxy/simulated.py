@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from workshop_kit.apps.docs_search.vectors import DIM, vector
+from text_vectors import DIM, vector
 
 
 def complete(messages: list[dict[str, Any]], scripts: list[dict] | None = None) -> dict[str, Any]:

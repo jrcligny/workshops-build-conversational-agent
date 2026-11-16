@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 CLOCK = datetime.fromisoformat(settings.frozen_clock)
 

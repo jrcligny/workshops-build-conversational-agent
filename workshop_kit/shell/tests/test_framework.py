@@ -14,7 +14,7 @@ def test_interface_health(services):
 
 
 def test_users_lists_the_seeded_identities(services):
-    from workshop_kit.apps.business_api.seed_data import USERS
+    from business_api.seed_data import USERS
 
     users = httpx.get(f"{services['interface']}/users", timeout=5).json()["users"]
     assert [(u["user_id"], u["role"], u["organization"]) for u in users] == [(u, r, o) for u, _, r, o in USERS]

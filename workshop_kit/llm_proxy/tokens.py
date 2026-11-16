@@ -8,7 +8,7 @@ from typing import Any
 import jwt
 from fastapi import Header, HTTPException
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 # Test tokens shipped with the repository (not the Azure key).
 STUDENTS = {

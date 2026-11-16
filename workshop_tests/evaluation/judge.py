@@ -22,7 +22,7 @@ from typing import Any
 
 import httpx
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 # The agent built in the workshops converses in French: every rubric judges a French answer.
 AGENT_LANGUAGE = "fr"

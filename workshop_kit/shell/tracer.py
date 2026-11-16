@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 _lock = threading.Lock()
 TRACE_FILE = "turns.jsonl"

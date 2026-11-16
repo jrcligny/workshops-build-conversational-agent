@@ -20,7 +20,7 @@ import sys
 
 import pytest
 
-from workshop_kit.shell.config import REPO_ROOT, repo_path, settings
+from workshop_config import REPO_ROOT, repo_path, settings
 from workshop_tests.evaluation.routes import expected_digest, routes_digest
 
 pytestmark = pytest.mark.workshop

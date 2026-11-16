@@ -5,7 +5,7 @@ from __future__ import annotations
 import httpx
 
 from workshop_kit.llm_proxy.tokens import reset_usage
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 from workshop_tests.evaluation.judge import judge
 from workshop_kit.shell.tracer import read_all
 

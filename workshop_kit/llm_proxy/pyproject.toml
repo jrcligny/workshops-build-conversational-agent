@@ -9,7 +9,13 @@ dependencies = [
     "python-dotenv>=1.0",
     "pyjwt>=2.9",
     "uvicorn>=0.32",
+    "workshop-config",
+    "workshop-text-vectors",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+workshop-config = { path = "../../shared/workshop_config", editable = true }
+workshop-text-vectors = { path = "../../shared/text_vectors", editable = true }

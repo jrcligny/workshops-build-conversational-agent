@@ -6,8 +6,8 @@ import json
 import uuid
 from typing import Any
 
-from workshop_kit.apps.business_api.db import connection
-from workshop_kit.shell.timestamps import CLOCK, now
+from business_api.db import connection
+from business_api.clock import CLOCK, now
 
 STATUSES_HIDDEN_FROM_CUSTOMER_SERVICE = {"deleted", "rejected"}
 

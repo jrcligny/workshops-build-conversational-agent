@@ -15,7 +15,7 @@ import re
 import pytest
 
 from workshop_kit.services.sandbox.interface import is_egress_allowed, is_policy_enforced, policy
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.probes import contacted_hosts, opened_files, student_activity
 from workshop_tests.testing.turns import events_of, model_calls, model_input, successful_turn, tools

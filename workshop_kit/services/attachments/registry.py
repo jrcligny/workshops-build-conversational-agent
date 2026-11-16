@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 
 EXTENSIONS = {".txt", ".md", ".pdf", ".csv"}
 

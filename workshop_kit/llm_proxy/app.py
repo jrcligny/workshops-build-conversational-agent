@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from workshop_kit.llm_proxy import live, replay, simulated
 from workshop_kit.llm_proxy.tokens import STUDENTS, consume, issue_student_token, require_student, usage
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 logger = logging.getLogger("llm_proxy")
 

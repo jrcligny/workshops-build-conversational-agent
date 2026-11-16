@@ -13,7 +13,7 @@ from urllib.parse import urlsplit
 
 import yaml
 
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 
 
 def policy_file() -> Path:

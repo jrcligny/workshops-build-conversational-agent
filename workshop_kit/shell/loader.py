@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 from workshop_kit.shell.harness_contract import HarnessNotImplemented
 
 

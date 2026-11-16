@@ -6,7 +6,7 @@ another initial request, the Lyon namesake, another order in the state, another 
 
 import pytest
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 from workshop_tests.testing.turns import events_of, history, model_input, successful_turn, tool_arguments, tools
 
 pytestmark = pytest.mark.workshop

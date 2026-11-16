@@ -5,9 +5,9 @@ from __future__ import annotations
 import random
 from datetime import timedelta
 
-from workshop_kit.apps.business_api.db import connection, transaction
-from workshop_kit.apps.business_api.schema import init_schema
-from workshop_kit.shell.timestamps import CLOCK
+from business_api.db import connection, transaction
+from business_api.schema import init_schema
+from business_api.clock import CLOCK
 
 ORGANIZATION_A = "organization-a"
 ORGANIZATION_B = "organization-b"

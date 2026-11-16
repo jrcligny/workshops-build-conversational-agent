@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 pytestmark = pytest.mark.llm_proxy
 

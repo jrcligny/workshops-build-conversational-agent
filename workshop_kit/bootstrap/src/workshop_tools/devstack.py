@@ -19,8 +19,8 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 TOOLS_SOURCE = REPO_ROOT / "workshop_kit" / "bootstrap" / "src"
 UI_ROOT = REPO_ROOT / "workshop_kit" / "chat-ui"
 PROJECTS = {
-    "business_api": REPO_ROOT / "workshop_kit" / "apps" / "business_api",
-    "docs_search": REPO_ROOT / "workshop_kit" / "apps" / "docs_search",
+    "business_api": REPO_ROOT / "business" / "business_api",
+    "docs_search": REPO_ROOT / "business" / "docs_search",
     "proxy": REPO_ROOT / "workshop_kit" / "llm_proxy",
     "mcp": REPO_ROOT / "my-agent",
     "interface": REPO_ROOT / "workshop_kit" / "shell",
@@ -76,8 +76,8 @@ def services(port_offset: int = 0) -> list[Service]:
         "MCP_PORT": str(ports["mcp"]),
     }
     modules = {
-        "business_api": "workshop_kit.apps.business_api.app:app",
-        "docs_search": "workshop_kit.apps.docs_search.app:app",
+        "business_api": "business_api.app:app",
+        "docs_search": "docs_search.app:app",
         "proxy": "workshop_kit.llm_proxy.app:app",
         "interface": "workshop_kit.shell.chat_app:app",
     }
@@ -137,15 +137,15 @@ def _has_table(path: Path, table: str) -> bool:
 
 def initialize_data(reset: bool = False, service_name: str | None = None) -> None:
     """Initialize missing databases only; resetting existing workshop work is opt-in."""
-    from workshop_kit.shell.config import repo_path, settings
+    from workshop_config import repo_path, settings
 
     if service_name in (None, "business_api") and (reset or not _has_table(repo_path(settings.business_api_db), "users")):
-        from workshop_kit.apps.business_api.seed_data import load_dataset
+        from business_api.seed_data import load_dataset
 
         print("Initializing the standard business dataset.", flush=True)
         load_dataset("standard")
     if service_name in (None, "docs_search") and (reset or not _has_table(repo_path(settings.docs_search_db), "passages")):
-        from workshop_kit.apps.docs_search.indexing import rebuild
+        from docs_search.indexing import rebuild
 
         print("Building the document index.", flush=True)
         rebuild()

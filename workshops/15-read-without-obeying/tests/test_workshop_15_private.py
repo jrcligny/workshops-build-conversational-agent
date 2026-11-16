@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
 

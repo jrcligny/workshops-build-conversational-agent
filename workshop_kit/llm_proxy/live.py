@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 logger = logging.getLogger("llm_proxy.live")
 

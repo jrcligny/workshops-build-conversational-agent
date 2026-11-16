@@ -7,7 +7,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 _local = threading.local()
 

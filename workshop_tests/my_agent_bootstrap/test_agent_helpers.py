@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from workshop_kit.shell.config import repo_path, settings
+from workshop_config import repo_path, settings
 
 
 @pytest.fixture(scope="module")
@@ -27,7 +27,7 @@ def test_harness_model_client_reads_the_proxy_url_at_call_time(monkeypatch):
     assert harness.model_client().base_url == "http://127.0.0.1:9"
 
 def test_http_client_carries_the_token_and_raises_readable_errors(helpers, services, reset_state):
-    from workshop_kit.apps.business_api.auth import issue_token
+    from business_api.auth import issue_token
 
     http = helpers("http_client")
     token = issue_token("camille-renard", "customer_service", "organization-a")

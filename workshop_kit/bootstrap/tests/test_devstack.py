@@ -62,9 +62,9 @@ def test_missing_database_check_does_not_create_it(tmp_path):
 
 
 def test_database_initialization_preserves_existing_work(monkeypatch, tmp_path):
-    from workshop_kit.apps.business_api import seed_data
-    from workshop_kit.apps.docs_search import indexing
-    from workshop_kit.shell.config import settings
+    from business_api import seed_data
+    from docs_search import indexing
+    from workshop_config import settings
 
     load = Mock()
     rebuild = Mock()

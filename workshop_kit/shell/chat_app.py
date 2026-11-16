@@ -72,7 +72,7 @@ def health():
 @app.get("/users")
 def list_users():
     """Test identities of the seeded datasets, offered by the identity selector of chat-ui."""
-    from workshop_kit.apps.business_api.seed_data import USERS
+    from business_api.seed_data import USERS
 
     return {
         "users": [
@@ -94,7 +94,7 @@ def list_attachments():
 def create_conversation(body: ConversationIn):
     conversation_id = uuid.uuid4().hex
     if body.sign_in and not body.app_token:
-        from workshop_kit.apps.business_api.auth import issue_token
+        from business_api.auth import issue_token
 
         body.app_token = issue_token(body.user_id, body.role, body.organization, typ="entry")
     _conversations[conversation_id] = body.model_dump()

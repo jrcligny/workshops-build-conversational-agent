@@ -9,9 +9,9 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from workshop_kit.apps.business_api.auth import decode_token, issue_token, user_from_header
-from workshop_kit.apps.business_api.seed_data import DATASETS, case_catalog, load_dataset, user as user_record
-from workshop_kit.apps.business_api.services import (
+from business_api.auth import decode_token, issue_token, user_from_header
+from business_api.seed_data import DATASETS, case_catalog, load_dataset, user as user_record
+from business_api.services import (
     SOURCES,
     active_failure,
     arm_failure,
@@ -31,7 +31,7 @@ from workshop_kit.apps.business_api.services import (
     set_user_settings,
     submit_draft,
 )
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 
 app = FastAPI(title="Business application of the running example", version="0.1.0")
 

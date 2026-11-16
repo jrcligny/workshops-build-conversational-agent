@@ -4,8 +4,8 @@ The FTS5 table stays available for inspection; scores are absolute (0..1), not r
 
 from __future__ import annotations
 
-from workshop_kit.apps.docs_search.indexing import connect
-from workshop_kit.apps.docs_search.vectors import pack, terms, vector
+from docs_search.indexing import connect
+from text_vectors import pack, terms, vector
 
 
 def _allowed(passage: dict, organization: str, role: str) -> bool:

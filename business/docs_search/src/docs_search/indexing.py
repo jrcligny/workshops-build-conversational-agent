@@ -7,11 +7,12 @@ from pathlib import Path
 
 import yaml
 
-from workshop_kit.apps.docs_search.sqlite_vec_ext import load_sqlite_vec
-from workshop_kit.apps.docs_search.vectors import DIM, pack, vector
-from workshop_kit.shell.config import settings
+from docs_search.sqlite_vec_ext import load_sqlite_vec
+from text_vectors import DIM, pack, vector
+from workshop_config import settings
 
-CORPUS_ROOT = Path(__file__).resolve().parents[3] / "corpus"
+# business/docs_search/src/docs_search/indexing.py -> business/docs_search/corpus
+CORPUS_ROOT = Path(__file__).resolve().parents[2] / "corpus"
 METADATA_FILE = "metadata.yaml"
 
 

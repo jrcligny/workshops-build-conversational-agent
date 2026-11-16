@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from workshop_kit.shell.config import settings
+from workshop_config import settings
 from workshop_tests.evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french, model_meaning_judge
 from workshop_tests.testing.chat_client import Turn
 from workshop_tests.testing.turns import apply_rubric_repeatedly
