@@ -1,9 +1,28 @@
-"""Judge: during design, a structural rubric or a replayed verdict; later, through the Azure proxy."""
+"""Judge of the workshop rubrics, in two layers.
+
+1. Structural layer (always): patterns required or forbidden in the answer or
+   the trace, and the French-answer rule. Checked by code.
+2. Meaning layer (when the rubric sets `judge_meaning`): a judge model reads the
+   criterion and the French answer and returns a verdict. It runs whenever a
+   judge model is configured (`JUDGE_BASE_URL` and `AZURE_OPENAI_JUDGE_DEPLOYMENT`,
+   OpenAI-compatible chat completions); a negative verdict fails the rubric.
+   `JUDGE_MODE=semantic` makes the meaning layer mandatory, `structural` disables it,
+   `auto` (default) uses it when it is configured.
+
+Rubrics are applied k times out of n on fresh conversations by
+`workshop_tests.testing.turns.apply_rubric_repeatedly` (`JUDGE_K`, `JUDGE_N`).
+"""
 
 from __future__ import annotations
 
+import json
 import re
+from collections.abc import Callable
 from typing import Any
+
+import httpx
+
+from workshop_kit.shell.config import settings
 
 # The agent built in the workshops converses in French: every rubric judges a French answer.
 AGENT_LANGUAGE = "fr"
@@ -32,26 +51,83 @@ def looks_french(text: str) -> bool:
     return fr > 0 and fr >= en
 
 
-def judge(rubric: dict[str, Any], dialogue: dict[str, Any], expected_verdict: str | None = None) -> dict[str, Any]:
-    """Applies a written rubric.
+MeaningJudge = Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]
 
-    During design (no real judge model): the structural requirements
-    (patterns required or forbidden in the response or in the trace) are
-    checked by code. Meaning assessment, when the rubric asks for it, is
-    flagged "to calibrate" and does not fail once the structural requirements
-    are met. The agent converses in French: an answer that does not look French
-    fails (see JUDGE_INSTRUCTIONS, also sent to the real judge in phase B).
-    A hand-written replay verdict, when given, takes precedence.
+_VERDICT_PROMPT = (
+    "Criterion: {criterion}\n\n"
+    "Answer of the agent (French):\n<<<\n{response}\n>>>\n\n"
+    "Turn trace excerpt (may be empty):\n<<<\n{trace}\n>>>\n\n"
+    'Reply with a single JSON object: {{"passed": true|false, "rationale": "<one sentence>"}}.'
+)
+
+
+def judge_mode() -> str:
+    return (settings.judge_mode or "auto").lower()
+
+
+def meaning_judge_configured() -> bool:
+    return bool(settings.judge_base_url and settings.azure_openai_judge_deployment)
+
+
+def model_meaning_judge(rubric: dict[str, Any], dialogue: dict[str, Any], client: httpx.Client | None = None) -> dict[str, Any]:
+    """Asks the judge model (OpenAI-compatible endpoint) whether the answer meets the criterion."""
+    prompt = _VERDICT_PROMPT.format(
+        criterion=rubric.get("criterion") or "",
+        response=dialogue.get("response") or "",
+        trace=str(dialogue.get("trace") or "")[:4000],
+    )
+    body = {
+        "model": settings.azure_openai_judge_deployment,
+        "temperature": 0,
+        "messages": [
+            {"role": "system", "content": JUDGE_INSTRUCTIONS},
+            {"role": "user", "content": prompt},
+        ],
+    }
+    headers = {"Authorization": f"Bearer {settings.judge_api_key}"} if settings.judge_api_key else {}
+    url = settings.judge_base_url.rstrip("/") + "/chat/completions"
+    own = client is None
+    client = client or httpx.Client(timeout=60)
+    try:
+        response = client.post(url, json=body, headers=headers)
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"] or ""
+    finally:
+        if own:
+            client.close()
+    match = re.search(r"\{.*\}", content, re.DOTALL)
+    try:
+        verdict = json.loads(match.group(0) if match else content)
+    except json.JSONDecodeError:
+        return {"passed": False, "rationale": f"unreadable judge verdict: {content[:200]!r}"}
+    return {"passed": bool(verdict.get("passed")), "rationale": str(verdict.get("rationale") or "")}
+
+
+def _verdict(rubric: dict[str, Any], passed: bool, rationale: str, **extra: Any) -> dict[str, Any]:
+    return {
+        "passed": passed,
+        "rationale": rationale,
+        "rubric": rubric.get("id"),
+        "criterion": rubric.get("criterion"),
+        **extra,
+    }
+
+
+def judge(
+    rubric: dict[str, Any],
+    dialogue: dict[str, Any],
+    expected_verdict: str | None = None,
+    meaning_judge: MeaningJudge | None = None,
+) -> dict[str, Any]:
+    """Applies a written rubric to one dialogue (one answer and its trace).
+
+    The structural layer runs first; the meaning layer (see the module docstring)
+    runs only when the structural layer passes. `meaning` in the verdict is
+    "passed", "failed" or "not assessed". A hand-written replay verdict, when
+    given, takes precedence. `meaning_judge` overrides the configured judge model.
     """
     if expected_verdict:
-        return {
-            "passed": expected_verdict == "passed",
-            "rationale": "replayed verdict (design phase)",
-            "excerpts": [],
-            "mode": "replay",
-            "rubric": rubric.get("id"),
-            "criterion": rubric.get("criterion"),
-        }
+        return _verdict(rubric, expected_verdict == "passed", "replayed verdict", excerpts=[], mode="replay")
 
     response = dialogue.get("response") or ""
     trace = str(dialogue.get("trace") or "")
@@ -60,9 +136,12 @@ def judge(rubric: dict[str, Any], dialogue: dict[str, Any], expected_verdict: st
         "trace": trace,
         "all": response + "\n" + trace,
     }
+    if not response.strip() and (rubric.get("requirements") or rubric.get("judge_meaning")):
+        return _verdict(rubric, False, "no assistant response to judge", excerpts=[], mode="structural")
+
     failures: list[str] = []
     excerpts: list[str] = []
-    if rubric.get("language", AGENT_LANGUAGE) == "fr" and response.strip() and not looks_french(response):
+    if rubric.get("language", AGENT_LANGUAGE) == "fr" and not looks_french(response):
         failures.append("the answer is not in French (the agent converses in French)")
     for requirement in rubric.get("requirements") or []:
         kind = requirement.get("type")
@@ -81,34 +160,30 @@ def judge(rubric: dict[str, Any], dialogue: dict[str, Any], expected_verdict: st
             missing = [p for p in patterns if p.lower() not in text]
             if missing:
                 failures.append("required patterns missing: " + ", ".join(missing))
-
-    if not response.strip() and (rubric.get("requirements") or rubric.get("judge_meaning")):
-        return {
-            "passed": False,
-            "rationale": "no assistant response to judge",
-            "excerpts": [],
-            "mode": "simulated",
-            "rubric": rubric.get("id"),
-            "criterion": rubric.get("criterion"),
-        }
     if failures:
-        return {
-            "passed": False,
-            "rationale": "; ".join(failures),
-            "excerpts": excerpts,
-            "mode": "simulated",
-            "rubric": rubric.get("id"),
-            "criterion": rubric.get("criterion"),
-        }
+        return _verdict(rubric, False, "; ".join(failures), excerpts=excerpts, mode="structural", meaning="not assessed")
+
     rationale = "structural requirements of the rubric met"
-    if rubric.get("judge_meaning"):
-        rationale += "; meaning assessment to calibrate in phase B (real judge)"
-    return {
-        "passed": True,
-        "rationale": rationale,
-        "excerpts": [response[:200]] if response else [],
-        "mode": "simulated",
-        "rubric": rubric.get("id"),
-        "criterion": rubric.get("criterion"),
-        "to_calibrate": bool(rubric.get("judge_meaning")),
-    }
+    if not rubric.get("judge_meaning"):
+        return _verdict(rubric, True, rationale, excerpts=[response[:200]], mode="structural", meaning="not assessed")
+
+    mode = judge_mode()
+    if meaning_judge is None and mode != "structural" and meaning_judge_configured():
+        meaning_judge = model_meaning_judge
+    if meaning_judge is None:
+        if mode == "semantic":
+            return _verdict(
+                rubric, False,
+                "JUDGE_MODE=semantic but no judge model is configured (JUDGE_BASE_URL, AZURE_OPENAI_JUDGE_DEPLOYMENT)",
+                excerpts=[], mode="structural", meaning="not assessed",
+            )
+        return _verdict(
+            rubric, True, rationale + "; meaning not assessed (no judge model configured)",
+            excerpts=[response[:200]], mode="structural", meaning="not assessed",
+        )
+    meaning = meaning_judge(rubric, {"response": response, "trace": trace})
+    passed = bool(meaning.get("passed"))
+    return _verdict(
+        rubric, passed, f"{rationale}; meaning: {meaning.get('rationale', '')}",
+        excerpts=[response[:200]], mode="semantic", meaning="passed" if passed else "failed",
+    )

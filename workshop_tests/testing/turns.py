@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import httpx
+
+from workshop_kit.shell.config import settings
 from workshop_tests.evaluation.judge import judge
 from workshop_kit.shell.tracer import read_all
 
@@ -38,7 +41,62 @@ def flat(obj) -> str:
     return str(obj)
 
 
+def tool_name(call: dict) -> str:
+    return str(call.get("name") or call.get("tool") or "")
+
+
+def tool_arguments(call: dict) -> dict:
+    args = call.get("arguments") or call.get("parameters") or {}
+    return args if isinstance(args, dict) else {"raw": args}
+
+
+def tool_result(call: dict) -> dict:
+    result = call.get("result") or call.get("output") or {}
+    return result if isinstance(result, dict) else {"raw": result}
+
+
+def tool_status(call: dict) -> str:
+    """Normalised status of a tool result: ok | not_found | error (see the interface contract)."""
+    return str(tool_result(call).get("status") or "").lower()
+
+
+def events_of(turn, event_type: str) -> list[dict]:
+    return [data for kind, data in turn.events if kind == event_type]
+
+
+def model_calls(services) -> list[dict]:
+    """Chat-completion calls received by the model proxy since the start of the test."""
+    token = httpx.post(f"{services['proxy']}/_test/token", timeout=10).json()["token"]
+    log = httpx.get(f"{services['proxy']}/log", headers={"Authorization": f"Bearer {token}"}, timeout=10).json()
+    return [e for e in log if e.get("route") == "/v1/chat/completions"]
+
+
 def apply_rubric(rubric: dict, turn, trace=None) -> dict:
+    """Applies a rubric once, to an answer that cannot be replayed on a fresh conversation."""
     verdict = judge(rubric, {"response": turn.text, "trace": flat(trace) if trace is not None else ""})
     assert verdict["passed"], f"rubric {rubric.get('id')}: {verdict.get('rationale')}"
     return verdict
+
+
+def apply_rubric_repeatedly(rubric: dict, run, k: int | None = None, n: int | None = None) -> list[dict]:
+    """Runs `run()` (which opens a fresh conversation and returns `(turn, trace)`) up to n times.
+
+    The rubric passes when at least k runs pass (JUDGE_K out of JUDGE_N by default).
+    Stops as soon as the outcome is known.
+    """
+    k = int(k or settings.judge_k)
+    n = int(n or settings.judge_n)
+    verdicts: list[dict] = []
+    passed = 0
+    for i in range(n):
+        turn, trace = run()
+        verdict = judge(rubric, {"response": turn.text, "trace": flat(trace) if trace is not None else ""})
+        verdicts.append(verdict)
+        passed += bool(verdict["passed"])
+        if passed >= k or passed + (n - i - 1) < k:
+            break
+    assert passed >= k, (
+        f"rubric {rubric.get('id')}: {passed} run(s) passed, {k} out of {n} required; "
+        + " | ".join(v.get("rationale", "") for v in verdicts if not v["passed"])
+    )
+    return verdicts

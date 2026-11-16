@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     prompt_token_cap: int = 800
     judge_k: int = 3
     judge_n: int = 5
+    # Meaning layer of the judge: auto | semantic | structural (see workshop_tests/evaluation/judge.py).
+    judge_mode: str = "auto"
+    # OpenAI-compatible base URL of the judge model (for example the proxy's /v1) and its bearer token.
+    judge_base_url: str = ""
+    judge_api_key: str = ""
 
 
 settings = Settings()
