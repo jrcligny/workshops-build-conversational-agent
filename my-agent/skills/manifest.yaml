@@ -11,7 +11,7 @@ skills:
     unlocks: []
   - id: invoice-check
     title: Contrôle et approbation d'une facture fournisseur
-    version: "1.0"
+    version: "1.1"
     path: invoice-check
     description: Contrôler une facture fournisseur avant d'en préparer l'approbation.
     unlocks: [prepare_invoice_approval]

@@ -93,7 +93,7 @@ def identity_record(user, token: str) -> dict:
         "role": user.role,
         "organization": user.organization,
         "received_token_type": received,
-        "relayed_to_tool_server": "user token, in the Authorization header",
+        "relayed_to_tool_server": "user token, in the request header (value never traced)",
         "business_api_token": "exchanged by the tool server for an application token on behalf of the user",
         "service_account": False,
     }

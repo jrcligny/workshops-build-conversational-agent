@@ -1,0 +1,16 @@
+id: truncated-result-total
+edge_case: truncated-result-total
+description: On a large dataset the listing is bounded; the answer gives the real total and says the list is partial.
+dataset: volume
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - "Listez toutes les commandes en retard de Transports Morel."
+facts:
+  - {check: tool_called, tool: query}
+  - {check: event, event: mention}
+  - {check: trace_contains, any: ["\"truncated\": true", "'truncated': true"]}
+rubric:
+  criterion: The answer states that the list is partial and gives the total returned by the application, not the number of lines shown.
+  judge_meaning: true
+  requirements:
+    - {type: required_any, field: response, patterns: ["partiel", "partielle", "tronqu", "sur un total", "au total"]}
