@@ -1,24 +1,24 @@
 # Installation
 
-Main target: **Windows**, with the latest stable Python release published on
-[python.org](https://www.python.org/downloads/) (Python **3.15**, currently
-3.15.2 as of 25 October 2026). Linux and macOS are supported too. The
-repository requires Python 3.15 or newer (`requires-python`, `.python-version` file).
+Main target: **Windows**, with Python **3.13** from
+[python.org](https://www.python.org/downloads/) or uv. Linux and macOS are
+supported too. The repository requires Python 3.13 or newer (`requires-python`)
+and selects Python 3.13 for development and CI (`.python-version`).
 
 ## Common requirements
 
-- Python 3.15 or newer, **from python.org** (or from uv / Homebrew), not Apple's
+- Python 3.13, **from python.org** (or from uv / Homebrew), not Apple's
   system Python nor, preferably, the Microsoft Store package
 - [uv](https://docs.astral.sh/uv/)
 
 Loading the **sqlite-vec** extension requires an interpreter whose SQLite
 allows `enable_load_extension`. This is the case for the official python.org
-builds and for the interpreters installed by `uv python install 3.15`. See below
+builds and for the interpreters installed by `uv python install 3.13`. See below
 if loading fails.
 
 ## Windows (PowerShell)
 
-1. Install Python 3.15 from [python.org](https://www.python.org/downloads/windows/)
+1. Install Python 3.13 from [python.org](https://www.python.org/downloads/windows/)
    (official **64-bit** installer). Tick **Add python.exe to PATH**.
 2. Install uv, in PowerShell:
 
@@ -31,8 +31,8 @@ powershell -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps
 ```powershell
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
-uv python install 3.15
-uv sync --extra dev --python 3.15
+uv python install 3.13
+uv sync --extra dev --python 3.13
 Copy-Item .env.example .env
 uv run pytest tests/kit
 uv run workshop check-shell
@@ -46,15 +46,15 @@ uses neither `fork` nor POSIX signals; it works on Windows.
 ```bash
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
-uv python install 3.15
-uv sync --extra dev --python 3.15
+uv python install 3.13
+uv sync --extra dev --python 3.13
 cp .env.example .env
 uv run pytest tests/kit
 uv run workshop check-shell
 ```
 
 On macOS, do not use `/usr/bin/python3` (often built without SQLite extension
-loading). Prefer `uv python install 3.15`, Homebrew (`brew install python@3.15`)
+loading). Prefer `uv python install 3.13`, Homebrew (`brew install python@3.13`)
 or the python.org installer.
 
 ## sqlite-vec: diagnostics
@@ -67,7 +67,7 @@ uv run python -c "import sqlite3; print(hasattr(sqlite3.Connection, 'enable_load
 ```
 
 The expected values are `True` and a recent SQLite version (3.41 or newer
-recommended). Then run `uv sync --python 3.15` again with an official interpreter.
+recommended). Then run `uv sync --python 3.13` again with an official interpreter.
 
 ## Check the framework
 

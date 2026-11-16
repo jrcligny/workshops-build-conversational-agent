@@ -6,7 +6,7 @@ Companion repository for the workshops of the book *De l'assistant à l'agent : 
 
 It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 19, chapter 10 being split into 10a to 10d). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal shell (chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The shell includes neither the conversational loop nor the *system prompt*.
 
-Main target: **Windows**, with Python **3.15** (latest stable release on [python.org](https://www.python.org/downloads/) at design time: 3.15.2). Linux and macOS are supported too.
+Main target: **Windows**, with Python **3.13** from [python.org](https://www.python.org/downloads/) or uv. Linux and macOS are supported too.
 
 ## Layout
 
@@ -47,8 +47,8 @@ Students only touch `my-agent/`. There is no exception: the files the kit reads 
 See [docs/installation.md](docs/installation.md) for details. In short, on Windows (PowerShell):
 
 ```powershell
-uv python install 3.15
-uv sync --extra dev --python 3.15
+uv python install 3.13
+uv sync --extra dev --python 3.13
 Copy-Item .env.example .env
 uv run pytest tests/kit
 uv run workshop check-shell   # succeeds when every workshop test fails on the empty shell
@@ -58,8 +58,8 @@ uv run workshop check 03      # stays red until workshop 03 is done
 On Linux or macOS (bash):
 
 ```bash
-uv python install 3.15
-uv sync --extra dev --python 3.15
+uv python install 3.13
+uv sync --extra dev --python 3.13
 cp .env.example .env
 uv run pytest tests/kit
 uv run workshop check-shell

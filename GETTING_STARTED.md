@@ -2,7 +2,7 @@
 
 This repository accompanies the workshops of the book. In the book, the workshops are decision studies; here, you carry them out in a provided environment, without any pre-written agent code.
 
-Main target: Windows, with Python 3.15 (latest stable release from python.org). See [docs/installation.md](docs/installation.md).
+Main target: Windows, with Python 3.13 (from python.org or uv). See [docs/installation.md](docs/installation.md).
 
 ## What is provided
 
