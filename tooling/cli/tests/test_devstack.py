@@ -12,7 +12,7 @@ from workshop_tools import cli, devstack
 def test_each_project_uses_its_own_environment():
     assert devstack.REPO_ROOT == cli.REPO_ROOT
     assert (cli.REPO_ROOT / "start.py").is_file()
-    assert devstack.TOOLS_SOURCE == cli.REPO_ROOT / "workshop_kit" / "bootstrap" / "src"
+    assert devstack.TOOLS_SOURCE == cli.REPO_ROOT / "tooling" / "cli" / "src"
     stack = devstack.services(10)
     assert [s.name for s in stack] == ["business_api", "docs_search", "proxy", "mcp", "interface", "chat_ui"]
     assert [s.port for s in stack] == [8011, 8012, 8013, 8014, 8010, 8090]
@@ -21,7 +21,7 @@ def test_each_project_uses_its_own_environment():
         assert service.cwd == devstack.REPO_ROOT
         assert (service.project / "pyproject.toml").is_file()
         assert (service.project / "uv.lock").is_file()
-        assert service.env["PYTHONPATH"].split(devstack.os.pathsep)[0] == str(devstack.REPO_ROOT)
+        assert service.env["PYTHONPATH"].split(devstack.os.pathsep)[0] == str(devstack.TOOLS_SOURCE)
     assert len({service.command[0] for service in stack}) == 6
     ui = stack[-1]
     assert ui.cwd == devstack.UI_ROOT

@@ -7,9 +7,9 @@ It owns its `pyproject.toml`, `uv.lock` and `.venv`; there is no root Python pro
 Run from the repository root:
 
 ```powershell
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
-uv run --project workshop_kit/bootstrap workshop serve
-uv run --project workshop_kit/bootstrap workshop start 03
+uv sync --project tooling/cli --locked --python 3.13
+uv run --project tooling/cli workshop serve
+uv run --project tooling/cli workshop start 03
 ```
 
 `python start.py` is a standard-library-only bootstrap: it synchronizes this
@@ -22,11 +22,11 @@ Prepare it before checking:
 
 ```powershell
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_kit/bootstrap workshop check 03
-uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
-uv run --project workshop_kit/bootstrap workshop check-shell
+uv run --project tooling/cli workshop check 03
+uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check-bootstrap
 ```
 
-Acceptance tests stay red until the workshop is implemented; `check-shell`
+Acceptance tests stay red until the workshop is implemented; `check-bootstrap`
 succeeds when every workshop test fails on the bootstrap of `my-agent/`. See
 [installation](../../docs/installation.md) for service options and ports.

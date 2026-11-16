@@ -27,11 +27,8 @@ dependencies = [
     "workshop-model-gateway",
 ]
 
-[tool.uv]
-package = false
-
 [tool.uv.sources]
-workshop-tools = { path = "../workshop_kit/bootstrap", editable = true }
+workshop-tools = { path = "../tooling/cli", editable = true }
 workshop-config = { path = "../shared/workshop_config", editable = true }
 workshop-text-vectors = { path = "../shared/text_vectors", editable = true }
 workshop-business-api = { path = "../business/business_api", editable = true }
@@ -40,11 +37,17 @@ workshop-agent-sdk = { path = "../agent_sdk", editable = true }
 workshop-agent-gateway = { path = "../gateway/agent_gateway", editable = true }
 workshop-model-gateway = { path = "../gateway/model_gateway", editable = true }
 
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/workshop_tests"]
+
 [tool.pytest.ini_options]
-# Kit tests sit next to the component they test (`<component>/tests/`); chat-ui has its own project.
-testpaths = ["../agent_sdk", "../business", "../gateway", "../workshop_kit", "../workshop_tests", "../workshops"]
-norecursedirs = [".*", "__pycache__", "node_modules", "venv", "chat-ui", "inert_agent"]
-pythonpath = [".."]
+# Kit tests sit next to the component they test (`<component>/tests/`); clients/chat_ui has its own project.
+testpaths = ["../agent_sdk", "../business", "../gateway", "../tooling", "../workshop_tests", "../workshops"]
+norecursedirs = [".*", "__pycache__", "node_modules", "venv", "inert_agent"]
 # Fixture loading and source paths remain explicit when running from another cwd.
 addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures -p workshop_tests.testing.superseded -p workshop_tests.testing.private"
 asyncio_default_fixture_loop_scope = "function"

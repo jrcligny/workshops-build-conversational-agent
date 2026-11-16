@@ -994,7 +994,7 @@ requires-dist = [
 [[package]]
 name = "workshop-tests"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
@@ -1041,7 +1041,7 @@ requires-dist = [
     { name = "workshop-docs-search", editable = "../business/docs_search" },
     { name = "workshop-model-gateway", editable = "../gateway/model_gateway" },
     { name = "workshop-text-vectors", editable = "../shared/text_vectors" },
-    { name = "workshop-tools", editable = "../workshop_kit/bootstrap" },
+    { name = "workshop-tools", editable = "../tooling/cli" },
 ]
 
 [[package]]
@@ -1052,7 +1052,7 @@ source = { editable = "../shared/text_vectors" }
 [[package]]
 name = "workshop-tools"
 version = "0.1.0"
-source = { editable = "../workshop_kit/bootstrap" }
+source = { editable = "../tooling/cli" }
 dependencies = [
     { name = "httpx" },
 ]

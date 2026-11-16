@@ -3,7 +3,7 @@
 They check the same success criteria as the public tests with other inputs (other customers,
 references, phrasings, users, thresholds), to see whether an implementation generalises.
 They are not given to students (see `export-ignore` in `.gitattributes`). `workshop check
-<id> --private` adds them; `check-shell` and `check-inert` always run them.
+<id> --private` adds them; `check-bootstrap` and `check-inert` always run them.
 """
 
 from __future__ import annotations

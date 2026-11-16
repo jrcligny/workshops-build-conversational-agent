@@ -39,27 +39,22 @@ def test_evaluation_routes_checksum():
 
 
 def test_student_files_only_in_my_agent():
-    """Student assets stay in my-agent; the kit UI owns only its infrastructure resources."""
-    kit = REPO_ROOT / "workshop_kit"
+    """Student assets stay in my-agent; the SDK and the gateways hold only code and project files."""
+    project_files = {"pyproject.toml", "uv.lock", ".python-version", "README.md"}
     data_files = []
-    for folder, directories, filenames in kit.walk():
-        directories[:] = [d for d in directories if d not in {"__pycache__", ".venv", ".pytest_cache"}]
-        if folder == kit:
-            directories.remove("chat-ui")
-            directories.remove("bootstrap")
-        data_files.extend(
-            (folder / name).relative_to(REPO_ROOT).as_posix()
-            for name in filenames if Path(name).suffix != ".py"
-            and not (name in {"pyproject.toml", "uv.lock", ".python-version"} and folder in {
-                kit / "apps" / "business_api", kit / "apps" / "docs_search",
-                kit / "llm_proxy", kit / "shell",
-            })
-        )
+    for top in (REPO_ROOT / "agent_sdk", REPO_ROOT / "gateway"):
+        for folder, directories, filenames in top.walk():
+            directories[:] = [d for d in directories if d not in {"__pycache__", ".venv", ".pytest_cache"}]
+            data_files.extend(
+                (folder / name).relative_to(REPO_ROOT).as_posix()
+                for name in filenames
+                if Path(name).suffix != ".py" and name not in project_files
+            )
     assert data_files == []
-    ui = kit / "chat-ui"
+    ui = REPO_ROOT / "clients" / "chat_ui"
     assert (ui / "pyproject.toml").is_file()
     assert (ui / "uv.lock").is_file()
-    assert (ui / "workshop_chat_ui" / "welcome.md").is_file()
-    bootstrap = kit / "bootstrap"
-    assert (bootstrap / "pyproject.toml").is_file()
-    assert (bootstrap / "uv.lock").is_file()
+    assert (ui / "src" / "chat_ui" / "welcome.md").is_file()
+    cli = REPO_ROOT / "tooling" / "cli"
+    assert (cli / "pyproject.toml").is_file()
+    assert (cli / "uv.lock").is_file()

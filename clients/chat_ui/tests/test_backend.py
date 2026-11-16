@@ -4,7 +4,7 @@ import json
 
 import httpx
 import pytest
-from workshop_chat_ui.backend import (
+from chat_ui.backend import (
     DEFAULT_BACKEND_URL,
     BackendClient,
     BackendError,

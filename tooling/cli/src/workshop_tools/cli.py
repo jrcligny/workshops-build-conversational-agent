@@ -278,7 +278,7 @@ def cmd_start(workshop_id: str) -> int:
     if guide.exists():
         print(f"Guide: {guide.relative_to(REPO_ROOT).as_posix()}")
     print("Start the applications if you want to explore by hand (see docs/installation.md), then:")
-    print(f"  uv run --project workshop_kit/bootstrap workshop check {workshop_id}")
+    print(f"  uv run --project tooling/cli workshop check {workshop_id}")
     if not (REPO_ROOT / "my-agent" / "harness.py").exists():
         print("Warning: my-agent/harness.py is missing.", file=sys.stderr)
         return 2
@@ -294,7 +294,8 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
     check.add_argument("--private", action="store_true", help="Also run the private tests (*_private.py), not given to students")
 
-    sub.add_parser("check-shell", help="Check that every workshop test fails on the bootstrap of my-agent/")
+    sub.add_parser("check-bootstrap", aliases=["check-shell"],
+                   help="Check that every workshop test fails on the bootstrap of my-agent/, except the declared ones")
     sub.add_parser("check-inert", help="Check that every workshop test fails against the inert agent")
 
     start = sub.add_parser("start", help="Show the workshop guide, without copying any agent code")
@@ -308,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "check":
         return cmd_check(args.workshop_id, args.non_regression, args.private)
-    if args.command == "check-shell":
+    if args.command in ("check-bootstrap", "check-shell"):
         return cmd_check_shell()
     if args.command == "check-inert":
         return cmd_check_inert()

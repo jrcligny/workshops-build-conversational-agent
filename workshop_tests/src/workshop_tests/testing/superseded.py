@@ -3,7 +3,7 @@
 For example, workshop 03 requires an agent without tools; workshop 04 gives it one. When the
 target workshop (environment variable `WORKSHOP_TARGET`, set by `workshop check`) is at or past
 `<id>`, the test is skipped with an explicit reason instead of failing the non-regression run.
-Without a target (check-shell, check-inert, plain pytest), the test runs.
+Without a target (check-bootstrap, check-inert, plain pytest), the test runs.
 """
 
 from __future__ import annotations

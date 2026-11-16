@@ -59,7 +59,7 @@ def test_root_is_not_a_python_project_and_bootstrap_owns_its_dependencies():
     assert not (ROOT / "pyproject.toml").exists()
     assert not (ROOT / "uv.lock").exists()
     assert not (ROOT / "conftest.py").exists()
-    assert start.TOOLS == ROOT / "workshop_kit" / "bootstrap"
+    assert start.TOOLS == ROOT / "tooling" / "cli"
     for folder in (start.TOOLS, ROOT / "workshop_tests"):
         assert (folder / "pyproject.toml").is_file()
         assert (folder / "uv.lock").is_file()

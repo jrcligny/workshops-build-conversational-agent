@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-TOOLS = ROOT / "workshop_kit" / "bootstrap"
+TOOLS = ROOT / "tooling" / "cli"
 
 
 def main(argv=None):

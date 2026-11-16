@@ -16,8 +16,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-TOOLS_SOURCE = REPO_ROOT / "workshop_kit" / "bootstrap" / "src"
-UI_ROOT = REPO_ROOT / "workshop_kit" / "chat-ui"
+TOOLS_SOURCE = REPO_ROOT / "tooling" / "cli" / "src"
+UI_ROOT = REPO_ROOT / "clients" / "chat_ui"
 PROJECTS = {
     "business_api": REPO_ROOT / "business" / "business_api",
     "docs_search": REPO_ROOT / "business" / "docs_search",
@@ -63,7 +63,7 @@ def services(port_offset: int = 0) -> list[Service]:
         **os.environ,
         "PYTHONUNBUFFERED": "1",
         "PYTHONPATH": os.pathsep.join(
-            [str(REPO_ROOT), str(TOOLS_SOURCE)]
+            [str(TOOLS_SOURCE)]
             + ([os.environ["PYTHONPATH"]] if os.environ.get("PYTHONPATH") else [])
         ),
         "BUSINESS_API_URL": f"http://{HOST}:{ports['business_api']}",
@@ -95,7 +95,7 @@ def services(port_offset: int = 0) -> list[Service]:
             health_path = None  # The empty MCP server has no health endpoint.
         elif name == "chat_ui":
             command = (
-                str(python), "-m", "chainlit", "run", "workshop_chat_ui/app.py",
+                str(python), "-m", "chainlit", "run", "src/chat_ui/app.py",
                 "--host", HOST, "--port", str(port), "--headless",
             )
             cwd = UI_ROOT

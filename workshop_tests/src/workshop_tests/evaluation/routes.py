@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 ROUTES_DIR = REPO_ROOT / "workshops" / "17-evaluation" / "routes"
 CHECKSUM_FILE = "routes.sha256"
 
