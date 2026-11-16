@@ -5,6 +5,7 @@ import pytest
 
 from workshop_kit.apps.docs_search.indexing import connect, rebuild
 from workshop_kit.apps.docs_search.search import index_state
+from workshop_kit.shell.config import settings
 
 pytestmark = pytest.mark.docs_search
 
@@ -100,3 +101,28 @@ def test_index_uses_a_vec0_table(session_dir):
         assert "distance_metric=cosine" in row[0] or "float[" in row[0]
     finally:
         conn.close()
+
+
+def test_real_answer_outranks_off_topic_passage(observation, services):
+    """Scores are absolute: the procedure answering the question beats a page matching one generic word."""
+    token = observation.token("camille-renard")["app_token"]
+    answer = _search(services, token, {"query": "Que dit la procédure quand une livraison arrive incomplète ?", "k": 3}).json()
+    off_topic = _search(services, token, {"query": "Que dit la documentation sur le voyage spatial des factures xyzzy-42 ?", "k": 3, "threshold": 0.0}).json()
+    best_answer = answer["passages"][0]
+    assert best_answer["document_id"] == "proc-incomplete-deliveries"
+    assert best_answer["score"] > max(p["score"] for p in off_topic["passages"]) + 0.3
+    default = _search(services, token, {"query": "Que dit la documentation sur le voyage spatial des factures xyzzy-42 ?"}).json()
+    assert default["no_passage"] is True, "with the default threshold, an off-topic question returns no passage"
+
+
+def test_index_state_scoped_to_the_identity(observation, services):
+    def state(token):
+        r = httpx.get(f"{services['docs_search']}/indexing/state", headers={"Authorization": f"Bearer {token}"}, timeout=10)
+        assert r.status_code == 200
+        return r.json()["documents"]
+
+    seen = state(observation.token("camille-renard")["app_token"])
+    assert seen and {d["organization"] for d in seen} == {"organization-a"}
+    assert "invoice-statuses" not in {d["document_id"] for d in seen}, "an accounting document stays hidden from customer service"
+    assert "organization-b" in {d["organization"] for d in state(settings.observation_token)}
+    assert httpx.get(f"{services['docs_search']}/indexing/state", timeout=10).status_code == 401

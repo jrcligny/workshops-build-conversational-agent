@@ -1,9 +1,11 @@
-"""Hybrid search: FTS5 (lexical) + sqlite-vec KNN (vector), filtered by permissions."""
+"""Hybrid search: lexical coverage + sqlite-vec KNN (vector), filtered by permissions.
+
+The FTS5 table stays available for inspection; scores are absolute (0..1), not relative to the best hit."""
 
 from __future__ import annotations
 
 from workshop_kit.apps.docs_search.indexing import connect
-from workshop_kit.apps.docs_search.vectors import pack, vector
+from workshop_kit.apps.docs_search.vectors import pack, terms, vector
 
 
 def _allowed(passage: dict, organization: str, role: str) -> bool:
@@ -20,7 +22,7 @@ def search(
     organization: str,
     role: str,
     k: int = 5,
-    threshold: float = 0.05,
+    threshold: float = 0.3,
     db_path: str | None = None,
 ) -> dict:
     conn = connect(db_path)
@@ -30,23 +32,13 @@ def search(
         if not visible:
             return {"passages": [], "no_passage": True, "query": query}
 
-        words = [w.lower() for w in query.split() if len(w) > 2]
+        # Lexical branch: share of the query's content words found in the passage (absolute, so an
+        # off-topic passage matching one generic word cannot outrank the real answer).
+        wanted = set(terms(query))
         lexical_scores: dict[str, float] = {}
-        try:
-            q = " OR ".join(words) if words else query
-            rows = conn.execute(
-                "SELECT id, bm25(passages_fts) AS score FROM passages_fts WHERE passages_fts MATCH ? ORDER BY score",
-                (q,),
-            ).fetchall()
-            for row in rows:
-                lexical_scores[row["id"]] = -float(row["score"])
-        except Exception:  # noqa: BLE001
-            lexical_scores = {}
-        if not lexical_scores:
-            for p in visible:
-                haystack = (p["text"] + " " + p["title"] + " " + p["section"]).lower()
-                lexical_scores[p["id"]] = sum(haystack.count(w) for w in words)
-
+        for p in visible:
+            present = set(terms(f"{p['title']} {p['section']} {p['text']}"))
+            lexical_scores[p["id"]] = len(wanted & present) / len(wanted) if wanted else 0.0
         rowid_to_id = {int(p["_rowid"]): p["id"] for p in everything}
         k_vec = max(k * 4, min(len(everything), 50), 8)
         vector_rows = conn.execute(
@@ -68,12 +60,11 @@ def search(
     finally:
         conn.close()
 
-    max_lex = max((max(lexical_scores.values()), 1.0)) if lexical_scores else 1.0
     fused: dict[str, float] = {}
     for p in visible:
-        lex_n = max(0.0, lexical_scores.get(p["id"], 0.0)) / max_lex
+        lex_n = lexical_scores.get(p["id"], 0.0)
         vec_n = max(0.0, vector_scores.get(p["id"], 0.0))
-        fused[p["id"]] = 0.5 * lex_n + 0.5 * vec_n
+        fused[p["id"]] = 0.6 * lex_n + 0.4 * vec_n
 
     by_id = {p["id"]: p for p in visible}
     ranked = sorted(fused.items(), key=lambda kv: kv[1], reverse=True)
@@ -110,12 +101,16 @@ def get_passage(passage_id: str, db_path: str | None = None) -> dict | None:
         conn.close()
 
 
-def index_state(db_path: str | None = None) -> dict:
+def index_state(db_path: str | None = None, organization: str | None = None, role: str | None = None) -> dict:
+    """Documents in the index. With an identity, only the documents that identity may see."""
     conn = connect(db_path)
     try:
         rows = conn.execute(
-            "SELECT document_id, version, organization, COUNT(*) AS n FROM passages GROUP BY document_id, version, organization"
+            "SELECT document_id, version, organization, audience, COUNT(*) AS n FROM passages"
+            " GROUP BY document_id, version, organization, audience"
         ).fetchall()
+        if organization is not None:
+            rows = [r for r in rows if _allowed(dict(r), organization, role or "")]
         return {"documents": [dict(r) for r in rows]}
     finally:
         conn.close()

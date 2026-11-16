@@ -18,7 +18,7 @@ _LOG: list[dict] = []
 class SearchIn(BaseModel):
     query: str
     k: int = 5
-    threshold: float = 0.05
+    threshold: float = 0.3
 
 
 class RebuildIn(BaseModel):
@@ -73,9 +73,11 @@ def api_rebuild(body: RebuildIn, authorization: str | None = Header(default=None
 
 @app.get("/indexing/state")
 def api_index_state(authorization: str | None = Header(default=None)):
-    if authorization:
-        _identity(authorization)
-    return index_state()
+    # The observation token sees the whole index (tests); a user sees only what they may search.
+    if _bearer(authorization) == settings.observation_token:
+        return index_state()
+    identity = _identity(authorization)
+    return index_state(organization=identity["organization"], role=identity["role"])
 
 
 @app.get("/log")
