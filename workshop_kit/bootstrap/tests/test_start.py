@@ -7,7 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 spec = importlib.util.spec_from_file_location("workshop_start", ROOT / "start.py")
 start = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(start)

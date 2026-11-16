@@ -11,7 +11,7 @@ Run from the repository root, not from this directory:
 ```powershell
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check 03
 uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
 uv run --project workshop_kit/bootstrap workshop check-shell

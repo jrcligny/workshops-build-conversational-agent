@@ -139,7 +139,7 @@ From the repository root:
 uv sync --project workshop_kit/chat-ui --extra dev
 uv run --project workshop_kit/chat-ui --extra dev pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 ```
 
 `--confcutdir` bounds UI test configuration discovery to the UI project. Shared

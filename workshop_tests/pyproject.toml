@@ -27,7 +27,9 @@ package = false
 workshop-tools = { path = "../workshop_kit/bootstrap", editable = true }
 
 [tool.pytest.ini_options]
-testpaths = ["../workshop_kit/tests", "../workshops"]
+# Kit tests sit next to the component they test (`<component>/tests/`); chat-ui has its own project.
+testpaths = ["../workshop_kit", "../workshop_tests", "../workshops"]
+norecursedirs = [".*", "__pycache__", "node_modules", "venv", "chat-ui", "inert_agent"]
 pythonpath = [".."]
 # Fixture loading and source paths remain explicit when running from another cwd.
 addopts = "-q --strict-markers --import-mode=importlib -p workshop_tests.testing.fixtures -p workshop_tests.testing.superseded -p workshop_tests.testing.private"

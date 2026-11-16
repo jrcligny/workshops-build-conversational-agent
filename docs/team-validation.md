@@ -15,7 +15,7 @@ delegates checks to the test project's environment and pytest configuration;
 1. Bootstrap and inert agent: `uv run --project workshop_kit/bootstrap workshop check-shell` and `workshop check-inert` must succeed (every workshop test fails; only the bootstrap may pass the tests listed in `workshop_tests/bootstrap_passes.txt`).
 2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project workshop_kit/bootstrap workshop check N --non-regression`).
 3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
-4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests`.
+4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests`.
 
 The CI replays points 1 and 4 on every commit.
 

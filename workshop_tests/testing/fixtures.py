@@ -1,7 +1,7 @@
 """Shared pytest fixtures: applications, proxy, traces, dataset.
 
 Loaded as a pytest plugin by `workshop_tests/pyproject.toml`, so that the kit tests
-(`workshop_kit/tests/`) and the workshop tests (`workshops/*/tests/`) share them.
+(`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/`, `workshop_tests/my_agent_bootstrap/`) and the workshop tests (`workshops/*/tests/`) share them.
 """
 
 from __future__ import annotations

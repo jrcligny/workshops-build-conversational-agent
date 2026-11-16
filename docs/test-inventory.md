@@ -5,7 +5,7 @@ Aligned with the "success criterion" subsections of the book
 into `main`). All these tests **fail against the inert agent** (`workshop check-inert`) and **on the
 bootstrap of `my-agent/`** (`workshop check-shell`), except, for the bootstrap, those listed in
 `workshop_tests/bootstrap_passes.txt`: the bootstrap already converses through the model. The infrastructure tests in
-`workshop_kit/tests/` must pass. Shared fixtures, clients, runtime probes and evaluation
+`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/` and `workshop_tests/my_agent_bootstrap/` must pass. Shared fixtures, clients, runtime probes and evaluation
 helpers live in `workshop_tests/testing/` and `workshop_tests/evaluation/`, not in the
 runtime kit. The names each test reads are listed in
 [interface-contract.md](interface-contract.md#names-read-by-the-tests).
@@ -49,7 +49,7 @@ no root Python project or pytest configuration.
 ```powershell
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check 07
 uv run --project workshop_kit/bootstrap workshop check 07 --non-regression
 uv run --project workshop_kit/bootstrap workshop check-shell

@@ -42,7 +42,7 @@ docs/                interface contract, installation, decisions, test inventory
 Three test suites live in this repository:
 
 - `workshops/*/tests/`: the success criteria of each workshop. **They fail until the workshop is done** (red, then green).
-- `workshop_kit/tests/`: the tests of the provided infrastructure, which must always pass.
+- `workshop_kit/<component>/tests/` (and `workshop_tests/evaluation/tests/`, `workshop_tests/my_agent_bootstrap/`): the tests of the provided infrastructure, next to the component they test; they must always pass.
 - `workshop_kit/chat-ui/tests/`: the chat UI's tests, run with that project's own dependencies; they must always pass too.
 
 Students only touch `my-agent/`. The files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live there too. The supplied UI resources live in `workshop_kit/chat-ui/`; service dependency manifests and lockfiles live alongside their applications. The remaining kit files are Python code. A kit test checks this separation.
@@ -56,7 +56,7 @@ uv python install 3.13
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check-shell   # succeeds when every workshop test fails on the bootstrap, except workshop_tests/bootstrap_passes.txt
 uv run --project workshop_kit/bootstrap workshop check 03      # stays red until workshop 03 is done
 ```
@@ -68,7 +68,7 @@ uv python install 3.13
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 cp .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check-shell
 uv run --project workshop_kit/bootstrap workshop check 03
 ```

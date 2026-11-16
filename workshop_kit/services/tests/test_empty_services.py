@@ -14,7 +14,7 @@ from workshop_kit.services.attachments.registry import folder as attachments_fol
 
 pytestmark = pytest.mark.shell
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 MY_AGENT = REPO_ROOT / "my-agent"
 
 

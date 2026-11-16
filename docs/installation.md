@@ -38,7 +38,7 @@ uv python install 3.13
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check-shell
 ```
 
@@ -56,7 +56,7 @@ uv python install 3.13
 uv sync --project workshop_kit/bootstrap --locked --python 3.13
 uv sync --project workshop_tests --locked --python 3.13
 cp .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 uv run --project workshop_kit/bootstrap workshop check-shell
 ```
 
@@ -161,14 +161,14 @@ Tooling and tests are two additional, separate projects, not a root package:
   `.python-version`. It depends on the local `workshop-tools` project in editable
   mode. Its `testing/` and `evaluation/` folders provide shared fixtures and helpers.
 
-Infrastructure tests live in `workshop_kit/tests/`, while workshop acceptance
+Infrastructure tests live next to the component they test (`workshop_kit/<component>/tests/`, `workshop_tests/evaluation/tests/`, `workshop_tests/my_agent_bootstrap/`), while workshop acceptance
 tests stay next to their guides. Chainlit's MCP 1 and the agent's MCP 2 remain
 isolated; UI tests use the UI project's `dev` extra, not `workshop_tests/`.
 
 Run the infrastructure suite from the repository root:
 
 ```powershell
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit workshop_tests
 ```
 
 The `-c` explicitly selects the test project's configuration and fixture plugin;
