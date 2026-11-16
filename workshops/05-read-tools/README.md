@@ -1,21 +1,106 @@
-# Workshop 05 — Two read tools
+# Atelier 05 — Deux outils de lecture
 
-Chapter 5 of the book. No solution is provided: you work in `my-agent/`.
+Chapitre 5 du livre. Aucune solution n'est fournie : vous travaillez dans `my-agent/`.
 
-## Goal
+## Intention
 
-Add two read tools: searching for a customer and listing a customer's orders.
+L'agent gagne deux outils de lecture : chercher un client par son nom et lister ses
+commandes. La question du chapitre est : qui décide de l'étape suivante ? Quand le chemin
+est connu d'avance, le programme enchaîne les étapes (un *workflow*). Quand il ne l'est
+pas, le modèle décide (un agent). Entre les deux s'étend un continuum d'autonomie. Un
+enchaînement stable, comme lister puis filtrer, gagne à être enfermé dans un outil.
 
-## Success criterion
+## Critère de réussite
 
-Your agent has two new read tools. Searching for a customer returns every matching customer, namesakes included, without picking one on behalf of the user. The list of a customer's orders can keep only those whose delivery is late, and the filter is applied by the tool, not by the model.
+Face à un homonyme, l'agent présente les clients trouvés et demande lequel est visé, sans
+choisir à la place de l'utilisateur. Pour compter les commandes en retard d'un client,
+il fait filtrer et compter par la source, puis donne le nombre exact.
 
-## How to check
+## Ce que lisent les tests
 
-The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+Les tests lisent `tools` dans la trace (`name`, `arguments`, `result.status`, `result`).
+Sont imposés :
+
+- « Quelles sont les commandes de Léa Martin ? » : les résultats `ok` contiennent
+  `C-MARTIN-LILLE` et `C-MARTIN-LYON` ; la réponse cite Lille et Lyon ; elle ne contient
+  pas `CMD-2010` (la commande d'une seule des deux clientes) ;
+- jeu de données `volume`, « Combien de commandes en retard a Transports Morel ? » :
+  un appel d'outil avec `arguments.filter == "late"` ; `result.total` ou `result.count`
+  vaut 60 ; la réponse contient « 60 ».
+
+Le test compare 60 au décompte calculé par l'API métier : le nombre doit venir de la
+source, pas d'un comptage fait par le modèle.
+
+Restent libres : les noms des outils, leurs descriptions, la forme des autres arguments
+et la façon d'enchaîner recherche et liste. Cet atelier n'a pas de rubrique *k sur n*.
+
+## Exemples
+
+### Questions à essayer
+
+- « Quelles sont les commandes de Léa Martin ? » → « Deux clientes portent ce nom, l'une
+  à Lille, l'autre à Lyon. Laquelle souhaitez-vous ? » Extrait de trace :
+
+  ```json
+  {"name": "search_customers", "arguments": {"name": "Léa Martin"},
+   "result": {"status": "ok", "customers": [{"id": "C-MARTIN-LILLE"}, {"id": "C-MARTIN-LYON"}]}}
+  ```
+
+- « Combien de commandes en retard a Transports Morel ? » (jeu `volume`) → « Transports
+  Morel a 60 commandes en retard. »
+
+  ```json
+  {"name": "list_customer_orders", "arguments": {"customer_id": "C-VOLUMEX", "filter": "late"},
+   "result": {"status": "ok", "total": 60}}
+  ```
+
+  Événements SSE : des `text`, puis `end` avec `ok: true`.
+
+### Contre-exemples
+
+- Choisir la cliente de Lille et lister CMD-2010 : l'agent a tranché à la place de
+  l'utilisateur.
+- Lister toutes les commandes et laisser le modèle compter les retards : le nombre est
+  fragile et l'argument `filter` manque.
+- Donner « environ 60 » ou un nombre tiré d'une page partielle.
+
+### Essayer soi-même
 
 ```powershell
-uv run --project workshop_kit/bootstrap workshop start 05
-uv run --project workshop_kit/bootstrap workshop check 05
-uv run --project workshop_kit/bootstrap workshop check 05 --non-regression   # workshops 03 to 05
+uv run --project workshop_kit/bootstrap workshop serve
+```
+
+Ouvrez http://127.0.0.1:8080, posez les questions ci-dessus, puis lisez la dernière ligne
+de `traces/turns.jsonl`. Le jeu `standard` compte 4 retards pour Transports Morel ; le
+test charge le jeu `volume` (60 retards). Lancez enfin `workshop check 05`.
+
+## Pistes
+
+- `GET /customers?name=` cherche par nom ; `GET /customers/{id}/orders?filter=late`
+  renvoie `orders`, `total`, `truncated` et `limit` (voir
+  `workshop_kit/apps/business_api/app.py` et `services.py`).
+- Prenez `total` dans la réponse de l'API, pas la longueur de la liste.
+- Le chemin « chercher le client, puis lister ses commandes » est connu d'avance : il
+  peut être enchaîné par le programme dans un même tour.
+- Un homonyme n'est pas une erreur : renvoyez les candidats et laissez le modèle demander.
+- Les données sont dans `workshop_kit/apps/business_api/seed_data.py` ; les assertions
+  détaillées sont dans [tests/](tests/).
+
+## Vérifier
+
+Le mode live est nécessaire : `PROXY_MODE=live`, `MODEL_MODE=live`,
+`AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`.
+
+Les tests restent rouges tant que le critère n'est pas atteint. Les contrôles de code
+passent d'abord, puis les rubriques. Le juge utilise `JUDGE_MODE`, `JUDGE_BASE_URL`,
+`JUDGE_API_KEY` et `AZURE_OPENAI_JUDGE_DEPLOYMENT` pour sa couche de sens. Les
+rubriques sont répétées *k sur n*.
+
+La non-régression rejoue les ateliers 03 à 05 : l'outil de l'atelier 04 doit toujours
+fonctionner. Les tests de l'atelier 03 marqués `superseded_by("04")` sont sautés.
+
+```powershell
+workshop start 05
+workshop check 05
+workshop check 05 --non-regression   # ateliers 03 à 05
 ```

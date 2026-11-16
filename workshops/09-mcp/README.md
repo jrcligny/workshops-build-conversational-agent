@@ -1,21 +1,111 @@
-# Workshop 09 — Tool contract and MCP
+# Atelier 09 — Le contrat d'outils et MCP
 
-Chapter 9 of the book. No solution is provided: you work in `my-agent/`.
+Chapitre 9 du livre. Aucune solution n'est fournie : vous travaillez dans `my-agent/`.
 
-## Goal
+## Intention
 
-Move your read tools to your MCP server, built from the repository's empty server, and replace the specialised tools with a generic query tool.
+Les outils spécialisés se multiplient avec les questions. Le chapitre 9 les remplace par un outil générique guidé par des exemples : interroger une source (`source`, `filters`, et en option `aggregate`), accompagné d'outils de divulgation progressive (lister les sources, décrire une source) et de la résolution de noms. Les valeurs codées sont traduites en libellé métier, et les messages d'erreur servent de guide : un filtre invalide renvoie les valeurs permises. Les outils sont servis par un serveur MCP sans état, séparé du harnais (hôte, client, serveur). Les noms suivent une convention de nommage par domaine.
 
-## Success criterion
+## Critère de réussite
 
-Your read tools are served by your MCP server, built from the repository's empty server, stateless; the agent no longer calls the application directly. Two distinct clients get the same catalog, from which the two tools of chapter 5 that were replaced have disappeared. A malformed filter receives an error that says what to fix, and values come back with their business label. A simple question from a buyer or an accountant succeeds through the generic query tool.
+Le serveur MCP de `my-agent/` publie un catalogue non vide, le même pour deux clients. Ce catalogue ne contient plus les outils spécialisés du chapitre 5 et contient un outil générique qui prend `source` et `filters`. Pendant la conversation, chaque appel d'outil passe par MCP et l'application est interrogée par sa route générique. Une valeur codée invalide produit une erreur qui liste les valeurs permises. Le total des factures en attente est calculé par l'application, pas par le modèle.
 
-## How to check
+## Ce que lisent les tests
 
-The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+Les tests sont dans [tests/](tests/).
+
+**Le serveur MCP démarré par le test.** Le test charge lui-même `my-agent/mcp_server.py`, sans passer par `workshop serve` :
+
+- il appelle la fonction `application()` du module, qui doit renvoyer l'application web du serveur ;
+- il la lance avec uvicorn sur un port libre de `127.0.0.1`, dans un fil d'exécution ;
+- il construit l'URL `http://127.0.0.1:<port>` suivie de la constante `MCP_PATH` du module (`/mcp` dans la coquille) ;
+- il se connecte deux fois avec le client du SDK `mcp`, en transport HTTP streamable, et appelle `list_tools()`.
+
+Gardez donc `application()` et `MCP_PATH`. La coquille les fournit déjà, avec un serveur sans état (`stateless_http=True`).
+
+**Le catalogue.**
+
+- Il n'est pas vide, et deux clients obtiennent les mêmes noms dans le même ordre.
+- Aucun outil ne s'appelle `search_customer`, `search_customers`, `list_orders` ou `list_customer_orders`.
+- Au moins un outil a un `inputSchema.properties` qui contient `source` et `filters`. `aggregate`, `group_by` et `limit` sont optionnels.
+- Libres : le nom de l'outil générique, les autres outils (découverte, résolution de noms, consultation d'une commande).
+
+**La trace du tour** (`traces/turns.jsonl`, dernière ligne).
+
+- `tools[].transport` vaut `"mcp"` pour chaque appel.
+- `tools[].name` appartient au catalogue.
+- `tools[].arguments.source`, `tools[].arguments.filters` et `tools[].arguments.aggregate`.
+- `tools[].result.status` : `"error"` sur un filtre rejeté (`"ok"`, ou son synonyme `"found"`, pour un succès).
+- `tools[].result.error` cite les valeurs permises (`delivered`, `shipped`…).
+- `tools[].result.value` : la valeur agrégée renvoyée par l'application.
+
+**Le journal de l'application.** Au moins une route commence par `/sources/` (par exemple `POST /sources/orders/query`).
+
+**Utilisateurs.** camille-renard (`customer_service`) par défaut ; nina-accountant (`accountant`, `organization-a`) pour les factures. Jeu de données `standard`. Aucune rubrique jugée dans cet atelier.
+
+## Exemples
+
+### Questions à essayer
+
+1. « Combien de commandes a Martin Durand ? » : au moins un appel, tous en `"transport": "mcp"`. Pour camille, Martin Durand a une commande visible (CMD-1042).
+
+```json
+{"tools": [{"name": "…", "transport": "mcp",
+            "arguments": {"source": "orders", "filters": {"customer_id": "C-DURAND-1"}, "aggregate": "count"},
+            "result": {"status": "ok", "value": 1}}]}
+```
+
+2. « Listez les commandes dont le statut vaut DELIV. » : le premier appel est rejeté, puis l'agent corrige son filtre ou demande quel statut est visé.
+
+```json
+{"tools": [
+  {"arguments": {"source": "orders", "filters": {"status": "DELIV"}},
+   "result": {"status": "error", "error": "unknown status DELIV; allowed values: delivered, shipped, in_preparation, …"}},
+  {"arguments": {"source": "orders", "filters": {"status": "delivered"}}, "result": {"status": "ok"}}
+]}
+```
+
+   La formulation de l'erreur est libre ; elle doit contenir `delivered` et `shipped`.
+
+3. Avec nina-accountant, « Quel est le montant total des factures en attente d'approbation ? » : le dernier appel sur `"source": "invoices"` porte `"aggregate": "total"`. Sa `result.value` vaut 1280 (FAC-3301-BIS), et la réponse affiche 1280.
+
+```json
+{"arguments": {"source": "invoices", "filters": {"status": "pending"}, "aggregate": "total"},
+ "result": {"status": "ok", "value": 1280.0}}
+```
+
+### Contre-exemples
+
+- Le harnais appelle encore ses outils Python en direct : `transport` n'est pas `"mcp"`, le test 2 échoue.
+- Le serveur relaie le filtre `DELIV` tel quel : l'application ne le rejette pas, elle renvoie zéro ligne (`"rows": []`). Sans erreur `"status": "error"`, le test 3 échoue.
+- Le modèle additionne lui-même les montants des factures : sans `"aggregate": "total"`, le test 4 échoue même si le nombre est juste.
+- Un catalogue qui dépend du client ou de l'ordre des connexions échoue au test 1.
+
+### Essayer soi-même
+
+1. Lancez `uv run --project workshop_kit/bootstrap workshop serve`. Le serveur MCP de `my-agent/` écoute sur le port 8004, et le harnais reçoit `MCP_URL=http://127.0.0.1:8004/mcp`.
+2. Pour lancer le serveur seul : `uv run --project my-agent python my-agent/mcp_server.py`.
+3. Ouvrez http://127.0.0.1:8080, posez les questions ci-dessus, puis lisez `tools[]` sur la dernière ligne de `traces/turns.jsonl`.
+4. Lancez `workshop check 09`.
+
+## Pistes
+
+- Partez de la coquille `my-agent/mcp_server.py` : `create_server()`, `application()`, `MCP_PATH`, SDK officiel `mcp`.
+- Les routes génériques sont dans `workshop_kit/apps/business_api/app.py` : `GET /sources`, `GET /sources/{name}` (champs, valeurs codées, agrégats) et `POST /sources/{name}/query` (`filters`, `limit`, `aggregate`, `group_by`). Une clé de filtre inconnue est refusée (400), mais pas une valeur codée invalide : la vérification revient au serveur MCP.
+- Pendant `workshop check`, les tests de cet atelier démarrent votre serveur MCP et transmettent son adresse au harnais par `MCP_URL`, comme `workshop serve`. Lisez `MCP_URL` à chaque tour ; les adresses des autres services arrivent de la même façon (`BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`). Pour les tests d'autres ateliers, où `MCP_URL` n'est pas définie, le harnais démarre ou joint lui-même son serveur.
+- Le chargement du module est fait par `workshop_kit/shell/loader.py` (`load_mcp_server`).
+- La question des factures demande le rôle `accountant`. Relayez l'identité de l'utilisateur de la conversation, pas une identité fixe.
+
+## Vérifier
+
+À partir de l'atelier 04, le mode live est la voie de référence. Dans `.env`, mettez `PROXY_MODE=live` et `MODEL_MODE=live`, et renseignez `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`.
+
+Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par le code (catalogue, trace, journal de l'application) est vérifié d'abord. Cet atelier n'a pas de rubrique de sens. Ailleurs, une rubrique est jugée par un juge sémantique s'il est configuré (`JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`), et répétée selon la règle k sur n (`JUDGE_K` réussites sur `JUDGE_N` essais).
+
+La non-régression rejoue les ateliers 03 à 09. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")` : ils sont ignorés quand l'atelier visé est 04 ou plus. Aucun test de cet atelier n'est marqué. Attention : les tests des ateliers précédents lisent toujours leurs propres noms d'arguments. L'atelier 05 attend `arguments.filter` = `"late"`, l'atelier 07 attend `arguments.mode` = `"count"` avec `result.count` et `result.orders`, et l'atelier 06 attend deux noms d'outils distincts pour deux appels indépendants. Vérifiez que votre catalogue MCP les satisfait encore.
 
 ```powershell
 uv run --project workshop_kit/bootstrap workshop start 09
 uv run --project workshop_kit/bootstrap workshop check 09
-uv run --project workshop_kit/bootstrap workshop check 09 --non-regression   # workshops 03 to 09
+uv run --project workshop_kit/bootstrap workshop check 09 --non-regression   # ateliers 03 à 09
 ```
