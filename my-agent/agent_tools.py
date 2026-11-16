@@ -105,6 +105,11 @@ def get_order(client: BusinessClient, reference: str) -> dict:
     }
 
 
+def get_customer(client: BusinessClient, customer_id: str) -> dict | None:
+    code, body = client.request("GET", f"/customers/{customer_id}")
+    return body if code == 200 and isinstance(body, dict) else None
+
+
 def search_customers(client: BusinessClient, name: str) -> dict:
     name = (name or "").strip()
     if not name:
