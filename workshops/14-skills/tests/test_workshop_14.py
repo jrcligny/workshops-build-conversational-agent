@@ -84,13 +84,18 @@ def test_write_according_to_permissions(services, observation):
 def test_skill_still_present_after_compaction(services, reset_state):
     client = _client(services, "nina-accountant", "accountant")
     _, trace = successful_turn(client, "Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS.")
-    loaded = trace.get("skills_loaded") or []
-    assert loaded, "a skill is loaded"
-    skill_id = loaded[0]["id"]
+    loaded_ids = {s.get("id") for s in trace.get("skills_loaded") or []}
+    assert loaded_ids, "a skill is loaded"
+    titles = {s.get("id"): str(s.get("title") or "") for s in load_manifest().get("skills") or []}
     compacted = False
     for i in range(int(settings.compaction_message_threshold) + 2):
         _, trace = successful_turn(client, f"Restons sur ce contrôle de facture ({i}).")
         compacted = compacted or "compaction" in trace
     assert compacted, "the conversation went past the compaction threshold"
-    assert skill_id in {s.get("id") for s in trace.get("skills_loaded") or []}, "the skill stays active after the compaction"
-    assert skill_id in str(model_input(trace)), "the loaded skill is still in the model input after the compaction"
+    still = {s.get("id") for s in trace.get("skills_loaded") or []}
+    assert loaded_ids <= still, "every skill loaded before stays active after the compaction (whatever the order of the list)"
+    context = str(model_input(trace))
+    for skill_id in loaded_ids:
+        assert skill_id in context or (titles.get(skill_id) and titles[skill_id] in context), (
+            f"the loaded skill {skill_id} is still in the model input after the compaction"
+        )

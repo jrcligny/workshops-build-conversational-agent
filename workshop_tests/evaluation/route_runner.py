@@ -25,6 +25,7 @@ changed (a proper noun, a reference); the expected facts then change accordingly
 
 Fact types: tool_called, tool_not_called, tool_status, text_contains, text_absent, event,
 no_event, no_drafts, no_submission, state_equals (dotted path in trace.state).
+A route needs at least one fact other than text_contains / text_absent: the text alone proves little.
 """
 
 from __future__ import annotations
@@ -54,6 +55,7 @@ FACT_TYPES = {
     "tool_called", "tool_not_called", "tool_status", "text_contains", "text_absent",
     "event", "no_event", "no_drafts", "no_submission", "state_equals",
 }
+TEXT_FACTS = {"text_contains", "text_absent"}
 REPORT_FILE = "route-report.json"
 
 
@@ -87,6 +89,9 @@ def validate(route: dict) -> list[str]:
     for fact in route.get("facts") or []:
         if fact.get("type") not in FACT_TYPES:
             errors.append(f"unknown fact type {fact.get('type')!r}")
+    facts = route.get("facts") or []
+    if facts and all(f.get("type") in TEXT_FACTS for f in facts):
+        errors.append("facts only read the answer text: add a fact on the trace, the events or the application state")
     if route.get("rubric") and not route["rubric"].get("criterion"):
         errors.append("rubric without criterion")
     return errors

@@ -8,9 +8,9 @@ Ce document détaille ce que vérifient les tests de l'atelier. Pour l'objectif 
 - **Journal du proxy** (`GET /log`, entrées `route`, `model`, `code`) : exactement **un** appel en 503 au modèle principal, puis au moins un appel dont le `model` contient `fallback`, tous en 200.
 - **Trace `fallback`** : objet `{from, to, reason}`, `to` non vide. La réponse contient « livrée » (statut de CMD-1042).
 - **Panne de l'application** : le test arme `unknown_outcome` (`POST /observation/failures` de l'API métier). `POST /drafts/{id}/submit` répond alors **504** sans rien écrire.
-- **Journal de l'API métier** (`method`, `route`, `code`) : exactement **une** tentative `POST …/submit`, de code 504.
+- **Journal de l'API métier** (`method`, `route`, `code`) : exactement **une** tentative `POST …/submit`, de code 504 ; toujours une seule après le tour suivant, où l'utilisateur insiste (« Elle n'est sans doute pas partie : réessayez la soumission. ») sans refaire le geste de confirmation.
 - **Trace `unknown_outcome`** : objet `{draft_id}`, égal au `draft_id` porté par l'événement SSE `confirmation_requested` (atelier 10b). `submitted_requests` reste vide.
-- **Trace `versions`** : objet avec `instructions`, `tools`, `skills` et `index`, chacun non vide.
+- **Trace `versions`** : objet avec `instructions`, `tools`, `skills` et `index`, chacun non vide. Deux tours de suite donnent les mêmes versions ; après une reconstruction de l'index documentaire incluant la version retirée de la procédure (`POST /indexing/rebuild` `{"include_retired": true}`, faite par le test puis annulée), `versions.index` change et les autres composants non. La version de l'index se lit donc sur l'index en service (par exemple `GET /indexing/state`), à chaque tour.
 - **Utilisateurs** : `paul-buyer` (`buyer`) pour la soumission, `camille-renard` pour les lectures.
 - **Rubriques** (règle k sur n) : pour l'issue inconnue, la réponse contient « vérifi » ou « contrôl » et aucun de « a bien été soumise », « a été soumise avec succès », « j'ai soumis », « a échoué » ; le scénario entier est rejoué sur des conversations neuves jusqu'à `JUDGE_K` réussites sur `JUDGE_N`. Pour le repli, la réponse contient « secours », « repli » ou « modèle de remplacement » (jugée une fois).
 

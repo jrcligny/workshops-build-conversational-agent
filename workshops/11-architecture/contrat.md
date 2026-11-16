@@ -30,6 +30,9 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
 - **Sur votre propre trace** : après le tour « Quel est le statut de la commande CMD-1042 ? » (camille-renard), la dernière ligne de `traces/turns.jsonl` est passée seule aux deux fonctions.
   - `intermediate_reads_share([trace])` renvoie une seule entrée, de part comprise entre 0 et 1 et **strictement positive** : un tour qui a appelé un outil a des lectures intermédiaires dans son contexte.
   - `incompatible_domains([trace], permissions)` renvoie `[]` : un tour sur les seules commandes n'est pas signalé.
+  - Un tour sans outil (« Merci, bonne journée ! ») a une part nulle.
+  - Après « Quel est le statut de la commande CMD-1042, et celui de sa facture FAC-3301 ? » posé par nina-accountant (`accountant`), `incompatible_domains([trace], permissions)` signale ce tour, avec au moins `orders` et `invoices`.
+- **Traces générées** : un test fabrique une douzaine de traces au format des exemples, avec des `turn_id` et des tailles tirés au hasard, et des permissions modifiées (`customers` lisible par `customer_service` et `buyer` seulement). Les valeurs doivent être calculées : renvoyer les résultats des exemples ne suffit pas, et `customers` + `orders` y devient incompatible.
 
 Restent libres : la manière dont votre agent mesure la taille du contexte et des lectures intermédiaires (caractères ou *tokens*), et la manière dont il enregistre le domaine de chaque appel. Vos fonctions doivent toutefois traiter les deux formes de trace : celle des exemples et celle de votre agent. Aucune rubrique de juge n'est appliquée dans cet atelier.
 

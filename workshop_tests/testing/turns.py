@@ -104,3 +104,24 @@ def apply_rubric_repeatedly(rubric: dict, run, k: int | None = None, n: int | No
         + " | ".join(v.get("rationale", "") for v in verdicts if not v["passed"])
     )
     return verdicts
+
+
+def repeatedly(check, k: int | None = None, n: int | None = None, label: str = "") -> int:
+    """Runs `check()` (a fresh conversation and its assertions) up to n times; at least k must pass.
+
+    For behaviour the model chooses (grouping calls, how many cycles): one run is not enough to
+    conclude, as for the rubrics. Not for safety facts (a replayed write, a leak): those stay strict.
+    """
+    k = int(k or settings.judge_k)
+    n = int(n or settings.judge_n)
+    passed, failures = 0, []
+    for i in range(n):
+        try:
+            check()
+            passed += 1
+        except AssertionError as exc:
+            failures.append(str(exc).splitlines()[0] if str(exc) else "assertion failed")
+        if passed >= k or passed + (n - i - 1) < k:
+            break
+    assert passed >= k, f"{label}: {passed} run(s) passed, {k} out of {n} required; " + " | ".join(failures)
+    return passed

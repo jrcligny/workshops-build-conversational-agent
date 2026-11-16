@@ -21,8 +21,8 @@ Sont imposés dans le flux SSE :
   puis de `end` avec `ok: true`.
 
 Les tests vérifient aussi : au moins deux cycles et deux outils, avec des indices
-croissants, pour une question chaînée ; deux outils différents dans un même cycle pour
-une question groupée ; aucun outil ni `step` quand l'interruption est demandée avant
+croissants, pour une question chaînée, et un dernier cycle (la réponse) après le dernier appel ; deux outils différents dans un même cycle pour
+une question groupée ; ces deux comportements, choisis par le modèle, sont vérifiés sur des conversations neuves jusqu'à `JUDGE_K` réussites sur `JUDGE_N` ; aucun outil ni `step` quand l'interruption est demandée avant
 le tour.
 
 Restent libres : la valeur de la limite, la stratégie de groupement, les libellés métier

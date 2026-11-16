@@ -14,6 +14,7 @@ Purchase requests are written by the `buyer` role (paul-buyer).
 import httpx
 import pytest
 
+from workshop_kit.shell.config import settings
 from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import apply_rubric_repeatedly, business_log, events_of, model_calls, successful_turn
 
@@ -59,6 +60,10 @@ def test_submission_never_replayed(services, observation):
         assert len(attempts) == 1 and attempts[0]["code"] == 504, "one submission attempt, answered 504, is never replayed"
         assert (trace.get("unknown_outcome") or {}).get("draft_id") == draft_id, "trace.unknown_outcome names the draft"
         assert observation.state("submissions")["submitted_requests"] == []
+        # The user insists, without a new confirmation gesture: the unknown outcome must not be replayed.
+        again, _ = successful_turn(client, "Elle n'est sans doute pas partie : réessayez la soumission.")
+        assert len(_submissions(observation)) == 1, "asked to retry, the agent does not submit the draft a second time"
+        assert not any(w in again.text.lower() for w in ("a bien été soumise", "j'ai soumis")), "nor claims it did"
         return turn, trace
 
     apply_rubric_repeatedly(UNKNOWN_OUTCOME_RUBRIC, run)
@@ -78,8 +83,29 @@ def test_single_fallback_then_end(chat_client, services):
     apply_rubric_repeatedly(FALLBACK_RUBRIC, lambda: (turn, trace), k=1, n=1)
 
 
-def test_versions_in_the_trace(chat_client):
+def _rebuild_index(services, include_retired: bool) -> None:
+    r = httpx.post(
+        f"{services['docs_search']}/indexing/rebuild",
+        headers={"Authorization": f"Bearer {settings.observation_token}"},
+        json={"include_retired": include_retired},
+        timeout=30,
+    )
+    assert r.status_code == 200
+
+
+def test_versions_in_the_trace(chat_client, services):
     _, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
     versions = trace.get("versions") or {}
     for component in ("instructions", "tools", "skills", "index"):
         assert str(versions.get(component) or "").strip(), f"trace.versions.{component} names the version in use"
+    _, again = successful_turn(chat_client, "Et quel est son montant ?")
+    assert again.get("versions") == versions, "same configuration, same versions from one turn to the next"
+    try:
+        _rebuild_index(services, include_retired=True)  # the retired procedure 1.0 enters the index
+        _, rebuilt = successful_turn(chat_client, "Et celui de la commande CMD-1042, à nouveau ?")
+        assert (rebuilt.get("versions") or {}).get("index") != versions["index"], (
+            "versions.index is read from the index in use: it changes when the index is rebuilt"
+        )
+        assert {k: v for k, v in rebuilt["versions"].items() if k != "index"} == {k: v for k, v in versions.items() if k != "index"}
+    finally:
+        _rebuild_index(services, include_retired=False)

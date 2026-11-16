@@ -13,18 +13,24 @@ from workshop_tests.testing.turns import events_of, successful_turn, tool_argume
 pytestmark = pytest.mark.workshop
 
 
-def _mentions(turn) -> str:
-    return " ".join(str(m.get("content", "")) for m in events_of(turn, "mention"))
+def _mentions(turn) -> list[str]:
+    """Each mention of the turn, separately: one mention must carry the whole statement."""
+    return [str(m.get("content", "")) for m in events_of(turn, "mention")]
+
+
+def _past_the_opening(chat_client) -> None:
+    """Plays the opening turn first: its mention (what the agent keeps, workshop 12) cannot satisfy these tests."""
+    successful_turn(chat_client, "Bonjour.")
 
 
 def test_partial_result_mention_built_by_the_harness(chat_client, observation, business_client):
     observation.reset("volume")
     customer = business_client.get("/customers", params={"name": "Transports Morel"}).json()[0]
     total = business_client.get(f"/customers/{customer['id']}/orders", params={"filter": "late"}).json()["total"]
+    _past_the_opening(chat_client)
     turn, trace = successful_turn(chat_client, "Listez toutes les commandes en retard de Transports Morel.")
     assert any(c.get("result", {}).get("truncated") for c in tools(trace)), "the list is bounded by the tool"
-    mention = _mentions(turn)
-    assert "partiel" in mention.lower() and str(total) in mention, (
+    assert any("partiel" in m.lower() and str(total) in m for m in _mentions(turn)), (
         f"a mention, built from the tool result, says the list is partial and gives the total ({total})"
     )
 
@@ -39,11 +45,14 @@ def test_customer_recorded_only_after_the_choice(chat_client):
 
 
 def test_unconsulted_record_marked_unverified(chat_client):
+    _past_the_opening(chat_client)
     turn, trace = successful_turn(chat_client, "La facture FAC-9999 et la commande CMD-0000 sont-elles réglées ?")
     looked_up = {ref: [tool_status(c) for c in tools(trace) if ref in str(tool_arguments(c))] for ref in ("FAC-9999", "CMD-0000")}
     assert all(looked_up.values()), "each record is looked up in the application"
-    mention = _mentions(turn)
-    assert "FAC-9999" in mention and "CMD-0000" in mention, "a mention lists the records that could not be verified"
+    assert any("FAC-9999" in m and "CMD-0000" in m for m in _mentions(turn)), "one mention lists the records that could not be verified"
+    assert not any("FAC-9999" in m for m in _mentions(successful_turn(chat_client, "Merci.")[0])), (
+        "the mention is built for the turn that cited the records, not repeated afterwards"
+    )
     assert all(s == "not_found" for v in looked_up.values() for s in v), "neither record exists in the application"
 
 

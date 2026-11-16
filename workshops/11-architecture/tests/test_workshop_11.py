@@ -13,11 +13,13 @@ written by your own agent (folder `traces/`).
 
 import importlib.util
 import json
+import random
 from pathlib import Path
 
 import pytest
 
 from workshop_kit.shell.config import repo_path, settings
+from workshop_tests.testing.chat_client import ChatClient
 from workshop_tests.testing.turns import successful_turn
 
 pytestmark = pytest.mark.workshop
@@ -60,10 +62,47 @@ def test_incompatible_domains_reported():
     assert by_turn["t2"] == {"orders", "invoices"}
 
 
-def test_queries_run_on_your_own_traces(chat_client):
-    _, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
+def test_queries_computed_on_unseen_traces():
+    """Traces generated at test time (new turn ids, sizes and permissions): the values are computed, not recalled."""
+    rng = random.Random(11)
+    combos = [[], ["orders"], ["customers", "orders"], ["orders", "invoices"], ["invoices", "customers", "invoices"]]
+    traces, expected_share, expected_mixed = [], {}, {}
+    permissions = dict(PERMISSIONS, customers={"customer_service", "buyer"})  # customers no longer readable by the accountant
+    for i in range(12):
+        total = rng.randint(500, 9000)
+        reads = rng.randint(0, total)
+        domains = combos[i % len(combos)]
+        turn_id = f"gen-{rng.randint(1000, 9999)}-{i}"
+        traces.append({"turn_id": turn_id, "context": {"total_size": total, "intermediate_reads": reads},
+                       "tools": [{"name": "query", "domain": d} for d in domains]})
+        expected_share[turn_id] = reads / total
+        if len({frozenset(permissions[d]) for d in domains}) > 1:
+            expected_mixed[turn_id] = set(domains)
     module = _load_queries()
+    shares = {s["turn_id"]: s["share"] for s in module.intermediate_reads_share(traces)}
+    assert shares.keys() == expected_share.keys()
+    for turn_id, share in expected_share.items():
+        assert shares[turn_id] == pytest.approx(share)
+    reported = {r["turn_id"]: set(r["domains"]) for r in module.incompatible_domains(traces, permissions)}
+    assert reported == expected_mixed, "the permissions passed as argument decide, e.g. customers + orders now differ"
+
+
+def test_queries_run_on_your_own_traces(chat_client, services):
+    module = _load_queries()
+    _, trace = successful_turn(chat_client, "Quel est le statut de la commande CMD-1042 ?")
     shares = module.intermediate_reads_share([trace])
     assert len(shares) == 1 and 0.0 <= shares[0]["share"] <= 1.0, "the share is computed on a trace written by your agent"
     assert shares[0]["share"] > 0, "a turn that called a tool has intermediate reads in its context"
     assert module.incompatible_domains([trace], PERMISSIONS) == [], "a turn on orders only is not reported"
+
+    _, greeting = successful_turn(chat_client, "Merci, bonne journée !")
+    if not greeting.get("tools"):
+        assert module.intermediate_reads_share([greeting])[0]["share"] == 0, "a turn without tool has no intermediate read"
+
+    accountant = ChatClient(services["interface"])
+    accountant.open(user_id="nina-accountant", role="accountant", organization="organization-a")
+    _, mixed = successful_turn(accountant, "Quel est le statut de la commande CMD-1042, et celui de sa facture FAC-3301 ?")
+    reported = module.incompatible_domains([mixed], PERMISSIONS)
+    assert len(reported) == 1 and {"orders", "invoices"} <= set(reported[0]["domains"]), (
+        "a turn of your agent reading orders and invoices together is reported"
+    )

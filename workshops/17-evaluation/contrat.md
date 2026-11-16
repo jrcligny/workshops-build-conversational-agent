@@ -34,7 +34,7 @@ rubric:                                     # le sens, jugé seulement si tous l
   judge_meaning: true
 ```
 
-Types de faits : `tool_called` et `tool_not_called` (`argument_contains` facultatif), `tool_status` (`argument_contains`, `status_in`), `text_contains` et `text_absent` (`value`), `event` et `no_event` (`event`, nom d'un événement SSE), `no_drafts`, `no_submission` (état de l'application), `state_equals` (`path` pointé dans `trace.state`, `equals`). Exigences de rubrique : `forbidden`, `required_any`, `required_all` (`patterns`, `field` facultatif : `response`, `trace` ou `all`). Champs obligatoires : `id`, `edge_case`, `turns`, `facts`, `rubric.criterion`.
+Types de faits : `tool_called` et `tool_not_called` (`argument_contains` facultatif), `tool_status` (`argument_contains`, `status_in`), `text_contains` et `text_absent` (`value`), `event` et `no_event` (`event`, nom d'un événement SSE), `no_drafts`, `no_submission` (état de l'application), `state_equals` (`path` pointé dans `trace.state`, `equals`). Exigences de rubrique : `forbidden`, `required_any`, `required_all` (`patterns`, `field` facultatif : `response`, `trace` ou `all`). Champs obligatoires : `id`, `edge_case`, `turns`, `facts`, `rubric.criterion`. Un parcours dont tous les faits sont `text_contains` ou `text_absent` est **invalide** : au moins un fait doit porter sur la trace (`tool_*`, `state_equals`), les événements (`event`, `no_event`) ou l'état de l'application (`no_drafts`, `no_submission`). Le test vérifie aussi que le rapport écrit sur disque est celui de l'exécution et qu'au moins un de vos parcours y figure.
 
 Chaque exécution part d'une conversation neuve et d'un jeu de données rechargé. Pour un parcours à vous, `attachments_dir` est relatif à `my-agent/routes/` (par exemple `my-agent/routes/fixtures/`).
 
@@ -71,7 +71,8 @@ Extrait du rapport `my-agent/route-report.json` :
 {"judge_mode": "auto", "invalid": [], "uncovered_edge_cases": [],
  "routes": [{"id": "reference-exacte-cmd-1042", "edge_case": "approximate-reference", "origin": "student",
              "k": 3, "n": 5, "passed_runs": 3, "passed": true,
-             "runs": [{"facts": [{"fact": {"type": "text_contains", "value": "livrée"}, "passed": true}],
+             "runs": [{"facts": [{"fact": {"type": "tool_status", "argument_contains": "CMD-1042", "status_in": ["ok"]}, "passed": true},
+                                 {"fact": {"type": "text_contains", "value": "livrée"}, "passed": true}],
                        "facts_passed": true, "meaning": {"passed": true, "meaning": "not assessed"}, "passed": true}]}]}
 ```
 

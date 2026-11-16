@@ -7,7 +7,7 @@ Interface events read here: `step` (data.cycle, data.tool), `mention`, `interrup
 
 import pytest
 
-from workshop_tests.testing.turns import apply_rubric_repeatedly, events_of, successful_turn, tool_name, tools
+from workshop_tests.testing.turns import apply_rubric_repeatedly, events_of, repeatedly, successful_turn, tool_name, tools
 
 pytestmark = pytest.mark.workshop
 
@@ -32,25 +32,34 @@ PARTIAL_RUBRIC = {
 
 
 def test_several_cycles(chat_client):
-    _, trace = successful_turn(chat_client, CHAINED)
-    assert isinstance(trace.get("cycles"), int) and trace["cycles"] >= 2, "trace.cycles counts the loop cycles (>= 2 here)"
-    names = [tool_name(c) for c in tools(trace)]
-    assert len(names) >= 2, "a chained question needs a customer search, then an order call"
-    cycles = [c.get("cycle") for c in tools(trace)]
-    assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
-    assert cycles == sorted(cycles) and cycles[0] < cycles[-1], "the order call comes in a later cycle than the search"
+    def check():
+        chat_client.open()
+        _, trace = successful_turn(chat_client, CHAINED)
+        assert isinstance(trace.get("cycles"), int) and trace["cycles"] >= 2, "trace.cycles counts the loop cycles (>= 2 here)"
+        names = [tool_name(c) for c in tools(trace)]
+        assert len(names) >= 2, "a chained question needs a customer search, then an order call"
+        cycles = [c.get("cycle") for c in tools(trace)]
+        assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
+        assert cycles == sorted(cycles) and cycles[0] < cycles[-1], "the order call comes in a later cycle than the search"
+        assert trace["cycles"] > max(cycles), "the loop ends with a model call that answers, after the last tool call"
+
+    repeatedly(check, label="06-several-cycles")
 
 
 def test_independent_calls_grouped(chat_client):
-    _, trace = successful_turn(
-        chat_client,
-        "Donnez-moi le statut de CMD-1042 et, en même temps, la liste des clients nommés Léa Martin.",
-    )
-    calls = tools(trace)
-    assert len({tool_name(c) for c in calls}) >= 2, "two independent calls are expected"
-    cycles = [c.get("cycle") for c in calls]
-    assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
-    assert len(set(cycles)) < len(cycles), "independent calls requested together run in the same cycle"
+    def check():
+        chat_client.open()
+        _, trace = successful_turn(
+            chat_client,
+            "Donnez-moi le statut de CMD-1042 et, en même temps, la liste des clients nommés Léa Martin.",
+        )
+        calls = tools(trace)
+        assert len({tool_name(c) for c in calls}) >= 2, "two independent calls are expected"
+        cycles = [c.get("cycle") for c in calls]
+        assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
+        assert len(set(cycles)) < len(cycles), "independent calls requested together run in the same cycle"
+
+    repeatedly(check, label="06-independent-calls-grouped")
 
 
 def test_steps_reported_to_the_interface(chat_client):

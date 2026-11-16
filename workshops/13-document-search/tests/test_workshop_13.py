@@ -7,6 +7,8 @@ Contract read here:
   the program from the passages actually returned (never written by the model).
 """
 
+import re
+
 import pytest
 
 from workshop_tests.testing.chat_client import ChatClient
@@ -43,9 +45,17 @@ def test_empty_result_declared(chat_client):
     turn, trace = successful_turn(chat_client, "Que dit la documentation sur le voyage spatial des factures xyzzy-42 ?")
     searches = _searches(trace)
     assert searches, "the documentation is searched before answering"
-    # The passages returned (if any) do not answer the question: the agent says so instead of citing them.
+    # Above the default threshold (0.3), nothing in the corpus answers this question.
+    assert all(not r["passages"] for r in searches), "no passage clears the threshold: the search result is empty"
     assert not _sources(turn), "no source is displayed when nothing answers the question"
-    assert any(w in turn.text.lower() for w in ("aucun", "pas trouvé", "rien trouvé", "introuvable")), "the empty result is declared"
+    text = turn.text.lower()
+    declared = re.search(
+        r"(aucun|aucune) (document|passage|information|résultat|source|mention|procédure)"
+        r"|(pas|rien) trouvé|introuvable|ne (contient|mentionne|traite|couvre) (pas|rien)|ne dit rien",
+        text,
+    )
+    assert declared, "the empty result is declared as such (a bare « aucun » or « pas » is not enough)"
+    assert "/docs/" not in text, "no document address is cited"
 
 
 def test_permission_filtering(chat_client, services):

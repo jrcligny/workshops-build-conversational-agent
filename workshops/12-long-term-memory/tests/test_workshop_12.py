@@ -68,9 +68,12 @@ def test_memory_announced_on_opening(chat_client):
     turn, trace = successful_turn(chat_client, "Bonjour")
     _memory(trace)
     mentions = [str(m.get("content", "")).lower() for m in events_of(turn, "mention")]
-    assert any("mémoire" in m or "retiens" in m for m in mentions), "the first turn carries a mention saying what the agent keeps"
+    memory_mentions = [m for m in mentions if "montant" in m and ("format" in m or "tableau" in m) and "oubli" in m]
+    assert memory_mentions, (
+        "the first turn carries a mention naming what is kept (amount display, answer format) and that it can be forgotten"
+    )
     later, _ = successful_turn(chat_client, "Et ensuite ?")
-    assert not any("mémoire" in str(m.get("content", "")).lower() for m in events_of(later, "mention")), (
+    assert not any("montant" in str(m.get("content", "")).lower() for m in events_of(later, "mention")), (
         "the mention is given once, at the opening"
     )
 

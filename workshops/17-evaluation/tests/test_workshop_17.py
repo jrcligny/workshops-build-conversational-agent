@@ -9,6 +9,8 @@ Contract read here:
   the runner writes `my-agent/route-report.json`. The test checks the report, not keywords.
 """
 
+import json
+
 import pytest
 
 from workshop_tests.evaluation import route_runner
@@ -54,7 +56,15 @@ def test_route_report(services, observation):
     report = route_runner.run_routes(open_client, observation)
     assert not report["invalid"], f"invalid routes: {report['invalid']}"
     assert not report["uncovered_edge_cases"], f"uncovered edge cases: {report['uncovered_edge_cases']}"
-    assert (route_runner.student_dir().parent / route_runner.REPORT_FILE).exists(), "the report is written"
+    written = json.loads((route_runner.student_dir().parent / route_runner.REPORT_FILE).read_text(encoding="utf-8"))
+    assert [(r["id"], r["passed"]) for r in written["routes"]] == [(r["id"], r["passed"]) for r in report["routes"]], (
+        "the report written on disk is the one of this run"
+    )
+    assert any(r["origin"] == "student" for r in report["routes"]), "your own routes are run, not only the official ones"
+    for route in report["routes"]:
+        for run in route["runs"]:
+            kinds = {f["fact"].get("type") for f in run.get("facts") or []}
+            assert not kinds or kinds - route_runner.TEXT_FACTS, f"{route['id']}: a run checks the trace or the application, not only the text"
     for route in report["routes"]:
         assert route["runs"] and all("facts" in run for run in route["runs"]), "each run reports its facts"
     failed = [f"{r['origin']}:{r['id']} ({r['passed_runs']}/{r['k']} of {r['n']})" for r in report["routes"] if not r["passed"]]

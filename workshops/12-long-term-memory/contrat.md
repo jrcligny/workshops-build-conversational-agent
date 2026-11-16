@@ -14,7 +14,7 @@ Sections du chapitre 12 exercées par cet atelier (écart assumé avec le fil ro
   - Rubriques prévues : `amount_display` (`excluding_tax` | `including_tax`) et `answer_format` (`table` | `text`) ; une seule entrée par rubrique et par utilisateur.
   - `origin` vaut `"user"` ; `recorded_at` est une date ISO 8601 ; `user` et `organization` identifient le propriétaire.
 - **Événement SSE `memory`** quand la mémoire change : `{"action": "written" | "deleted", "topic", "value"}`.
-- **Événement SSE `mention`** au premier tour d'une conversation seulement ; son `content` contient « mémoire » ou « retiens ».
+- **Événement SSE `mention`** au premier tour d'une conversation seulement ; son `content` nomme ce qui est retenu, l'affichage des **montants** et le **format** (ou **tableau**) des réponses, et dit que l'on peut le faire **oublier** (« oubli… »). Une mention qui dit seulement « mémoire » ne suffit pas. Aux tours suivants, aucune mention ne reparle des montants.
 - **Stockage** : sur disque, dans le dossier donné par la variable d'environnement `MEMORY_DIR`, lue au moment de l'appel (les tests en fournissent un, vidé avant chaque test ; `my-agent/memory/` sinon). Les tests lisent le texte des fichiers de ce dossier : une valeur supprimée ou refusée ne doit pas y figurer.
 - **Entrée du modèle** (`input`) : la préférence chargée y figure (`excluding_tax` ou « hors taxe ») ; celle d'un autre utilisateur n'y figure pas.
 - **Relecture** : après « Comme la dernière fois, la commande CMD-1042 de Martin Durand est encore en préparation, vous confirmez ? », le journal de l'API métier contient `/orders/CMD-1042` (code 200), la trace au moins un appel d'outil, et la réponse « livrée ».

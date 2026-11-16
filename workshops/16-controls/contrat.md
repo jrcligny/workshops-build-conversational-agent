@@ -4,10 +4,10 @@ Ce document détaille ce que vérifient les tests de l'atelier. Pour l'objectif 
 
 ## Ce que lisent les tests
 
-- **Événement SSE `mention`**, champ `data.content`. Les tests concatènent le `content` de toutes les mentions du tour.
+- **Événement SSE `mention`**, champ `data.content`. Les tests lisent chaque mention **séparément** : une même mention doit porter tout l'énoncé attendu. Avant les tests de résultat borné et de références inexistantes, la conversation joue un premier tour « Bonjour. » : la mention d'ouverture (atelier 12) ne compte donc pas.
 - **Résultat borné** (jeu `volume`, client « Transports Morel ») : au moins un appel avec `tools[].result.truncated` vrai (atelier 07). La mention contient `partiel` et le total renvoyé par l'application pour `filter="late"` (60 commandes en retard dans `volume`).
 - **Homonymes** (« Léa Martin », Lille et Lyon) : après la question, `state.candidates` contient exactement 2 éléments et `state.current_customer` est vide. Après « Celle de Lille. », `state.current_customer.city` vaut `"Lille"`.
-- **Références inexistantes** `FAC-9999` et `CMD-0000` : chacune est cherchée dans l'application (un appel dont les `arguments` la contiennent) ; tous ces appels ont `tools[].result.status` = `not_found` ; une mention cite les deux références.
+- **Références inexistantes** `FAC-9999` et `CMD-0000` : chacune est cherchée dans l'application (un appel dont les `arguments` la contiennent) ; tous ces appels ont `tools[].result.status` = `not_found` ; une même mention cite les deux références ; au tour suivant (« Merci. »), aucune mention ne reprend `FAC-9999`.
 - **Isolement** : conversation A (`camille-renard`, `customer_service`) → `state.current_order.reference` = `"CMD-1042"`. Conversation B (`paul-buyer`, `buyer`), ouverte en parallèle → `state.current_order` et `state.current_customer` vides, et ni « Durand » ni `CMD-1042` dans la réponse. De retour dans A, « Et son client ? » → la réponse cite Durand.
 - Champs de trace hérités : `state` (atelier 08 : `current_customer`, `candidates`, `current_order`), `tools[].result.status`, `total` et `truncated` (atelier 07).
 
