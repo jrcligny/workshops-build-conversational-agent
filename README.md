@@ -1,44 +1,80 @@
 # Workshops — Build a Conversational Agent
 
-Dépôt compagnon des ateliers du livre *De l'assistant à l'agent : anatomie d'un agent conversationnel*.
+Companion repository for the workshops of the book *De l'assistant à l'agent : anatomie d'un agent conversationnel* (written in French).
 
-Il fournit l'environnement et les tests de bout en bout pour réaliser les ateliers (chapitres 3 à 19, le chapitre 10 étant découpé en 10a à 10d). **Il ne contient pas le code de l'agent** : vous construisez le vôtre dans `mon-agent/`, à partir d'une coquille minimale (interface de chat, client de modèle branché sur le proxy, émission de traces, contrat d'interface, serveur MCP vide). La coquille n'inclut ni la boucle conversationnelle ni le *system prompt*.
+**Languages: code and docs in English, the agent converses in French.** Everything in this repository is in English except what the agent's user reads or types: the user turns and expected answers in the tests, the simulated model replies, the corpus texts and the display labels of business values. Details in [docs/decisions.md](docs/decisions.md#language).
 
-Cible principale : **Windows**, avec Python **3.15** (dernière version stable de [python.org](https://www.python.org/downloads/) au moment de la conception : 3.15.2). Linux et macOS sont pris en charge.
+It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 19, chapter 10 being split into 10a to 10d). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal shell (chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The shell includes neither the conversational loop nor the *system prompt*.
 
-## Contenu
+Main target: **Windows**, with Python **3.15** (latest stable release on [python.org](https://www.python.org/downloads/) at design time: 3.15.2). Linux and macOS are supported too.
 
-- `application/` — API métier du fil rouge (FastAPI, SQLite) : commandes, achats, factures, rôles, deux organisations, endpoint d'observation.
-- `documentation/` — recherche documentaire (processus séparé) : index SQLite (**FTS5** + **sqlite-vec** / table `vec0`), corpus en `.txt` dans `corpus/`.
-- `proxy/` — proxy compatible OpenAI, devant Azure OpenAI plus tard. En conception, seuls les modes **simulé** et **rejoué** sont disponibles. La clé Azure, si elle est un jour configurée, se lit dans une variable d'environnement et n'est jamais versionnée.
-- `socle/` — contrat d'interface, traces, client de modèle, interface de chat.
-- `mon-agent/` — votre agent : `harness.py` (coquille), `serveur_mcp.py` (serveur MCP vide), `mode-local/` (accueil de l'atelier 19).
-- `services/` — emplacements de la coquille : confinement (interface, sans politique), catalogue de *skills* (vide), zone de pièces jointes (vide).
-- `tests/atelier-03` … `tests/atelier-19` (dont `atelier-10a` à `atelier-10d`) — critères de réussite. **Ces tests échouent tant que l'atelier n'est pas réalisé** (logique rouge puis vert).
-- `tests/application`, `tests/documentation`, `tests/proxy`, `tests/socle` — tests du cadre, qui doivent passer.
+## Layout
 
-## Licence
+```
+README.md            this file
+GETTING_STARTED.md   what is provided, what you write
+my-agent/            the ONLY folder students edit
+  harness.py         empty shell of your agent
+  mcp_server.py      empty MCP server (wired in workshop 09)
+  sandbox/           sandbox policy (policy.yaml, workshop 10d)
+  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
+  attachments/       read-only attachments area (workshop 15)
+  local-mode/        landing structure of workshop 19 (specifications/, controls/)
+workshops/           one folder per workshop: README.md (guide), state.yaml, tests/
+workshop_kit/        provided infrastructure (Python package), never edited by students
+  shell/             settings, harness contract, chat interface, model client, tracer
+  llm_proxy/         OpenAI-compatible proxy (simulated / replay; live Azure OpenAI later)
+  apps/business_api/ business API test app (FastAPI + SQLite)
+  apps/docs_search/  document search test app (SQLite FTS5 + sqlite-vec)
+  services/          readers for my-agent/sandbox, my-agent/skills, my-agent/attachments
+  evaluation/        LLM judge and evaluation-route checksum
+  testing/           shared test helpers and pytest fixtures
+  cli.py             the `workshop` command
+corpus/              documentation sources (.txt) and metadata.yaml
+docs/                interface contract, installation, decisions, test inventory, team validation
+tests/kit/           tests of the infrastructure itself (must pass)
+```
 
-La licence n'est pas encore fixée. Aucun fichier `LICENSE` n'est publié pour le moment.
+Two kinds of tests live in this repository:
 
-## Démarrage rapide
+- `workshops/*/tests/`: the success criteria of each workshop. **They fail until the workshop is done** (red, then green).
+- `tests/kit/`: the tests of the provided infrastructure, which must always pass.
 
-Voir [docs/installation.md](docs/installation.md) (instructions Windows / PowerShell et Unix). En résumé :
+Students only touch `my-agent/`. There is no exception: the files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live in `my-agent/` too, and `workshop_kit/` loads them through configurable paths (`sandbox_policy_file`, `skills_dir`, `attachments_dir` in `workshop_kit/shell/config.py`, overridable from `.env`). `workshop_kit/` contains only Python code; a kit test checks it.
+
+## Quick start
+
+See [docs/installation.md](docs/installation.md) for details. In short, on Windows (PowerShell):
+
+```powershell
+uv python install 3.15
+uv sync --extra dev --python 3.15
+Copy-Item .env.example .env
+uv run pytest tests/kit
+uv run workshop check-shell   # succeeds when every workshop test fails on the empty shell
+uv run workshop check 03      # stays red until workshop 03 is done
+```
+
+On Linux or macOS (bash):
 
 ```bash
 uv python install 3.15
 uv sync --extra dev --python 3.15
 cp .env.example .env
-uv run pytest tests/application tests/documentation tests/proxy tests/socle
-uv run atelier verifier-coquille   # succès si tous les tests d'atelier échouent sur la coquille
-uv run atelier verifier 03         # reste rouge tant que l'atelier 03 n'est pas fait
+uv run pytest tests/kit
+uv run workshop check-shell
+uv run workshop check 03
 ```
+
+## Licence
+
+The licence is not decided yet. No `LICENSE` file is published for now.
 
 ## Documentation
 
+- [Getting started](GETTING_STARTED.md)
 - [Installation](docs/installation.md)
-- [Contrat d'interface](docs/contrat-interface.md)
-- [Procédure de validation de l'équipe](docs/validation-equipe.md) (phase B, une fois Azure disponible)
-- [Inventaire des tests d'atelier](docs/inventaire-tests.md)
-- [Décisions provisoires](docs/decisions.md)
-- [Avant de commencer](AVANT-DE-COMMENCER.md)
+- [Interface contract](docs/interface-contract.md)
+- [Workshop test inventory](docs/test-inventory.md)
+- [Team validation procedure](docs/team-validation.md) (phase B, once Azure is available)
+- [Provisional decisions](docs/decisions.md)

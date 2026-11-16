@@ -1,0 +1,7 @@
+# Versioned skills catalog — empty base (workshop 14).
+# Expected format: an id, a title, a path to the skill folder (relative to
+# my-agent/skills/), a version. Read by workshop_kit (setting `skills_dir`).
+# The catalog is empty: the student fills it in during workshop 14
+# (customer delays, invoice check, compliant purchase request).
+version: "0"
+skills: []

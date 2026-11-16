@@ -1,0 +1,3 @@
+workshop: '03'
+title: 'System prompt and conversational loop'
+tests: tests/

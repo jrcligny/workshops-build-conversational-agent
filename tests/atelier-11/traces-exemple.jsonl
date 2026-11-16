@@ -1,2 +1,0 @@
-{"tour_id": "t1", "conversation_id": "c1", "utilisateur": "camille-renard", "role": "charge_clientele", "contexte": {"taille_totale": 4000, "lectures_intermediaires": 2500}, "outils": [{"nom": "interroger", "domaine": "commandes"}]}
-{"tour_id": "t2", "conversation_id": "c1", "utilisateur": "camille-renard", "role": "charge_clientele", "contexte": {"taille_totale": 3500, "lectures_intermediaires": 800}, "outils": [{"nom": "interroger", "domaine": "commandes"}, {"nom": "interroger", "domaine": "factures"}]}

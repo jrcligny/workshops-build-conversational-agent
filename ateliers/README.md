@@ -1,1 +1,0 @@
-Carte des ateliers : un dossier par atelier ou sous-atelier, avec un GUIDE.md qui reprend le critère de réussite du manuscrit. Les tests vivent dans `tests/atelier-NN/`. L'inventaire complet est dans [docs/inventaire-tests.md](../docs/inventaire-tests.md).

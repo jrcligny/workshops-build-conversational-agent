@@ -1,8 +1,0 @@
-# Politique de confinement — coquille vide (atelier 10d).
-# Aucune politique n'est encore appliquée : la liste d'autorisation est vide
-# et le drapeau "active" reste à false. L'étudiant la remplira à l'atelier 10d.
-active: false
-liste_autorisation: []
-limites:
-  duree_s: null
-  budget_jetons: null
