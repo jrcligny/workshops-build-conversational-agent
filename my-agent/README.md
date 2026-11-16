@@ -3,6 +3,7 @@
 This is where you build your agent. It is the **only** folder you edit: code, policy, catalog and attachments alike.
 
 - `harness.py` is a runnable bootstrap: it answers every message with the same cautious sentence and writes the trace of the turn, but calls neither the model nor any tool. Replace it from workshop 03 on.
+- `system_prompt.md` is the system prompt of your agent (workshop 03), loaded by `harness.py` at each turn; its HTML comments are guidance and are not sent to the model.
 - `mcp_server.py` is an empty MCP server: it starts and answers the handshake, but exposes no business tool. You will wire it in workshop 09.
 - `sandbox/policy.yaml` is the sandbox policy of workshop 10d (inactive, empty allowlist).
 - `skills/` is the versioned skills catalog of workshop 14 (`manifest.yaml`, zero *skill*).

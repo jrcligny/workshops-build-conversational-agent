@@ -27,6 +27,8 @@ def test_bootstrap_answers_without_model_nor_tool(chat_client, traces):
     assert "CMD-1042" not in turn.text, "the bootstrap asserts nothing about the data"
     (trace,) = traces.all()
     assert trace["tools"] == [] and trace["input"]["message"].startswith("Quel est le statut")
+    prompt = trace["input"]["system_prompt"]
+    assert prompt and "<!--" not in prompt, "system_prompt.md is loaded without its HTML comments"
 
 
 def test_bootstrap_is_the_one_recorded_for_check_inert():

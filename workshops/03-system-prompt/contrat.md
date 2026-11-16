@@ -21,7 +21,7 @@ Le prompt ne doit contenir ni `CMD-1042`, ni « delivered », ni « livrée », 
 le message et la réponse précédents. Lors de l'insistance, `input.history` contient au
 moins deux messages.
 
-Restent libres : la formulation du prompt, son découpage en fichiers, la manière de
+Restent libres : la formulation du prompt (dans `my-agent/system_prompt.md`), la manière de
 construire l'historique et le découpage du flux.
 
 Rubrique `03-refusal-without-source` : la réponse est en français et ne contient aucune
@@ -64,6 +64,8 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 
 - Le contrat est décrit dans `workshop_kit/shell/harness_contract.py` et
   `docs/interface-contract.md`. Partez de `my-agent/harness.py`.
+- Écrivez le prompt dans `my-agent/system_prompt.md` : `harness.py` le charge à chaque tour
+  (`load_system_prompt()`, sans les commentaires HTML) et le reporte dans `input.system_prompt`.
 - `workshop_kit/shell/model_client.py` fournit `generate` et `generate_stream` vers le proxy ;
   `workshop_kit/shell/tracer.py` écrit la trace du tour.
 - L'interface n'ajoute un échange à l'historique que si le tour a produit du texte :

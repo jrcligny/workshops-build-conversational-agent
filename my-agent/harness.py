@@ -5,6 +5,9 @@ turn, writes a trace and sends the interface its events (`text`, then `end`). Wh
 does not do is the work of the workshops: it calls neither the model nor any tool, and
 answers every turn with the same cautious sentence. Every workshop test fails on it.
 
+The system prompt lives in `system_prompt.md`, next to this file: `load_system_prompt()`
+reads it at each turn, without its HTML comments.
+
 Workshop 03 starts here: replace the fixed answer with a system prompt and a call to the
 kit's model client (`workshop_kit.shell.model_client`, wired to the proxy), keep the
 conversation history, and enrich the trace as the workshops ask (see each `contrat.md`).
@@ -15,7 +18,9 @@ answers (code, comments and identifiers stay English).
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterator
+from pathlib import Path
 
 from workshop_kit.shell import tracer
 from workshop_kit.shell.harness_contract import Event, Message, TestUser
@@ -24,6 +29,12 @@ ANSWER = (
     "Je n'ai pas accès aux données de l'application et je ne peux pas affirmer "
     "l'état d'une commande précise. Pouvez-vous préciser votre demande ?"
 )
+SYSTEM_PROMPT_FILE = Path(__file__).with_name("system_prompt.md")
+
+
+def load_system_prompt() -> str:
+    text = SYSTEM_PROMPT_FILE.read_text(encoding="utf-8")
+    return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
 
 
 class Harness:
@@ -43,7 +54,7 @@ class Harness:
             "turn_id": tracer.new_id(),
             "conversation_id": conversation_id,
             "user": {"id": user.id, "role": user.role, "organization": user.organization},
-            "input": {"system": "", "history": [], "message": message},
+            "input": {"system_prompt": load_system_prompt(), "history": [], "message": message},
             "tools": [],
             "output": ANSWER,
         })
