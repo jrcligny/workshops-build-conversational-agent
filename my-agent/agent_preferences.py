@@ -60,20 +60,23 @@ def _save(user, entries: list[dict]) -> None:
     path.write_text(json.dumps(entries, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-# The user's own message must be about the topic: the model never infers a preference on its own.
-MENTIONS = {
-    "amount_display": re.compile(r"\bHT\b|TTC|taxe|montant", re.IGNORECASE),
-    "answer_format": re.compile(r"tableau|texte|forme|format", re.IGNORECASE),
-}
+def _normalized(text: str) -> str:
+    return " ".join(re.findall(r"\w+", (text or "").casefold()))
 
 
-def remember(user, topic: str, value: str, request: str = "") -> tuple[dict, dict | None]:
+def expressed(request: str, quote: str) -> bool:
+    """The model never infers a preference: it quotes the user's current message, where the preference is stated."""
+    excerpt = _normalized(quote)
+    return len(excerpt.split()) >= 2 and excerpt in _normalized(request)
+
+
+def remember(user, topic: str, value: str, request: str = "", quote: str = "") -> tuple[dict, dict | None]:
     """Writes one planned preference; returns (tool result, written entry or None)."""
-    if topic in MENTIONS and not MENTIONS[topic].search(request or ""):
+    if not expressed(request, quote):
         return {
             "status": "refused",
-            "error": f"the user did not ask to remember a preference about {topic}; nothing was stored",
-            "fix": "store nothing; say which preferences you can keep (HT/TTC amounts, table/text answers)",
+            "error": "user_words must quote the user's current message where they state this preference; nothing was stored",
+            "fix": "store only a preference the user explicitly states in this message; otherwise say what you can keep",
         }, None
     if topic not in TOPICS or value not in TOPICS[topic]:
         return {
@@ -125,8 +128,12 @@ def tool_specs() -> list[dict]:
                     "properties": {
                         "topic": {"type": "string", "enum": sorted(TOPICS)},
                         "value": {"type": "string", "enum": sorted({v for vs in TOPICS.values() for v in vs})},
+                        "user_words": {
+                            "type": "string",
+                            "description": "Exact words of the user's current message stating this preference.",
+                        },
                     },
-                    "required": ["topic", "value"],
+                    "required": ["topic", "value", "user_words"],
                 },
             },
         },
