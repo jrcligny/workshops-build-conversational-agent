@@ -43,7 +43,9 @@ class Settings(BaseSettings):
     # Frozen clock of the dataset (Europe/Paris, conventional repository date)
     frozen_clock: str = "2026-03-15T10:00:00"
 
+    # Workshop 08: compaction once the context holds this many turns; the last turns kept as they are.
     compaction_message_threshold: int = 8
+    compaction_keep_turns: int = 2
     prompt_token_cap: int = 800
     judge_k: int = 3
     judge_n: int = 5

@@ -55,9 +55,13 @@ def test_loaded_history_becomes_the_context_and_the_transcript(services, chat_cl
     assert chat_client.load(SAMPLE) == 2
     ctx = context(chat_client.conversation_id)
     assert ctx.messages == to_messages(SAMPLE) and ctx.summary == ""
+    ctx.state["current_order"] = {"reference": "CMD-2010"}
     assert chat_client.load(SAMPLE[1:], append=True) == 3
     ctx = context(chat_client.conversation_id)
     assert ctx.messages == to_messages(SAMPLE) + to_messages(SAMPLE[1:])
+    assert ctx.state == {"current_order": {"reference": "CMD-2010"}}, "appending keeps the working state"
+    chat_client.load(SAMPLE)
+    assert context(chat_client.conversation_id).state == {}, "a new written history comes without a working state"
     unknown = httpx.post(f"{services['interface']}/conversations/nope/history", json={"messages": []}, timeout=5)
     assert unknown.status_code == 404
 

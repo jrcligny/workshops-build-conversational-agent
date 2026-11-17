@@ -87,8 +87,19 @@ def test_tracer_returns_the_interface_events_it_traces(session_dir):
     from agent_sdk import trace as trace_mod
     user = TestUser("nina-accountant", "accountant", "organization-a")
     tracer = trace_mod.Tracer("c2", user, "bonjour")
-    event = tracer.compaction(summarized_answers=3, kept_user_messages=4, threshold=8, summary="résumé")
-    assert (event.type, event.data["summary"]) == ("compaction", "résumé") and tracer.to_dict()["compaction"]["threshold"] == 8
+    class _Model:
+        def generate(self, messages, tools=None, model="default"):
+            return {"model": "m-compact", "usage": {"total_tokens": 9}, "choices": [{"message": {"content": "résumé"}, "finish_reason": "stop"}]}
+
+    tracer.compaction_call(_Model(), [{"role": "system", "content": "rubriques"}, {"role": "user", "content": "tours"}])
+    event = tracer.compaction(
+        threshold=8, kept_turns=2, cleared_tool_results=[{"tool_call_id": "call_1_1", "name": "get_order", "turn": 1}],
+        summarized_turns=6, system_prompt="rubriques", previous_summary="", summary="résumé",
+    )
+    assert (event.type, event.data["summary"]) == ("compaction", "résumé") and "system_prompt" not in event.data
+    compaction = tracer.to_dict()["compaction"]
+    assert compaction["threshold"] == 8 and compaction["model_call"]["model"] == "m-compact"
+    assert "model" not in tracer.to_dict(), "the compaction call is not one of the agent's model calls"
     entry = trace_mod.memory_entry("langue", "français", user)
     assert {"topic", "value", "origin", "recorded_at", "user", "organization"} <= set(entry)
     (memory_event,) = tracer.memory(loaded=[], written=[entry])
@@ -146,7 +157,11 @@ def test_context_keeps_whole_turns_and_hands_copies_to_the_model():
     assert ctx.messages[1]["tool_calls"] == [call]
     ctx.replace(ctx.messages[4:], summary="Client : Léa Martin")
     assert "Léa Martin" in ctx.for_model("prompt")[1]["content"] and len(ctx.messages) == 2
-    assert seed("c-1", [{"role": "user", "content": "Bonjour"}]).summary == ""
+    ctx.state["current_customer"] = {"id": "C-MARTIN-LILLE"}
+    ctx.replace(ctx.messages)
+    assert ctx.state == {"current_customer": {"id": "C-MARTIN-LILLE"}}, "the working state crosses a replacement"
+    seeded = seed("c-1", [{"role": "user", "content": "Bonjour"}])
+    assert seeded.summary == "" and seeded.state == {}, "a written history comes without a working state"
     clear_contexts()
     assert context("c-1").messages == []
 

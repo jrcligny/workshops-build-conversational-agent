@@ -15,6 +15,11 @@ The system prompt is not stored: you send it at each turn.
     ...                                   # model calls, tool calls of the turn
     ctx.record(turn_messages)             # at the end of the turn: user, assistant, tool..., final answer
 
+`ctx.state` keeps the working memory of the conversation (08: current customer, current order,
+candidates), outside the messages: it crosses the compaction unchanged. A written history comes
+without it (`seed` empties it): when the context holds messages but no state, rebuild the state
+from those messages (tool results included) before compacting.
+
 What it does not do: decide anything. What you record, which results you clear, which turns you
 summarize and how stay the work of the workshops (08). `replace` only stores what you hand it.
 
@@ -47,12 +52,13 @@ def _as_dict(message: Message | dict[str, Any]) -> dict[str, Any]:
 
 
 class Context:
-    """The messages of one conversation, and its rolling summary (08)."""
+    """The messages of one conversation, its rolling summary and its working state (08)."""
 
     def __init__(self, conversation_id: str):
         self.conversation_id = conversation_id
         self.messages: list[dict[str, Any]] = []
         self.summary: str = ""
+        self.state: dict[str, Any] = {}
 
     def turns(self) -> list[list[dict[str, Any]]]:
         """The messages grouped by turn: a turn starts at a `user` message."""
@@ -90,10 +96,17 @@ def context(conversation_id: str) -> Context:
         return _contexts[conversation_id]
 
 
-def seed(conversation_id: str, messages: list[Message | dict[str, Any]], summary: str = "") -> Context:
-    """Starts a conversation from a written history (tests, demonstrations). Not for the agent."""
+def seed(
+    conversation_id: str,
+    messages: list[Message | dict[str, Any]],
+    summary: str = "",
+    state: dict[str, Any] | None = None,
+) -> Context:
+    """Starts a conversation from a written history (tests, demonstrations). Not for the agent.
+    The working state is emptied unless given: the agent rebuilds it from the messages."""
     ctx = context(conversation_id)
     ctx.replace(messages, summary)
+    ctx.state = copy.deepcopy(state or {})
     return ctx
 
 

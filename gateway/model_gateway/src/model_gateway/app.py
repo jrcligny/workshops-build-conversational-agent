@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from typing import Any
 
@@ -41,7 +42,14 @@ def _mode() -> str:
     return (settings.proxy_mode or "simulated").lower()
 
 
-def _record(student: str, route: str, model: str, tokens: int, code: int) -> None:
+def system_sha256(messages: list[dict[str, Any]]) -> str:
+    """Fingerprint of the system message of a request ("" without one): tells the agent's calls
+    from its compaction calls (08) without logging the prompt itself."""
+    system = next((m.get("content") for m in messages if m.get("role") == "system"), None)
+    return hashlib.sha256(str(system).encode("utf-8")).hexdigest() if isinstance(system, str) else ""
+
+
+def _record(student: str, route: str, model: str, tokens: int, code: int, system: str = "") -> None:
     entry = {
         "student": student,
         "route": route,
@@ -49,6 +57,7 @@ def _record(student: str, route: str, model: str, tokens: int, code: int) -> Non
         "tokens": tokens,
         "code": code,
         "mode": _mode(),
+        "system_sha256": system,
     }
     _LOG.append(entry)
     # Never an Azure key in the logs.
@@ -70,7 +79,7 @@ def _live_chat(body: ChatIn, student: str) -> dict[str, Any]:
     try:
         return live.chat(body.messages, model=body.model, tools=body.tools, temperature=body.temperature)
     except live.LiveError as exc:
-        _record(student, "/v1/chat/completions", body.model or "", 0, exc.status_code)
+        _record(student, "/v1/chat/completions", body.model or "", 0, exc.status_code, system_sha256(body.messages))
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
 
@@ -88,7 +97,7 @@ def chat(body: ChatIn, student: dict = Depends(require_student)):
         model = body.model or ""
         # The fallback model, when requested explicitly, stays reachable.
         if "fallback" not in model.lower():
-            _record(student["sub"], "/v1/chat/completions", model, 0, 503)
+            _record(student["sub"], "/v1/chat/completions", model, 0, 503, system_sha256(body.messages))
             raise HTTPException(status_code=503, detail="primary model unavailable")
     response = None
     if _mode() == "live":
@@ -101,9 +110,9 @@ def chat(body: ChatIn, student: dict = Depends(require_student)):
     try:
         consume(student["sub"], tokens)
     except HTTPException as exc:
-        _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, exc.status_code)
+        _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, exc.status_code, system_sha256(body.messages))
         raise
-    _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, 200)
+    _record(student["sub"], "/v1/chat/completions", body.model or response.get("model", ""), tokens, 200, system_sha256(body.messages))
     return response
 
 

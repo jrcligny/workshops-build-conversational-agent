@@ -116,12 +116,13 @@ def load_history(conversation_id: str, body: HistoryIn):
     The messages (user, assistant with `tool_calls`, `tool` results) become the agent's context
     (`agent_sdk.context.seed`); the transcript shown keeps, per turn, the user's text and the last
     non-empty assistant text. With `append`, the written history follows the turns already
-    played (the context and the transcript are extended, the summary is kept)."""
+    played (the context and the transcript are extended, the summary and the working state are kept;
+    without `append`, the state is emptied and the agent rebuilds it from the messages)."""
     if conversation_id not in _conversations:
         raise HTTPException(status_code=404, detail="unknown conversation")
     if body.append:
         ctx = context(conversation_id)
-        seed(conversation_id, ctx.messages + body.messages, ctx.summary)
+        seed(conversation_id, ctx.messages + body.messages, ctx.summary, ctx.state)
         transcript = list(_histories.get(conversation_id, []))
     else:
         seed(conversation_id, body.messages)

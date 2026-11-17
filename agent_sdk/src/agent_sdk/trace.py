@@ -184,20 +184,55 @@ class Tracer:
 
     # --- context (07, 08) -----------------------------------------------------------------
 
+    def compaction_call(self, client: Any, messages: list[dict], model: str = "default") -> dict[str, Any]:
+        """Calls the model for the compaction summary (08): `messages` start with your compaction
+        system prompt. The call is recorded in `compaction.model_call`, not in `model.calls`
+        (those stay the agent's). Returns the raw answer."""
+        started = time.perf_counter()
+        response = client.generate(messages, None, model=model)
+        choice = (response.get("choices") or [{}])[0]
+        self._compaction_call = {
+            "model": response.get("model"),
+            "usage": dict(response.get("usage") or {}),
+            "duration_ms": round((time.perf_counter() - started) * 1000),
+            "stop_reason": choice.get("finish_reason"),
+        }
+        if isinstance(self._trace.get("compaction"), dict):
+            self._trace["compaction"]["model_call"] = dict(self._compaction_call)
+        return response
+
     def compaction(
-        self, summarized_answers: int, kept_user_messages: int, threshold: int, summary: str, **extra: Any
+        self,
+        threshold: int,
+        kept_turns: int,
+        cleared_tool_results: list[dict[str, Any]],
+        summarized_turns: int,
+        system_prompt: str,
+        previous_summary: str,
+        summary: str,
+        **extra: Any,
     ) -> Event:
         """Records the compaction of this turn (08) and returns the `compaction` event to yield.
-        Call it only on the turn that compacts: the key stays absent otherwise."""
-        data = {
-            "summarized_answers": summarized_answers,
-            "kept_user_messages": kept_user_messages,
+        Call it only on the turn that compacts: the key stays absent otherwise.
+
+        `cleared_tool_results`: one `{tool_call_id, name, turn}` per tool result replaced by a
+        marker; `summarized_turns`: the turns that left the context for the summary; `system_prompt`:
+        your compaction prompt as sent; `previous_summary`: the summary it started from ("" the
+        first time). The call made with `compaction_call` is added as `model_call`."""
+        data: dict[str, Any] = {
             "threshold": threshold,
+            "kept_turns": kept_turns,
+            "cleared_tool_results": [dict(c) for c in cleared_tool_results],
+            "summarized_turns": summarized_turns,
+            "system_prompt": system_prompt,
+            "previous_summary": previous_summary,
             "summary": summary,
             **extra,
         }
+        if getattr(self, "_compaction_call", None):
+            data["model_call"] = dict(self._compaction_call)
         self._trace["compaction"] = data
-        return Event("compaction", dict(data))
+        return Event("compaction", {k: v for k, v in data.items() if k != "system_prompt"})
 
     def state(self, state: dict[str, Any]) -> None:
         """The working state after the turn (08): `current_customer`, `current_order`, `candidates`.

@@ -7,11 +7,14 @@ it. The judge thresholds and rubrics are calibrated at that point too: see
 
 ## Compaction threshold
 
-- **Provisional value:** 8 messages (`COMPACTION_MESSAGE_THRESHOLD`,
-  `settings.compaction_message_threshold`).
-- **Meaning:** beyond this number of turns, the *harness* must compact the
-  history (summary of the old exchanges; initial request, decisions and ids
-  kept verbatim).
+- **Provisional values:** 8 turns (`COMPACTION_MESSAGE_THRESHOLD`,
+  `settings.compaction_message_threshold`), 2 turns kept as they are
+  (`COMPACTION_KEEP_TURNS`, `settings.compaction_keep_turns`).
+- **Meaning:** once the context holds this number of turns at the start of a
+  turn, the *harness* clears every older tool result (marker in place of the
+  result) and replaces the turns before the last `COMPACTION_KEEP_TURNS` by a
+  rolling summary under five fixed headings, written by a separate model call
+  with `my-agent/compaction_prompt.md`.
 - **Status:** starting point for the simulated tests of workshop 07. The
   fidelity of the summaries produced by the real model, and the threshold
   itself, will be calibrated in phase B.
