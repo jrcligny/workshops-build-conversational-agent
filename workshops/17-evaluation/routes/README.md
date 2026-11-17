@@ -1,6 +1,6 @@
 # Parcours d'évaluation
 
-Parcours officiels du chapitre 17, exécutés par `workshop check 17` avec ceux que vous écrivez dans `my-agent/routes/`.
+Parcours officiels du chapitre 16, exécutés par `workshop check 17` avec ceux que vous écrivez dans `my-agent/routes/`.
 
 ## Contenu du dossier
 

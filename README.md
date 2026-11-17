@@ -4,7 +4,7 @@ Companion repository for the workshops of the book *De l'assistant à l'agent : 
 
 **Languages: code and docs in English, the agent converses in French.** Everything in this repository is in English except what the agent's user reads or types: the user turns and expected answers in the tests, the simulated model replies, the corpus texts and the display labels of business values. Details in [docs/decisions.md](docs/decisions.md#language).
 
-It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 19, chapter 10 being split into 10a to 10d). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal bootstrap (agent gateway with chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The bootstrap includes neither the conversational loop nor the *system prompt*.
+It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 18 of the book; chapter 11 is split into workshops 10a to 10d, and workshop numbers follow the folders, not the chapters: see the table in [workshops/README.md](workshops/README.md)). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal bootstrap (agent gateway with chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The bootstrap includes neither the conversational loop nor the *system prompt*.
 
 Main target: **Windows**, with Python **3.13** from [python.org](https://www.python.org/downloads/) or uv. Linux and macOS are supported too.
 

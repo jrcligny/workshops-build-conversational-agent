@@ -1,6 +1,6 @@
 # Atelier 18 — Pannes et livraison
 
-Chapitre 18 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 17 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

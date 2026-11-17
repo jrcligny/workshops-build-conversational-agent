@@ -1,10 +1,10 @@
 # Atelier 10a — L'identité et l'échange de jeton
 
-Chapitre 10 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 11 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
-Le chapitre 10 applique le moindre privilège en quatre couches, dont aucune ne suffit seule. Cet atelier traite la première : au nom de qui l'outil agit-il ? Pas au nom d'un compte de service qui verrait tout, mais au nom de l'utilisateur, avec un jeton distinct émis pour l'application à partir du sien (un échange de jeton). Chaque maillon vérifie ce qu'il reçoit : le harnais, le serveur MCP, puis l'application. Aucun jeton n'entre dans le contexte du modèle. Sans identité valide, rien n'est lu.
+Le chapitre 11 applique le moindre privilège en quatre couches, dont aucune ne suffit seule. Cet atelier traite la première : au nom de qui l'outil agit-il ? Pas au nom d'un compte de service qui verrait tout, mais au nom de l'utilisateur, avec un jeton distinct émis pour l'application à partir du sien (un échange de jeton). Chaque maillon vérifie ce qu'il reçoit : le harnais, le serveur MCP, puis l'application. Aucun jeton n'entre dans le contexte du modèle. Sans identité valide, rien n'est lu.
 
 ## C'est réussi quand…
 

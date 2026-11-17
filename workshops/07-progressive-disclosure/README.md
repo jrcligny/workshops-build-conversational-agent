@@ -1,6 +1,6 @@
 # Atelier 07 — Découvrir le contexte progressivement
 
-Chapitre 7 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 8 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

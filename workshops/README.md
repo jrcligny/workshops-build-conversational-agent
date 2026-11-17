@@ -1,6 +1,8 @@
 # Ateliers
 
-Un dossier par atelier ; le chapitre 10 est découpé en 10a à 10d. Chaque dossier contient :
+Un dossier par atelier ; le chapitre 11 du livre est découpé en 10a à 10d. Les numéros d'atelier
+sont ceux des dossiers, pas ceux des chapitres : le tableau ci-dessous donne la correspondance,
+qui suit l'annexe A du livre. Chaque dossier contient :
 
 - `README.md` : le guide de l'étudiant, en français. Il dit ce qu'il faut construire et pourquoi,
   quand c'est réussi, avec des exemples, ce qu'il faut éviter et des pistes ;
@@ -39,29 +41,30 @@ vérification lancent pytest avec le groupe de dépendances `tests` et la config
 n'y a ni projet Python ni environnement partagé à la racine, et `python start.py` n'installe
 jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 
-| Id | Dossier | Sujet |
-|---|---|---|
-| 03 | [03-system-prompt](03-system-prompt/) | Prompt système et boucle de conversation |
-| 04 | [04-first-tool](04-first-tool/) | Premier outil |
-| 05 | [05-read-tools](05-read-tools/) | Deux outils de lecture |
-| 06 | [06-agent-loop](06-agent-loop/) | Boucle d'agent |
-| 07 | [07-progressive-disclosure](07-progressive-disclosure/) | Découvrir le contexte progressivement |
-| 08 | [08-context-compaction](08-context-compaction/) | Compacter le contexte |
-| 09 | [09-mcp](09-mcp/) | Contrat d'outil et MCP |
-| 10a | [10a-identity](10a-identity/) | Identité et échange de jeton |
-| 10b | [10b-writes](10b-writes/) | Écritures |
-| 10c | [10c-groupings](10c-groupings/) | Regroupements |
-| 10d | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
-| 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire persistante |
-| 13 | [13-document-search](13-document-search/) | Recherche documentaire |
-| 14 | [14-skills](14-skills/) | *Skills* |
-| 15 | [15-read-without-obeying](15-read-without-obeying/) | Lire sans obéir |
-| 17 | [17-evaluation](17-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
-| 18 | [18-failures](18-failures/) | Pannes et livraison |
-| 19 | [19-specification](19-specification/) | Spécifier un contrôle |
+| Id | Chapitre du livre | Dossier | Sujet |
+|---|---|---|---|
+| 03 | 3 | [03-system-prompt](03-system-prompt/) | Prompt système et boucle de conversation |
+| 04 | 4 | [04-first-tool](04-first-tool/) | Premier outil |
+| 05 | 5 | [05-read-tools](05-read-tools/) | Deux outils de lecture |
+| 06 | 6 | [06-agent-loop](06-agent-loop/) | Boucle d'agent |
+| 07 | 8 | [07-progressive-disclosure](07-progressive-disclosure/) | Découvrir le contexte progressivement |
+| 08 | 9 (et 7) | [08-context-compaction](08-context-compaction/) | Compacter le contexte (et garder l'état de la conversation) |
+| 09 | 10 | [09-mcp](09-mcp/) | Contrat d'outil et MCP |
+| 10a | 11 | [10a-identity](10a-identity/) | Identité et échange de jeton |
+| 10b | 11 | [10b-writes](10b-writes/) | Écritures |
+| 10c | 11 | [10c-groupings](10c-groupings/) | Regroupements |
+| 10d | 11 | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
+| 12 | 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire persistante |
+| 13 | 13 | [13-document-search](13-document-search/) | Recherche documentaire |
+| 14 | 14 | [14-skills](14-skills/) | *Skills* |
+| 15 | 15 | [15-read-without-obeying](15-read-without-obeying/) | Lire sans obéir |
+| 17 | 16 | [17-evaluation](17-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
+| 18 | 17 | [18-failures](18-failures/) | Pannes et livraison |
+| 19 | 18 | [19-specification](19-specification/) | Spécifier un contrôle |
 
 Les chapitres 1 et 2 n'ont pas d'atelier : ils posent le cadre (ce qu'est un agent
-conversationnel, pourquoi on le vérifie par répétition). Les ateliers ne sont pas renumérotés :
-les numéros 11 et 16 restent libres, ces chapitres ayant été retirés du livre. La liste complète des tests est
+conversationnel, pourquoi on le vérifie par répétition). Le chapitre 7 (l'état de la conversation) n'a pas
+d'atelier propre : ses critères sont vérifiés par l'atelier 08. Les ateliers ne sont pas renumérotés
+d'après le nouveau plan du livre : les numéros 11 et 16 restent libres. La liste complète des tests est
 dans [docs/test-inventory.md](../docs/test-inventory.md), et les noms qu'ils lisent sont dans
 [docs/interface-contract.md](../docs/interface-contract.md#names-read-by-the-tests).

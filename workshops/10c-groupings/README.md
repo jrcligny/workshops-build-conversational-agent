@@ -1,6 +1,6 @@
 # Atelier 10c — Les regroupements calculés par l'application
 
-Chapitre 10 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 11 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

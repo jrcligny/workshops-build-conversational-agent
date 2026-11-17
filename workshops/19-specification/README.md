@@ -1,6 +1,6 @@
 # Atelier 19 — Spécifier un contrôle
 
-Chapitre 19 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 18 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

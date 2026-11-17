@@ -1,6 +1,6 @@
 # Atelier 09 — Le contrat d'outils et MCP
 
-Chapitre 9 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 10 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

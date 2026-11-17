@@ -1,6 +1,6 @@
 # Atelier 17 — Observer et évaluer
 
-Chapitre 17 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 16 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

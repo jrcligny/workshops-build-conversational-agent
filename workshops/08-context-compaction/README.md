@@ -1,6 +1,6 @@
 # Atelier 08 — Compacter le contexte
 
-Chapitre 8 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 9 du livre ; l'état de la conversation que la compaction doit préserver est présenté au chapitre 7. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 

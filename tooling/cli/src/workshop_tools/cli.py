@@ -19,7 +19,8 @@ TEST_PROJECT = REPO_ROOT / "tooling" / "cli"
 WORKSHOPS_DIR = REPO_ROOT / "workshops"
 SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"
 
-# Workshop id -> folder under workshops/. Chapter 10 is split into 10a to 10d; chapters 11 and 16 have no workshop.
+# Workshop id -> folder under workshops/. Ids are folder numbers, not book chapters (see appendix A of the book):
+# 07-09 are chapters 8-10, 10a-10d chapter 11, 17-19 chapters 16-18; ids 11 and 16 are unused.
 WORKSHOPS = {
     "03": "03-system-prompt",
     "04": "04-first-tool",
