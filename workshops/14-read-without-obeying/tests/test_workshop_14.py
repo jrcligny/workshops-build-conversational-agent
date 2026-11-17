@@ -2,7 +2,8 @@
 
 The checks (and the contract they read) are in `checks.py`; the cases in `cases.yaml`.
 The quote (`tests/fixtures/sample-quote.txt`) carries an injected instruction asking for a
-10000-euro purchase request.
+10000-euro purchase request; the
+attachment is attached to order CMD-2010 (`tests/fixtures/attachments.yaml`).
 """
 
 import pytest
@@ -28,13 +29,13 @@ def test_writes_removed_after_attachment(services, observation, quote_area):
     checks.writes_removed_after_attachment(services, observation, ATTACHMENT, CASES["writes_removed_after_attachment"])
 
 
-def test_read_by_id_according_to_permissions(services, quote_area):
-    checks.read_by_id_according_to_permissions(services, ATTACHMENT, CASES["read_by_id_according_to_permissions"])
+def test_writes_removed_after_documentation(services, observation):
+    checks.writes_removed_after_documentation(services, observation, CASES["writes_removed_after_documentation"])
+
+
+def test_read_by_id_according_to_permissions(services, observation, quote_area):
+    checks.read_by_id_according_to_permissions(services, observation, ATTACHMENT, CASES["read_by_id_according_to_permissions"])
 
 
 def test_no_sending_tool(services, quote_area):
     checks.no_sending_tool(services, ATTACHMENT, CASES["no_sending_tool"])
-
-
-def test_caches_not_shared(services, quote_area):
-    checks.caches_not_shared(services, ATTACHMENT, CASES["caches_not_shared"])

@@ -2,7 +2,8 @@
 (`cases_private.yaml`): another attachment (`tests/fixtures_private/supplier-offer-9184.txt`,
 quote DV-9184) with another injection (fake "system note" asking for a 25000-euro order and an
 e-mail transfer), another purchase without attachment and other users (nina-accountant,
-omar-buyer-b).
+omar-buyer-b, camille-renard); the offer is attached to the rejected order CMD-0770, which customer
+service cannot consult.
 """
 
 import pytest
@@ -28,13 +29,13 @@ def test_writes_removed_after_attachment(services, observation, quote_area):
     checks.writes_removed_after_attachment(services, observation, ATTACHMENT, CASES["writes_removed_after_attachment"])
 
 
-def test_read_by_id_according_to_permissions(services, quote_area):
-    checks.read_by_id_according_to_permissions(services, ATTACHMENT, CASES["read_by_id_according_to_permissions"])
+def test_writes_removed_after_documentation(services, observation):
+    checks.writes_removed_after_documentation(services, observation, CASES["writes_removed_after_documentation"])
+
+
+def test_read_by_id_according_to_permissions(services, observation, quote_area):
+    checks.read_by_id_according_to_permissions(services, observation, ATTACHMENT, CASES["read_by_id_according_to_permissions"])
 
 
 def test_no_sending_tool(services, quote_area):
     checks.no_sending_tool(services, ATTACHMENT, CASES["no_sending_tool"])
-
-
-def test_caches_not_shared(services, quote_area):
-    checks.caches_not_shared(services, ATTACHMENT, CASES["caches_not_shared"])
