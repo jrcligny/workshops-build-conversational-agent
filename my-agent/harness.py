@@ -2,8 +2,13 @@
 
 This file is the entry point of your agent. It already converses: at each turn it sends the
 model the system prompt (`system_prompt.md`, next to this file, read without its HTML
-comments), the conversation history and the user's message, relays the model's answer to the
-interface (`text`, then `end`) and writes the trace of the turn with `agent_sdk.trace.Tracer`.
+comments), the context of the conversation (`agent_sdk.context`: every message the model has
+seen, kept between turns) and the user's message, relays the model's answer to the interface
+(`text`, then `end`), records the turn in the context and writes the trace of the turn with
+`agent_sdk.trace.Tracer`.
+
+The `history` parameter is the transcript shown by the interface (texts only), for information:
+the context of the model is `agent_sdk.context`, which also keeps tool calls and their results.
 
 What it does not do is the work of the workshops: no tool, no business data, no loop, no
 compaction, no memory... Each workshop adds its part (see each `contrat.md`). The package
@@ -23,6 +28,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from agent_sdk import events
+from agent_sdk.context import context, unoffered_call_results
 from agent_sdk.trace import Tracer
 from agent_sdk.contract import Event, Message, TestUser
 from agent_sdk.model_client import ModelClient, ModelUnavailable
@@ -54,18 +60,29 @@ class Harness:
         limits: dict | None = None,
     ) -> Iterator[Event]:
         tracer = Tracer(conversation_id, user, message)
+        ctx = context(conversation_id)
         system_prompt = load_system_prompt()
-        tracer.input(system_prompt=system_prompt, history=history)
-        messages = (
-            [{"role": "system", "content": system_prompt}]
-            + [{"role": m.role, "content": m.content} for m in history]
-            + [{"role": "user", "content": message}]
-        )
+        tracer.input(system_prompt=system_prompt, history=ctx.messages)
+        turn_messages: list[dict] = [{"role": "user", "content": message}]
+        answer = ""
         try:
-            response = tracer.call_model(model_client(), messages)
-            answer = response["choices"][0]["message"].get("content") or ""
+            model = model_client()
+            for _ in range(2):
+                response = tracer.call_model(model, ctx.for_model(system_prompt) + turn_messages)
+                reply = response["choices"][0]["message"]
+                answer = reply.get("content") or ""
+                refusals = unoffered_call_results(reply, offered=[])
+                if not refusals:
+                    break
+                # The history may name tools this agent does not offer: refuse them, ask again.
+                turn_messages += [{"role": "assistant", "content": answer, "tool_calls": reply["tool_calls"]}, *refusals]
+                answer = ""
         except ModelUnavailable:
             answer = UNAVAILABLE
+        else:
+            if answer:
+                ctx.record(turn_messages + [{"role": "assistant", "content": answer}])
+        answer = answer or UNAVAILABLE
         tracer.output(answer)
         tracer.write()
         yield events.text(answer)

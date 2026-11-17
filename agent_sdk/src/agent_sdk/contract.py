@@ -44,6 +44,10 @@ class HarnessContract(Protocol):
         """Runs one turn: assembles the system prompt and the history, calls the model,
         yields events and writes a trace.
 
+        `history` is the transcript shown by the interface (user and final assistant texts), for
+        information: the context sent to the model is `agent_sdk.context.context(conversation_id)`,
+        which also keeps tool calls and their results.
+
         `attachments` is reserved for workshop 15.
         `interrupt_requested` (workshop 06) asks for a clean stop of the turn, with no new call.
         `confirmation` (workshop 10b) carries the user's confirmation gesture in the interface.

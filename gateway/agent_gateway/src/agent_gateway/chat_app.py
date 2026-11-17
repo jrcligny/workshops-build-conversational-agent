@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from agent_sdk.context import clear_contexts
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
 from agent_gateway.loader import load_harness
 
@@ -40,6 +41,7 @@ def reset_conversations() -> None:
     _histories.clear()
     _confirmations.clear()
     _interruptions.clear()
+    clear_contexts()
     global _harness
     _harness = None
 

@@ -124,3 +124,43 @@ def test_model_client_normalizes_outages():
     assert model_unavailable(ValueError("bug")) is None
     with pytest.raises(ModelUnavailable):
         ModelClient("http://127.0.0.1:9", timeout=0.5).generate([{"role": "user", "content": "x"}])
+
+def test_context_keeps_whole_turns_and_hands_copies_to_the_model():
+    from agent_sdk.context import clear_contexts, context, seed
+
+    clear_contexts()
+    ctx = context("c-1")
+    call = {"id": "call_1_1", "type": "function", "function": {"name": "get_order", "arguments": "{}"}}
+    ctx.record([
+        {"role": "user", "content": "CMD-2010 ?"},
+        {"role": "assistant", "content": "", "tool_calls": [call]},
+        {"role": "tool", "tool_call_id": "call_1_1", "name": "get_order", "content": "{\"status\": \"shipped\"}"},
+        {"role": "assistant", "content": "Expédiée."},
+    ])
+    ctx.record([{"role": "user", "content": "Merci"}, {"role": "assistant", "content": "De rien."}])
+    assert context("c-1") is ctx and context("c-2").messages == []
+    assert [len(turn) for turn in ctx.turns()] == [4, 2]
+    sent = ctx.for_model("prompt")
+    assert sent[0] == {"role": "system", "content": "prompt"} and sent[1:] == ctx.messages
+    sent[2]["tool_calls"].clear()
+    assert ctx.messages[1]["tool_calls"] == [call]
+    ctx.replace(ctx.messages[4:], summary="Client : Léa Martin")
+    assert "Léa Martin" in ctx.for_model("prompt")[1]["content"] and len(ctx.messages) == 2
+    assert seed("c-1", [{"role": "user", "content": "Bonjour"}]).summary == ""
+    clear_contexts()
+    assert context("c-1").messages == []
+
+
+def test_calls_to_unoffered_tools_are_refused_not_run():
+    import json
+
+    from agent_sdk.context import unoffered_call_results
+
+    reply = {"role": "assistant", "tool_calls": [
+        {"id": "a", "function": {"name": "get_order", "arguments": "{}"}},
+        {"id": "b", "function": {"name": "order_status", "arguments": "{}"}},
+    ]}
+    refusals = unoffered_call_results(reply, offered=["order_status"])
+    assert [(r["tool_call_id"], r["name"]) for r in refusals] == [("a", "get_order")]
+    assert json.loads(refusals[0]["content"])["status"] == "error"
+    assert unoffered_call_results({"role": "assistant", "content": "ok"}) == []

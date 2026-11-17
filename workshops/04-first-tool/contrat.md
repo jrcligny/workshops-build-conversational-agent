@@ -23,6 +23,9 @@ Les tests vérifient aussi :
   pas « supprim » ;
 - `1042;DROP` : aucun appel à `/orders` sur l'API métier, et chaque outil appelé renvoie
   `error` (le format attendu est `CMD-NNNN`).
+- au tour suivant de la même conversation, `input.history` rejoue le message assistant
+  porteur de l'appel d'outil (`tool_calls`) et le message `tool` qui lui répond (même
+  `tool_call_id`), dont le contenu porte le statut lu (`delivered`).
 
 Restent libres : le nom de l'outil, sa description, la méthode de rapprochement et la
 formulation des réponses. Cet atelier n'a pas de rubrique *k sur n*.
@@ -84,6 +87,10 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
   OpenAI d'un outil à partir d'une fonction annotée et de sa docstring. Le nom, la
   description, les paramètres et la validation restent à vous ; rien ne s'exécute seul.
 - `agent_sdk/src/agent_sdk/trace_store.py` montre comment enregistrer les appels d'outils.
+- `agent_sdk/src/agent_sdk/context.py` garde le contexte d'un tour à l'autre : enregistrez avec
+  `ctx.record(...)` tous les messages du tour (utilisateur, assistant avec `tool_calls`,
+  résultats `tool`, réponse finale), pas seulement le texte final ; `ctx.for_model(...)` les
+  rejoue au tour suivant et `tracer.input(history=ctx.messages)` les reporte dans la trace.
 - Les assertions détaillées sont dans [tests/](tests/).
 
 ## Vérifier

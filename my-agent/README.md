@@ -2,7 +2,7 @@
 
 This is where you build your agent. It is the **only** folder you edit: code, policy, catalog and attachments alike.
 
-- `harness.py` is a runnable bootstrap that already converses: at each turn it sends the model (through the course proxy) the system prompt, the history and the message, relays the answer (`text`, then `end`) and writes the trace of the turn. It calls no tool. You extend it from workshop 03 on.
+- `harness.py` is a runnable bootstrap that already converses: at each turn it sends the model (through the course proxy) the system prompt, the context of the conversation (`agent_sdk.context`: every message of the previous turns, tool calls and results included) and the message, relays the answer (`text`, then `end`), records the turn in the context and writes the trace of the turn. The `history` parameter of `turn(...)` is only the transcript shown by the interface. It calls no tool. You extend it from workshop 03 on.
 - `system_prompt.md` is the system prompt of your agent (workshop 03), loaded by `harness.py` at each turn; its HTML comments are guidance and are not sent to the model.
 - `mcp_server.py` is an empty MCP server: it starts and answers the handshake, but exposes no business tool. You will wire it in workshop 09.
 - `pyproject.toml` installs `agent_sdk` (editable, at the repository root), the repetitive code you import without modifying it, so you can focus on each workshop's goal. None of it does the work of a workshop:

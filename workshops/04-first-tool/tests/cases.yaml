@@ -19,3 +19,8 @@ deleted_order_never_suggested:
 
 invalid_reference_rejected_before_the_call:
   question: "Quel est le statut de la commande 1042;DROP ?"
+
+tool_result_replayed_next_turn:
+  question: "Quel est le statut de la commande CMD-1042 de Martin Durand ?"
+  follow_up: "Merci. Et vous pouvez me rappeler la référence ?"
+  status: delivered

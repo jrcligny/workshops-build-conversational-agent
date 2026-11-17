@@ -6,7 +6,7 @@ computed by the program is returned either as `status: approximate` with `order`
 `status: not_found` with `suggestions`; excluded orders are never returned.
 """
 
-from workshop_tests.testing.turns import model_calls, successful_turn, tool_arguments, tool_result, tool_status, tools
+from workshop_tests.testing.turns import history, model_calls, successful_turn, tool_arguments, tool_result, tool_status, tools
 
 
 def only_call(trace) -> dict:
@@ -63,3 +63,19 @@ def invalid_reference_rejected_before_the_call(chat_client, observation, case: d
     assert business_calls == [], "a reference that does not match the schema (CMD-NNNN) is rejected by the program"
     statuses = [tool_status(c) for c in tools(trace)]
     assert statuses and set(statuses) == {"error"}, "the tool call is recorded with status 'error' (invalid argument)"
+
+
+def tool_result_replayed_next_turn(chat_client, case: dict) -> None:
+    successful_turn(chat_client, case["question"])
+    _, trace = successful_turn(chat_client, case["follow_up"])
+    replayed = history(trace)
+    calls = [m for m in replayed if m.get("role") == "assistant" and m.get("tool_calls")]
+    results = [m for m in replayed if m.get("role") == "tool"]
+    assert calls, "input.history replays the assistant message carrying the tool call of the previous turn"
+    ids = {c.get("id") for m in calls for c in m["tool_calls"]}
+    assert results and all(m.get("tool_call_id") in ids for m in results), (
+        "input.history replays the tool result, linked to its call by tool_call_id"
+    )
+    assert any(case["status"] in str(m.get("content")) for m in results), (
+        "the replayed tool result carries the status read from the business application"
+    )

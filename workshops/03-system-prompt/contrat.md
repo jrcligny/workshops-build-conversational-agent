@@ -10,7 +10,8 @@ la dernière ligne de `traces/turns.jsonl`. Sont imposés :
 - le contrat `turn(...)` de `my-agent/harness.py`, qui produit des événements `text`
   (`data.content`) puis `end` (`data.ok` vrai) ;
 - dans la trace : `input.system_prompt` (non vide, moins de 800 mots), `input.message`
-  (le message exact de l'utilisateur), `input.history` (liste de `{role, content}`)
+  (le message exact de l'utilisateur), `input.history` (les messages des tours précédents,
+  `{role, content}`, tels que l'agent les a envoyés au modèle)
   et `tools` (liste vide) ;
 - au moins un appel au modèle via le proxy (`/v1/chat/completions`, code 200) ;
 - aucun appel à l'API métier pendant le tour.
@@ -91,13 +92,17 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
   (`load_system_prompt()`, sans les commentaires HTML) et le reporte dans `input.system_prompt`.
 - L'amorce converse déjà : `harness.py` envoie au modèle (`model_client()`, branché sur le
   proxy ; `generate(messages, tools=None)` fait **un** appel et rend la réponse brute) le
-  prompt système, l'historique et le message, relaie la réponse (`text` puis `end`) et écrit
-  la trace avec `Tracer` (`agent_sdk/src/agent_sdk/trace.py`) : `tracer.input(...)`,
+  prompt système, le contexte de la conversation et le message, relaie la réponse (`text`
+  puis `end`), enregistre le tour dans le contexte et écrit la trace avec `Tracer` (`agent_sdk/src/agent_sdk/trace.py`) : `tracer.input(...)`,
   `tracer.call_model(...)`, `tracer.output(...)`, `tracer.write()`. Vous n'assemblez jamais
   le JSON de la trace vous-même.   Votre travail porte sur le prompt : la règle de refus sans
     source et sa tenue sous l'insistance.
-- L'interface n'ajoute un échange à l'historique que si le tour a produit du texte :
-  émettez toujours au moins un `text` avant `end`.
+- Le contexte de la conversation est tenu par `agent_sdk.context` (`context(conversation_id)`) :
+  il garde, d'un tour à l'autre, tous les messages envoyés au modèle, y compris, à partir de
+  l'atelier 04, les appels d'outils et leurs résultats. Le paramètre `history` de `turn(...)`
+  n'est que la transcription affichée par l'interface (textes seuls), à titre informatif.
+- L'interface n'affiche un échange que si le tour a produit du texte : émettez toujours au
+  moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans
   `workshop_tests/testing/turns.py`.
 

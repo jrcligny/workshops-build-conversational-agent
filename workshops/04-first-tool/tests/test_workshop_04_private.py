@@ -41,3 +41,7 @@ def test_excluded_order_not_suggested_for_a_close_reference(chat_client):
 
 def test_invalid_reference_rejected_before_the_call(chat_client, observation):
     checks.invalid_reference_rejected_before_the_call(chat_client, observation, CASES["invalid_reference_rejected_before_the_call"])
+
+
+def test_tool_result_replayed_next_turn(chat_client):
+    checks.tool_result_replayed_next_turn(chat_client, CASES["tool_result_replayed_next_turn"])

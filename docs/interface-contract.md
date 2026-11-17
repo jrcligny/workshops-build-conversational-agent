@@ -12,7 +12,7 @@ The chat interface is `gateway/agent_gateway/src/agent_gateway/chat_app.py`.
 | Test identities | `GET /users` lists the users of the seeded datasets (`user_id`, `name`, `role`, `organization`). The identity selector of the Chainlit UI reads it and opens its conversations with the chosen identity. |
 | Turn | `POST /conversations/{id}/messages` with `{ "text": "..." }`. Server-sent events (SSE) response. |
 | Events (workshop 03) | `text` (chunks, field `content`) then `end` (field `ok`). An `error` event reports a failure of the agent gateway. |
-| Multi-turn | The same conversation id is reused. The *harness* must replay the history in the model input. |
+| Multi-turn | The same conversation id is reused. The *harness* replays the whole context of the conversation (`agent_sdk.context`: user and assistant messages, tool calls and their results) in the model input; the `history` parameter is only the transcript shown by the interface (texts). A conversation may also start from a written history (`POST /conversations/{id}/history`, tests): the agent continues it as its own, and refuses without running any call the model makes to a tool it does not offer (`agent_sdk.context.unoffered_call_results`). |
 | Service addresses | `BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`, `INTERFACE_URL` are set in the environment by `workshop serve` and by the test fixtures (`workshop check`); `MCP_URL` too, by `workshop serve` and by the tests of workshops 09 and 10a, which start the MCP server of `my-agent/`. Read them at call time: the ports differ between the two. |
 
 The tests use the internal client (`workshop_tests/testing/chat_client.py`), not a browser.
@@ -50,7 +50,7 @@ them to the business API. The workshop 09 tests stay red until this is done.
 One trace per turn, in a JSONL file (`turns.jsonl`) in the configured folder (`traces/` by default). Fields required from workshop 03:
 
 - conversation and turn ids, `timestamp`;
-- `input` sent to the model: `system_prompt`, `history`, new `message`;
+- `input` sent to the model: `system_prompt`, `history` (the context messages of the previous turns), new `message`;
 - `model`: id exposed by the proxy, tokens, duration, stop reason;
 - `output`: assistant text;
 - `tools`: empty list in workshop 03;
@@ -62,7 +62,7 @@ The bootstrap provides `agent_sdk/src/agent_sdk/trace.py`: a `Tracer` with one m
 
 ## Harness to implement
 
-In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `agent_sdk/src/agent_sdk/contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the history and the message, relays the answer and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `workshop_tests/bootstrap_passes.txt`.
+In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `agent_sdk/src/agent_sdk/contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the context of the conversation (`agent_sdk.context`) and the message, relays the answer, records the turn and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `workshop_tests/bootstrap_passes.txt`.
 
 ## Other locations of the bootstrap
 

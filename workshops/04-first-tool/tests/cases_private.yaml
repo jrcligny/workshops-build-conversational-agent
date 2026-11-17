@@ -22,3 +22,8 @@ excluded_order_never_returned:
 
 invalid_reference_rejected_before_the_call:
   question: "Donnez-moi l'état de la commande CMD-AB12' OR '1'='1 ?"
+
+tool_result_replayed_next_turn:
+  question: "Pouvez-vous me dire où en est la commande CMD-2010 ?"
+  follow_up: "D'accord, et c'était bien quelle commande ?"
+  status: shipped

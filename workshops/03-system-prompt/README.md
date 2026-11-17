@@ -10,7 +10,7 @@ sans source, même quand l'utilisateur insiste. Le chapitre insiste sur un point
 écrite dans le prompt n'est pas une garantie.
 
 La boucle conversationnelle est fournie par l'amorce. À chaque tour, `my-agent/harness.py`
-transmet au modèle le prompt, l'historique et le nouveau message, relaie la réponse et écrit
+transmet au modèle le prompt, le contexte de la conversation (`agent_sdk.context`) et le nouveau message, relaie la réponse et écrit
 la trace. Lisez-la pour comprendre ce que le modèle voit à chaque tour, sans avoir à la
 recoder. Le prompt livré, une phrase de rôle, ne suffit pas : les tests de refus échouent
 tant que le prompt n'énonce pas la règle.
