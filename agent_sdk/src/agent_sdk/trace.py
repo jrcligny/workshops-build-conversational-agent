@@ -44,7 +44,7 @@ def _add_usage(total: dict[str, int], usage: dict[str, Any]) -> None:
 
 
 def memory_entry(topic: str, value: Any, user: TestUser, origin: str = "user") -> dict[str, Any]:
-    """One memory entry in the expected format (12), stamped now. Which topics and values you
+    """One memory entry in the expected format (bonus), stamped now. Which topics and values you
     keep, and how you store them under `MEMORY_DIR`, stay yours."""
     return {
         "topic": topic,
@@ -80,7 +80,7 @@ class Tracer:
         **extra: Any,
     ) -> None:
         """What you send to the model: the system prompt, the history you really replay (03),
-        the state handed back at the start of the turn (08, `input.state`), any other block."""
+        the state handed back at the start of the turn (10, `input.state`), any other block."""
         block = self._trace["input"]
         if system_prompt is not None:
             block["system_prompt"] = system_prompt
@@ -104,7 +104,7 @@ class Tracer:
 
         `offered_tools`: names of the tools offered at this call (13, 14); pass `[]` when you
         offer none once you trace them, so the list stays one entry per call.
-        `context_size`: your measure of the context sent at this call (07)."""
+        `context_size`: your measure of the context sent at this call (09)."""
         choice = (response.get("choices") or [{}])[0]
         call: dict[str, Any] = {
             "cycle": self._cycle,
@@ -145,10 +145,10 @@ class Tracer:
         )
         return response
 
-    # --- cycles and tools (04, 05, 06, 15) ------------------------------------------------
+    # --- cycles and tools (04, 05, 15) ------------------------------------------------
 
     def cycle(self) -> int:
-        """Starts a new cycle of the agent loop (06) and returns its number, from 1.
+        """Starts a new cycle of the agent loop (05) and returns its number, from 1.
         Model and tool calls recorded afterwards carry it; `cycles` is the count."""
         self._cycle += 1
         self._trace["cycles"] = self._cycle
@@ -163,8 +163,8 @@ class Tracer:
         transport: str | None = None,
         **extra: Any,
     ) -> dict[str, Any]:
-        """Records one tool call: name, arguments, result (with its `status`), cycle (06),
-        duration (17) and transport (`"mcp"`, workshop 06). Returns the recorded entry."""
+        """Records one tool call: name, arguments, result (with its `status`), cycle (05),
+        duration (15) and transport (`"mcp"`, workshop 06). Returns the recorded entry."""
         entry: dict[str, Any] = {"name": name, "arguments": arguments, "result": result, "cycle": self._cycle}
         if duration_ms is not None:
             entry["duration_ms"] = int(duration_ms)
@@ -175,17 +175,17 @@ class Tracer:
         return entry
 
     def cycle_limit_reached(self) -> None:
-        """The loop stopped at its cycle limit (06)."""
+        """The loop stopped at its cycle limit (05)."""
         self._trace["cycle_limit_reached"] = True
 
     def interrupted(self) -> None:
-        """The turn stopped on the user's request (06)."""
+        """The turn stopped on the user's request (05)."""
         self._trace["interrupted"] = True
 
     # --- context (09, 10) -----------------------------------------------------------------
 
     def compaction_call(self, client: Any, messages: list[dict], model: str = "default") -> dict[str, Any]:
-        """Calls the model for the compaction summary (08): `messages` start with your compaction
+        """Calls the model for the compaction summary (10): `messages` start with your compaction
         system prompt. The call is recorded in `compaction.model_call`, not in `model.calls`
         (those stay the agent's). Returns the raw answer."""
         started = time.perf_counter()
@@ -212,7 +212,7 @@ class Tracer:
         summary: str,
         **extra: Any,
     ) -> Event:
-        """Records the compaction of this turn (08) and returns the `compaction` event to yield.
+        """Records the compaction of this turn (10) and returns the `compaction` event to yield.
         Call it only on the turn that compacts: the key stays absent otherwise.
 
         `cleared_tool_results`: one `{tool_call_id, name, turn}` per tool result replaced by a
@@ -235,7 +235,7 @@ class Tracer:
         return Event("compaction", {k: v for k, v in data.items() if k != "system_prompt"})
 
     def state(self, state: dict[str, Any]) -> None:
-        """The working state after the turn (08): `current_customer`, `current_order`, `candidates`.
+        """The working state after the turn (10): `current_customer`, `current_order`, `candidates`.
         The state handed to the model at the start of the turn goes to `input(state=...)`."""
         self._trace["state"] = state
 
@@ -257,7 +257,7 @@ class Tracer:
         written: list[dict] | None = None,
         deleted: list[dict] | None = None,
     ) -> list[Event]:
-        """Records the persistent memory of the turn (12): entries put back at the start
+        """Records the persistent memory of the turn (bonus): entries put back at the start
         (`loaded`), written and deleted by the turn. Returns one `memory` event per change.
         Call it at least once per turn (with `loaded=[]` when nothing is kept)."""
         block = self._trace.setdefault("memory", {"loaded": [], "written": [], "deleted": []})
@@ -268,7 +268,7 @@ class Tracer:
         return [Event("memory", {"action": a, "topic": e.get("topic"), "value": e.get("value")}) for a, e in changes]
 
     def skill_loaded(self, skill_id: str, version: str, cycle: int | None = None) -> None:
-        """A skill of the catalog is loaded or still active in this turn (14)."""
+        """A skill of the catalog is loaded or still active in this turn (13)."""
         self._trace.setdefault("skills_loaded", []).append(
             {"id": skill_id, "version": version, "cycle": self._cycle if cycle is None else cycle}
         )
@@ -282,15 +282,15 @@ class Tracer:
         return Event("mention", {"content": content, **extra})
 
     def fallback(self, from_model: str, to_model: str, reason: str) -> None:
-        """The fallback model answered instead of the primary one (18)."""
+        """The fallback model answered instead of the primary one (16)."""
         self._trace["fallback"] = {"from": from_model, "to": to_model, "reason": reason}
 
     def unknown_outcome(self, draft_id: str) -> None:
-        """A submission's outcome is unknown (18): it must not be replayed."""
+        """A submission's outcome is unknown (16): it must not be replayed."""
         self._trace["unknown_outcome"] = {"draft_id": draft_id}
 
     def versions(self, instructions: str, tools: str, skills: str, index: str) -> None:
-        """The versions in use for this turn (18)."""
+        """The versions in use for this turn (16)."""
         self._trace["versions"] = {"instructions": instructions, "tools": tools, "skills": skills, "index": index}
 
     # --- answer and writing ---------------------------------------------------------------

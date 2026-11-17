@@ -7,7 +7,7 @@ The model client itself is wired in `harness.py` (`model_client()`).
 | Module | What it gives you | What stays yours |
 |---|---|---|
 | `contract` | the types of the harness contract: `Message`, `Event`, `TestUser`, `HarnessNotImplemented` | what your `Harness.turn` yields |
-| `context` | `context(conversation_id)`: every message the model has seen (user, assistant with `tool_calls`, `tool` results), kept between turns, and the rolling summary; `seed` for written conversations (tests) | what you record, clear and summarize (08) |
+| `context` | `context(conversation_id)`: every message the model has seen (user, assistant with `tool_calls`, `tool` results), kept between turns, and the rolling summary; `seed` for written conversations (tests) | what you record, clear and summarize (10) |
 | `events` | one builder per event type of the contract | when to emit them and what they say |
 | `trace` | `Tracer`: one method per thing that happens in a turn (model call, tool call, state, compaction, memory, mention...), writing the trace in the format the tests read (through `trace_store`) | what you record, and when: the decisions of each workshop |
 | `model_client` | `ModelClient` and `ModelUnavailable`, the OpenAI-compatible client of the course proxy | the prompt, the tools offered, the fallback decision |

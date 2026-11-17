@@ -1,8 +1,8 @@
 # Ateliers
 
-Un dossier par atelier ; le chapitre 11 du livre est découpé en 10a à 10d. Les numéros d'atelier
-sont ceux des dossiers, pas ceux des chapitres : le tableau ci-dessous donne la correspondance,
-qui suit l'annexe A du livre. Chaque dossier contient :
+Un atelier par chapitre du livre, de 3 à 17 : le numéro de l'atelier est celui du chapitre
+(annexe A du livre). Le chapitre 8 (la mémoire de travail) n'a pas d'atelier
+propre : l'état de conversation qu'il décrit est exercé à l'atelier 10. Chaque dossier contient :
 
 - `README.md` : le guide de l'étudiant, en français. Il dit ce qu'il faut construire et pourquoi,
   quand c'est réussi, avec des exemples, ce qu'il faut éviter et des pistes ;
@@ -20,6 +20,7 @@ uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli workshop start 03
 uv run --project tooling/cli workshop check 03
 uv run --project tooling/cli workshop check 09 --non-regression
+uv run --project tooling/cli workshop check 07 --etape ecritures
 ```
 
 **Mode du modèle.** Le **mode live** est la référence pour tous les ateliers
@@ -41,30 +42,28 @@ vérification lancent pytest avec le groupe de dépendances `tests` et la config
 n'y a ni projet Python ni environnement partagé à la racine, et `python start.py` n'installe
 jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 
-| Id | Chapitre du livre | Dossier | Sujet |
+| Id | Dossier | Sujet | Étapes (`--etape`) |
 |---|---|---|---|
-| 03 | 3 | [03-system-prompt](03-system-prompt/) | Prompt système et boucle de conversation |
-| 04 | 4 | [04-first-tool](04-first-tool/) | Premier outil |
-| 05 | 5 | [05-read-tools](05-read-tools/) | Deux outils de lecture |
-| 06 | 6 | [06-agent-loop](06-agent-loop/) | Boucle d'agent |
-| 07 | 8 | [09-progressive-disclosure](09-progressive-disclosure/) | Découvrir le contexte progressivement |
-| 08 | 9 (et 7) | [10-context-compaction](10-context-compaction/) | Compacter le contexte (et garder l'état de la conversation) |
-| 09 | 10 | [06-mcp-server](06-mcp-server/) | Contrat d'outil et MCP |
-| 10a | 11 | [10a-identity](10a-identity/) | Identité et échange de jeton |
-| 10b | 11 | [10b-writes](10b-writes/) | Écritures |
-| 10c | 11 | [06-mcp-server](06-mcp-server/) | Regroupements |
-| 10d | 11 | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
-| 12 | 12 | [bonus-preference-memory](bonus-preference-memory/) | Mémoire persistante |
-| 13 | 13 | [12-document-search](12-document-search/) | Recherche documentaire |
-| 14 | 14 | [13-skills](13-skills/) | *Skills* |
-| 15 | 15 | [14-read-without-obeying](14-read-without-obeying/) | Lire sans obéir |
-| 17 | 16 | [15-evaluation](15-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
-| 18 | 17 | [16-failures](16-failures/) | Pannes et livraison |
-| 19 | 18 | [17-specification](17-specification/) | Spécifier un contrôle |
+| 03 | [03-system-prompt](03-system-prompt/) | Prompt système et boucle de conversation | |
+| 04 | [04-first-tool](04-first-tool/) | Premier outil | |
+| 05 | [05-agent-loop](05-agent-loop/) | Outils de lecture et boucle d'agent | `outils`, `boucle` |
+| 06 | [06-mcp-server](06-mcp-server/) | Serveur d'outils MCP et regroupements | `serveur`, `regroupements` |
+| 07 | [07-acting-rights](07-acting-rights/) | Identité, écritures et confinement | `identite`, `ecritures`, `confinement` |
+| 09 | [09-progressive-disclosure](09-progressive-disclosure/) | Divulgation progressive sur l'outil générique | |
+| 10 | [10-context-compaction](10-context-compaction/) | État de conversation et compaction | |
+| 11 | [11-no-memory](11-no-memory/) | Aucune mémoire, dite explicitement | |
+| 12 | [12-document-search](12-document-search/) | Recherche documentaire | |
+| 13 | [13-skills](13-skills/) | *Skills* | |
+| 14 | [14-read-without-obeying](14-read-without-obeying/) | Lire sans obéir | |
+| 15 | [15-evaluation](15-evaluation/) | Traces et évaluation (avec les parcours `routes/`) | |
+| 16 | [16-failures](16-failures/) | Pannes | |
+| 17 | [17-specification](17-specification/) | Spécifier un contrôle | |
+| bonus | [bonus-preference-memory](bonus-preference-memory/) | Mémoire de préférences (hors parcours) | |
 
 Les chapitres 1 et 2 n'ont pas d'atelier : ils posent le cadre (ce qu'est un agent
-conversationnel, pourquoi on le vérifie par répétition). Le chapitre 7 (l'état de la conversation) n'a pas
-d'atelier propre : ses critères sont vérifiés par l'atelier 10. Les ateliers ne sont pas renumérotés
-d'après le nouveau plan du livre : les numéros 11 et 16 restent libres. La liste complète des tests est
-dans [docs/test-inventory.md](../docs/test-inventory.md), et les noms qu'ils lisent sont dans
-[docs/interface-contract.md](../docs/interface-contract.md#names-read-by-the-tests).
+conversationnel, pourquoi on le vérifie par répétition). Le chapitre 8 n'en a pas non plus. Un
+atelier en plusieurs étapes se vérifie étape par étape avec `--etape`, puis en entier.
+L'atelier bonus met en œuvre l'option écartée par le chapitre 11 (une mémoire de préférences) :
+ses tests contredisent ceux de l'atelier 11, et `--non-regression` ne le rejoue jamais. La
+liste complète des tests est dans [docs/test-inventory.md](../docs/test-inventory.md), et les noms
+qu'ils lisent sont dans [docs/interface-contract.md](../docs/interface-contract.md#names-read-by-the-tests).

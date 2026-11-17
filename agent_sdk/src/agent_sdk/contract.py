@@ -49,7 +49,7 @@ class HarnessContract(Protocol):
         which also keeps tool calls and their results.
 
         `attachments` is reserved for workshop 14.
-        `interrupt_requested` (workshop 06) asks for a clean stop of the turn, with no new call.
+        `interrupt_requested` (workshop 05) asks for a clean stop of the turn, with no new call.
         `confirmation` (workshop 07) carries the user's confirmation gesture in the interface.
         `limits` (workshop 07) may carry a duration and a budget.
         """

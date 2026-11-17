@@ -136,8 +136,8 @@ for the trainers, not the students:
 - `.gitattributes` marks them `export-ignore`: the student material is produced with
   `git archive`, which leaves them out.
 
-Workshops 06, 14, 17 and 19 have tests with no input to vary (catalog, manifest, routes): those
-tests have no private variant, and workshop 17 has no private file.
+Workshops 06, 13, 15 and 17 have tests with no input to vary (catalog, manifest, routes,
+specification): those tests have no private variant, and workshop 17 has no private file.
 
 ## Simulated and live modes
 

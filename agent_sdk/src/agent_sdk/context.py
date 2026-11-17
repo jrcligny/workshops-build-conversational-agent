@@ -21,7 +21,7 @@ without it (`seed` empties it): when the context holds messages but no state, re
 from those messages (tool results included) before compacting.
 
 What it does not do: decide anything. What you record, which results you clear, which turns you
-summarize and how stay the work of the workshops (08). `replace` only stores what you hand it.
+summarize and how stay the work of the workshops (10). `replace` only stores what you hand it.
 
 A conversation may also start from a written history (`seed`): the tests load a conversation
 written in advance instead of playing it turn by turn, and the gateway exposes it as
@@ -52,7 +52,7 @@ def _as_dict(message: Message | dict[str, Any]) -> dict[str, Any]:
 
 
 class Context:
-    """The messages of one conversation, its rolling summary and its working state (08)."""
+    """The messages of one conversation, its rolling summary and its working state (10)."""
 
     def __init__(self, conversation_id: str):
         self.conversation_id = conversation_id
@@ -71,7 +71,7 @@ class Context:
 
     def for_model(self, system_prompt: str) -> list[dict[str, Any]]:
         """What to send the model before the user's new message: the system prompt, the summary
-        when there is one (08), then every stored message. Copies: editing them changes nothing here."""
+        when there is one (10), then every stored message. Copies: editing them changes nothing here."""
         messages = [{"role": "system", "content": system_prompt}]
         if self.summary:
             messages.append({"role": "system", "content": f"{SUMMARY_HEADING}\n{self.summary}"})
