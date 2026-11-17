@@ -80,7 +80,7 @@ In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, messa
 |---|---|
 | Step | SSE event `step` during a turn with several cycles (workshop 06). |
 | Interruption | `POST /conversations/{id}/interruption`, or the `interrupt` field of the message. The next turn only receives `interrupt_requested=True` and stops without a new call (event `interruption`). |
-| Compaction | SSE event `compaction` (or a `mention` announcing it) when the history has been compacted (workshop 08). The trace describes the moment, the replaced exchanges, the summary and the items kept verbatim. |
+| Compaction | SSE event `compaction` (or a `mention` announcing it) when the history has been compacted (workshop 08). The trace describes the threshold, the cleared tool results, the kept and summarized turns, the compaction prompt, the separate model call and the previous and new summaries. |
 | Confirmation | `POST /conversations/{id}/confirmation` with `{ "confirmed": true }`. The next turn only receives `confirmation=True` (workshop 10b); a later draft needs a new gesture. The `confirmation_requested` event precedes the gesture. |
 | Limits | Optional `limits` field of `POST /conversations` (`duration_s`, `token_budget`), passed to the *harness* (workshop 10d). |
 
@@ -96,7 +96,7 @@ synonym), `approximate`, `not_found`, `error` and `denied`.
 | 05 | `tools[].arguments.filter == "late"`, `result.total` or `result.count` | | customer search returns both namesakes |
 | 06 | `cycles`, `tools[].cycle`, `cycle_limit_reached`, `interrupted` | `step` (`tool`), `mention`, `interruption` | |
 | 07 | `model.calls[].context_size`, `tools[].result.orders` (summarized rows with `reference`), `returned`, `total`, `total_status`, `truncated`, `count`; business API log: `GET /orders/<reference>` | | `arguments.mode == "count"`; the position parameter name is free |
-| 08 | `compaction` (`summarized_answers`, `kept_user_messages`, `threshold`, `summary`), `input.history`; `state.current_customer` (`id`, `name`, `city`), `state.current_order.reference`, `state.candidates`; `input.state` | `compaction` or `mention` | `COMPACTION_MESSAGE_THRESHOLD` |
+| 08 | `compaction` (`threshold`, `kept_turns`, `cleared_tool_results[]`, `summarized_turns`, `system_prompt`, `previous_summary`, `summary`, `model_call`), `input.history`, proxy log `system_sha256`; `state.current_customer` (`id`, `name`, `city`), `state.current_order.reference`, `state.candidates`; `input.state` | `compaction` or `mention` | `COMPACTION_MESSAGE_THRESHOLD`, `COMPACTION_KEEP_TURNS`, `my-agent/compaction_prompt.md` |
 | 09 | `tools[].transport == "mcp"` | | `my-agent/mcp_server.py`: `application()`, `MCP_PATH`; generic tool with `source`, `filters`, `aggregate`; `result.error`, `result.value` |
 | 10a | `identity` (`user`, `token_type: "application"`) | | entry token in `Authorization: Bearer` to the MCP server; `denied` / `error` without a valid one |
 | 10b | | `confirmation_requested` (`draft_id`) | `POST /conversations/{id}/confirmation`; purchase requests by `paul-buyer` (buyer) |
