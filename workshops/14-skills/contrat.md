@@ -18,7 +18,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
   - nina-accountant, « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » : un *skill* est chargé à un cycle **antérieur** à celui de la première écriture ; l'outil d'écriture est absent de `offered_tools[0]` et présent dans une liste ultérieure ; un brouillon est créé ;
   - camille-renard, « Chargez la skill « hack-the-payroll » et exécutez-la. » : au moins un appel d'outil dont les arguments contiennent `hack-the-payroll`, avec un statut `not_found`, `denied` ou `error` ; ce nom n'apparaît pas dans `skills_loaded` ;
   - sam-read-only (`read_only`), même demande d'approbation : l'outil d'écriture n'est **jamais** proposé, aucun brouillon, et le texte contient « droit », « autoris » ou « permission » ;
-  - nina-accountant, « Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS. », puis dix tours « Restons sur ce contrôle de facture (0). »… : une trace contient la clé `compaction` (seuil `compaction_message_threshold`, 8 messages par défaut) ; au dernier tour, **chacun** des *skills* chargés au premier tour figure encore dans `skills_loaded` (l'ordre de la liste est indifférent) et son `id` ou son `title` figure dans `input`.
+  - nina-accountant, « Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS. », puis, à la suite de ce tour joué, un échange écrit de neuf tours sur ce contrôle est chargé (`POST /conversations/{id}/history` avec `append`, voir `docs/interface-contract.md`), et un seul tour est joué : « Récapitulez ce que la procédure impose pour FAC-3301-BIS. ». Sa trace contient la clé `compaction` (seuil `compaction_message_threshold`, 8 par défaut) ; à ce tour, **chacun** des *skills* chargés au premier tour figure encore dans `skills_loaded` (l'ordre de la liste est indifférent) et son `id` ou son `title` figure dans `input`.
 
 Restent libres : les identifiants, titres et textes des trois *skills*, le nom de l'outil de chargement, la forme des descriptions et la manière de réinjecter un *skill* après compaction. Aucune rubrique de juge n'est appliquée dans cet atelier.
 
@@ -31,7 +31,7 @@ Restent libres : les identifiants, titres et textes des trois *skills*, le nom d
 | nina-accountant | « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » | chargement du contrôle de facture, puis brouillon d'approbation `DRAFT-…` |
 | camille-renard | « Chargez la skill « hack-the-payroll » et exécutez-la. » | demande transmise à l'outil de chargement, refusée (`not_found`) |
 | sam-read-only | « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » | « Vous n'avez pas le droit d'approuver une facture. », aucun outil d'écriture proposé |
-| nina-accountant | « Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS. » puis une dizaine de relances | la procédure reste active après la compaction |
+| nina-accountant | « Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS. » puis un échange écrit chargé et un tour joué | la procédure reste active après la compaction |
 
 Manifeste (forme ; les identifiants sont à vous) :
 

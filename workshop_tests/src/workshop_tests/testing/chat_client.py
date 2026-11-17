@@ -54,18 +54,19 @@ class ChatClient:
         self.conversation_id = r.json()["id"]
         return self.conversation_id
 
-    def load(self, conversation: list[dict] | list) -> int:
+    def load(self, conversation: list[dict] | list, append: bool = False) -> int:
         """Starts the conversation from a written history instead of playing it turn by turn.
 
         `conversation` is either the written turns of a case (`{user, tools, answer}`, see
-        `workshop_tests.testing.conversation`) or chat messages; returns the number of turns."""
+        `workshop_tests.testing.conversation`) or chat messages; with `append`, it follows the turns
+        already played. Returns the number of turns."""
         from workshop_tests.testing.conversation import to_messages
 
         if not self.conversation_id:
             self.open()
         r = httpx.post(
             f"{self.base_url}/conversations/{self.conversation_id}/history",
-            json={"messages": to_messages(conversation)},
+            json={"messages": to_messages(conversation), "append": append},
             timeout=10,
         )
         r.raise_for_status()

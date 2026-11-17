@@ -20,4 +20,18 @@ skill_still_present_after_compaction:
   compaction_threshold: 5   # lower than the default threshold (monkeypatched)
   user: {user_id: nina-accountant, role: accountant}
   message: "Ouvrez la procédure d'approbation des factures et dites-moi ce qu'elle exige pour FAC-4410."
-  follow_up: "Continuons sur l'approbation de FAC-4410 (point {i})."
+  follow_up: "Où en est l'approbation de FAC-4410 ?"   # the live turn that compacts
+  # Written exchange loaded after the live turn: more turns than the threshold (5).
+  conversation:
+    - user: "La FAC-4410 concerne quelle commande ?"
+      answer: "La FAC-4410 se rapporte à la commande CMD-2010, pour 349,90 €."
+    - user: "Elle est déjà approuvée ?"
+      answer: "Non, elle est en attente d'approbation."
+    - user: "Qu'exige la procédure avant d'approuver ?"
+      answer: "Vérifier que la commande a bien été reçue et que le montant correspond, puis préparer un brouillon que vous confirmerez."
+    - user: "La CMD-2010 a été expédiée, ça suffit ?"
+      answer: "L'expédition ne suffit pas : la procédure attend la réception, ou au moins une preuve de livraison."
+    - user: "Je vais demander la preuve de livraison au transporteur."
+      answer: "Bonne idée. L'approbation pourra être préparée dès que vous l'aurez."
+    - user: "Note bien que j'attends ce document."
+      answer: "C'est noté : l'approbation de FAC-4410 attend la preuve de livraison de CMD-2010."

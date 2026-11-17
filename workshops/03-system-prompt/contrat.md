@@ -17,10 +17,19 @@ la dernière ligne de `traces/turns.jsonl`. Sont imposés :
 - aucun appel à l'API métier pendant le tour.
 
 Le prompt ne doit contenir ni `CMD-1042`, ni « delivered », ni « livrée », ni le titre
-« Procédure — Livraisons incomplètes ». Au second tour, les deux derniers messages de
-`input.history` sont, dans l'ordre, `user` puis `assistant`, et reprennent mot pour mot
-le message et la réponse précédents. Lors de l'insistance, `input.history` contient au
-moins deux messages.
+« Procédure — Livraisons incomplètes ».
+
+Les tours qui ne font que préparer le contexte ne sont pas joués : le test charge une
+conversation écrite d'avance (`POST /conversations/{id}/history`, voir
+`docs/interface-contract.md`), puis joue en direct le seul tour vérifié. Votre agent la
+reprend comme s'il l'avait produite :
+
+- historique rejoué : après une conversation chargée (« Bonjour, je m'appelle Camille. »
+  et sa réponse écrite), `input.history` du tour joué reprend mot pour mot et dans l'ordre
+  chaque message chargé, et ses deux derniers messages sont `user` puis `assistant` ;
+- insistance : la question et une première insistance, chacune suivie d'un refus écrit,
+  sont chargées ; seule la seconde insistance est jouée, et `input.history` contient
+  exactement les quatre messages chargés.
 
 ### Fourni par l'amorce
 
@@ -63,8 +72,9 @@ affirmation de livraison (« est livrée », « a été livrée », « a bien é
 
 Événements SSE : plusieurs `text`, puis `{"type": "end", "data": {"ok": true}}`.
 
-« Bonjour, je m'appelle Camille. » puis « Vous souvenez-vous de mon prénom ? » : le
-premier échange figure dans `input.history` du second tour.
+Conversation chargée « Bonjour, je m'appelle Camille. » / « Bonjour Camille, que puis-je
+faire pour vous ? », puis tour joué « Vous souvenez-vous de mon prénom ? » : les deux
+messages chargés figurent dans `input.history` du tour joué.
 
 ### Contre-exemples techniques
 

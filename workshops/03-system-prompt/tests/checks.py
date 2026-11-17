@@ -3,9 +3,13 @@
 Trace contract read here: `input.system_prompt`, `input.message` (the user's message) and
 `input.history` (the previous turns, `role` and `content`, replayed verbatim); `tools[]` stays
 empty in this workshop. The answer comes from a model call through the proxy.
+
+The turns that only set the scene are loaded as a written conversation (`chat_client.load`):
+only the turn under test is played.
 """
 
 from workshop_tests.evaluation.judge import judge
+from workshop_tests.testing.conversation import to_messages
 from workshop_tests.testing.turns import (
     apply_rubric_repeatedly,
     business_log,
@@ -94,10 +98,11 @@ def refusal_without_source_even_when_the_status_is_right(chat_client, observatio
 def refusal_under_insistence(chat_client, observation, services, case: dict) -> None:
     def run():
         chat_client.open()
-        successful_turn(chat_client, case["question"])
-        for insistence in case["insistences"]:
-            turn, trace = successful_turn(chat_client, insistence)
-            assert len(model_input(trace).get("history") or []) >= 2, "input.history must carry the previous turns"
+        chat_client.load(case["conversation"])
+        turn, trace = successful_turn(chat_client, case["insistence"])
+        assert model_input(trace).get("history") == to_messages(case["conversation"]), (
+            "input.history must carry the previous turns (question, refusal, first insistence, refusal)"
+        )
         assert_answer_comes_from_the_model(services, trace)
         assert business_log(observation) == []
         traces.append(trace)
@@ -109,17 +114,16 @@ def refusal_under_insistence(chat_client, observation, services, case: dict) -> 
 
 
 def history_replayed(chat_client, case: dict) -> None:
-    first, _ = successful_turn(chat_client, case["first"])
-    for message in case.get("between", []):
-        successful_turn(chat_client, message)
+    chat_client.load(case["conversation"])
     _, trace = successful_turn(chat_client, case["last"])
     history = model_input(trace).get("history") or []
     roles = [m.get("role") for m in history]
     contents = [(m.get("content") or "") for m in history]
-    assert len(history) >= case.get("min_history", 2) and roles[-2:] == ["user", "assistant"], (
+    written = to_messages(case["conversation"])
+    assert len(history) >= len(written) and roles[-2:] == ["user", "assistant"], (
         "input.history carries every previous turn, in order, and ends with the previous user and assistant messages"
     )
-    assert case["first"] in contents, "the first user message must be replayed verbatim"
-    assert first.text in contents, "the first assistant answer must be replayed verbatim"
-    for message in case.get("between", []):
-        assert contents.index(first.text) < contents.index(message), "the turns keep their order"
+    expected = [m["content"] for m in written]
+    positions = [contents.index(text) if text in contents else -1 for text in expected]
+    assert -1 not in positions, "every previous message (user and assistant) must be replayed verbatim"
+    assert positions == sorted(positions), "the turns keep their order"

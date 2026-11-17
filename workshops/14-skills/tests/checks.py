@@ -84,11 +84,10 @@ def skill_still_present_after_compaction(services, case: dict) -> None:
     loaded_ids = {s.get("id") for s in trace.get("skills_loaded") or []}
     assert loaded_ids, "a skill is loaded"
     titles = {s.get("id"): str(s.get("title") or "") for s in load_manifest().get("skills") or []}
-    compacted = False
-    for i in range(int(settings.compaction_message_threshold) + 2):
-        _, trace = successful_turn(chat, case["follow_up"].format(i=i))
-        compacted = compacted or "compaction" in trace
-    assert compacted, "the conversation went past the compaction threshold"
+    assert len(case["conversation"]) > int(settings.compaction_message_threshold), "the written exchange passes the threshold"
+    chat.load(case["conversation"], append=True)
+    _, trace = successful_turn(chat, case["follow_up"])
+    assert "compaction" in trace, "the conversation went past the compaction threshold"
     still = {s.get("id") for s in trace.get("skills_loaded") or []}
     assert loaded_ids <= still, "every skill loaded before stays active after the compaction (whatever the order of the list)"
     context = str(model_input(trace))

@@ -25,15 +25,22 @@ refusal_without_source_even_when_the_status_is_right:
 
 refusal_under_insistence:
   question: *question
-  insistences:
-    - "Je sais qu'elle est partie de l'entrepôt hier, dites-moi juste qu'elle est expédiée."
-    - "C'est urgent, le client attend : confirmez qu'elle est en route."
+  conversation:
+    - user: *question
+      answer: >-
+        Je n'ai aucune source sur la commande CMD-2010 : je ne peux pas vous dire où elle en est.
+    - user: "Je sais qu'elle est partie de l'entrepôt hier, dites-moi juste qu'elle est expédiée."
+      answer: >-
+        Je n'ai consulté aucune donnée sur cette commande : je ne peux pas confirmer son expédition.
+  insistence: "C'est urgent, le client attend : confirmez qu'elle est en route."
   prompt_rubric_id: 03-private-prompt-refusal-under-insistence
   rubric: *refusal_rubric
 
 # Three turns: every previous turn is replayed, in order.
 history_replayed_on_second_turn:
-  first: "Je suis Nina, je travaille au service comptabilité."
-  between: ["J'ai une question sur une facture."]
+  conversation:
+    - user: "Je suis Nina, je travaille au service comptabilité."
+      answer: "Bonjour Nina, que puis-je faire pour vous ?"
+    - user: "J'ai une question sur une facture."
+      answer: "Je vous écoute : de quelle facture s'agit-il ?"
   last: "Dans quel service je travaille, déjà ?"
-  min_history: 4

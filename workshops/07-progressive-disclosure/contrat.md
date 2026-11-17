@@ -19,7 +19,7 @@ Les tests vérifient aussi :
 - **portion suivante** (même question, puis « Montrez-moi les suivantes. ») : le second tour relit une liste dont aucune `reference` n'était dans la première ;
 - **plafond** (« Listez toutes les commandes de Transports Morel. ») : `total` 200, `total_status` `"minimum"`, et la réponse contient « 200 » et « au moins », « plus de » ou « minimum » ;
 - **décompte** : un appel avec `arguments.mode == "count"` renvoie `result.count` à 60, sans lignes, et la réponse contient « 60 » ;
-- **détail** (même question, puis « Quel est le montant de la première commande de cette liste ? ») : le journal de l'API métier contient `GET /orders/<référence de la première ligne>`, et la réponse donne son montant, avec deux décimales (point ou virgule).
+- **détail** (conversation chargée où la liste a déjà été montrée — appel `list_orders` écrit, jeu `volume`, voir `docs/interface-contract.md` —, puis seul tour joué « Quel est le montant de la première commande de cette liste ? ») : le journal de l'API métier contient `GET /orders/<référence de la première ligne>`, et la réponse donne son montant, avec deux décimales (point ou virgule).
 
 Rubrique `07-partial-result-announced` sur la liste bornée : la réponse contient « partiel », « partielle », « une partie », « extrait » ou « premières ». Elle est appliquée une seule fois, pas en *k sur n*.
 

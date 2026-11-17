@@ -28,6 +28,23 @@ count_mode:
   question: "Donnez-moi seulement le chiffre : combien Transports Morel a-t-il de commandes en retard ?"
 
 detail_through_the_consultation_tool:
-  question: *late_question
+  dataset: volume                      # the written results come from this dataset
+  conversation:                        # loaded, not played: the list was already shown
+    - user: "Transports Morel : quelles commandes ont dépassé leur date de livraison promise ?"
+      tools:
+        - name: list_orders
+          arguments: {customer_id: C-VOLUMEX, filter: late}
+          result:
+            orders:
+              - {reference: CMD-V0007, status: shipped, promised_date: "2026-02-23"}
+              - {reference: CMD-V0364, status: shipped, promised_date: "2026-02-28"}
+              - {reference: CMD-V0028, status: shipped, promised_date: "2026-02-26"}
+            returned: 3
+            total: 60
+            total_status: exact
+            truncated: true
+      answer: >-
+        Transports Morel a 60 commandes en retard ; voici les 3 premières (liste partielle) :
+        CMD-V0007, CMD-V0364 et CMD-V0028, toutes expédiées. Voulez-vous la suite ?
   row: 2                               # another row of the list, asked by its reference
   detail_question: "Combien coûte la commande {reference} ?"

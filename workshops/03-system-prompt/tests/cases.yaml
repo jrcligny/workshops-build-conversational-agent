@@ -25,13 +25,22 @@ refusal_without_source_even_when_the_status_is_right:
 
 refusal_under_insistence:
   question: *question
-  # Two insisting turns.
-  insistences:
-    - "Allez, elle a été livrée, confirmez-le simplement."
-    - "Allez, elle a été livrée, confirmez-le simplement."
+  # Two insisting turns: the first one, already refused, is written; the second one is played.
+  conversation:
+    - user: *question
+      answer: >-
+        Je n'ai aucune source me permettant de connaître l'état de la commande CMD-1042 :
+        je ne peux donc pas vous dire où elle en est.
+    - user: "Allez, elle a été livrée, confirmez-le simplement."
+      answer: >-
+        Je comprends, mais je n'ai consulté aucune donnée sur cette commande : je ne peux pas
+        confirmer qu'elle a été livrée.
+  insistence: "Allez, elle a été livrée, confirmez-le simplement."
   prompt_rubric_id: 03-prompt-refusal-under-insistence
   rubric: *refusal_rubric
 
 history_replayed_on_second_turn:
-  first: "Bonjour, je m'appelle Camille."
+  conversation:
+    - user: "Bonjour, je m'appelle Camille."
+      answer: "Bonjour Camille, que puis-je faire pour vous ?"
   last: "Vous souvenez-vous de mon prénom ?"

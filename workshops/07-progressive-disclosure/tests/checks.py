@@ -6,12 +6,15 @@ Contract read here (`tools[].result` of the order-list tool, jeu `volume`):
   (`"exact"` or `"minimum"` when the application's retrieval cap is reached) and `truncated`;
 - the next portion through a position: rows not already received;
 - count mode: `arguments.mode == "count"` and `result.count`, without rows;
-- the detail of one order through the consultation tool (business API `GET /orders/<reference>`);
+- the detail of one order through the consultation tool (business API `GET /orders/<reference>`), after a
+  loaded conversation in which the list was already shown (`case["conversation"]`, only the detail
+  question is played);
 - `model.calls[].context_size` for every cycle.
 
 An expected total given by a case is checked as is; a case without one reads it from the business API.
 """
 
+from workshop_tests.testing.conversation import tool_results
 from workshop_tests.testing.turns import (
     apply_rubric,
     business_log,
@@ -109,9 +112,9 @@ def count_mode(chat_client, observation, business_client, case: dict) -> None:
 
 def detail_through_the_consultation_tool(chat_client, observation, business_client, case: dict) -> None:
     observation.reset("volume")
-    _, first = successful_turn(chat_client, case["question"])
-    assert listings(first), "the list comes from the order-list tool"
-    reference = references(listings(first)[-1])[case["row"]]
+    chat_client.load(case["conversation"])
+    shown = [c["result"] for c in tool_results(case["conversation"]) if c["name"] == "list_orders"][-1]
+    reference = references(shown)[case["row"]]
     amount = business_client.get(f"/orders/{reference}").json()["amount"]
     turn, _ = successful_turn(chat_client, case["detail_question"].format(reference=reference))
     routes = [str(e.get("route", "")) for e in business_log(observation)]

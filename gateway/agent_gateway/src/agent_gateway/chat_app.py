@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from agent_sdk.context import clear_contexts, seed
+from agent_sdk.context import clear_contexts, context, seed
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
 from agent_gateway.loader import load_harness
 
@@ -68,6 +68,7 @@ class ConfirmationIn(BaseModel):
 
 class HistoryIn(BaseModel):
     messages: list[dict]
+    append: bool = False
 
 
 @app.get("/health")
@@ -114,11 +115,17 @@ def load_history(conversation_id: str, body: HistoryIn):
 
     The messages (user, assistant with `tool_calls`, `tool` results) become the agent's context
     (`agent_sdk.context.seed`); the transcript shown keeps, per turn, the user's text and the last
-    non-empty assistant text."""
+    non-empty assistant text. With `append`, the written history follows the turns already
+    played (the context and the transcript are extended, the summary is kept)."""
     if conversation_id not in _conversations:
         raise HTTPException(status_code=404, detail="unknown conversation")
-    seed(conversation_id, body.messages)
-    transcript: list[Message] = []
+    if body.append:
+        ctx = context(conversation_id)
+        seed(conversation_id, ctx.messages + body.messages, ctx.summary)
+        transcript = list(_histories.get(conversation_id, []))
+    else:
+        seed(conversation_id, body.messages)
+        transcript = []
     for message in body.messages:
         role, content = message.get("role"), message.get("content") or ""
         if role == "user":
