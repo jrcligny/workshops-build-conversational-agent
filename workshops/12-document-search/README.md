@@ -38,7 +38,7 @@ Plusieurs règles encadrent cet outil. Le **filtrage** par organisation et par p
 
 ## Pistes
 
-- La recherche reçoit l'identité de l'utilisateur mise en place à l'atelier 10a ; c'est elle qui détermine ce qu'il a le droit de voir.
+- La recherche reçoit l'identité de l'utilisateur mise en place à l'atelier 07 ; c'est elle qui détermine ce qu'il a le droit de voir.
 - La recherche renvoie presque toujours quelque chose : décidez comment l'agent constate qu'aucun passage n'est pertinent.
 - Construisez les sources à partir des passages du tour, sans doublons.
 - Une question mixte appelle deux outils : la recherche pour la procédure, la lecture de commande pour le statut.

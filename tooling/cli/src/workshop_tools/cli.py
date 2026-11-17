@@ -26,9 +26,7 @@ WORKSHOPS = {
     "04": "04-first-tool",
     "05": "05-agent-loop",
     "06": "06-mcp-server",
-    "10a": "10a-identity",
-    "10b": "10b-writes",
-    "10d": "10d-sandboxing",
+    "07": "07-acting-rights",
     "09": "09-progressive-disclosure",
     "10": "10-context-compaction",
     "12": "12-document-search",
@@ -46,6 +44,7 @@ BONUS_WORKSHOPS = {
 STEPS = {
     "05": ("outils", "boucle"),
     "06": ("serveur", "regroupements"),
+    "07": ("identite", "ecritures", "confinement"),
 }
 WORKSHOP_IDS = list(WORKSHOPS)
 ALL_WORKSHOPS = {**WORKSHOPS, **BONUS_WORKSHOPS}

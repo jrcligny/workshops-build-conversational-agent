@@ -7,11 +7,11 @@ What it gives you:
   `{"is_error", "structured", "text"}`;
 - `as_openai_tool(tool)`: turns one listed tool into a declaration for `generate(tools=...)`.
 The server URL is read from `MCP_URL` at each call (`http://127.0.0.1:8004/mcp` by default).
-`token` is sent as `Authorization: Bearer <token>` (workshop 10a).
+`token` is sent as `Authorization: Bearer <token>` (workshop 07).
 
 What stays yours: the tools the server exposes and how they reach the business API
 (`mcp_server.py`), recording `transport: "mcp"` on each call in the trace, the identity sent
-to the server and what the server does with it (10a).
+to the server and what the server does with it (07).
 
 Wiring checklist for workshop 06:
 1. start the server: `uv run --project my-agent python my-agent/mcp_server.py`;

@@ -93,7 +93,7 @@ Lancez `uv run --project tooling/cli workshop serve`, ouvrez http://127.0.0.1:80
 - La docstring de `workshops/15-evaluation/tests/route_runner.py` est la référence du format ; `agent_testkit/src/agent_testkit/evaluation/judge.py` décrit les deux couches du juge.
 - Vérifiez des propriétés de la trajectoire (un appel avec telle référence, un statut, une absence de brouillon) plutôt qu'une séquence imposée d'outils.
 - Le masquage se fait à l'écriture de la trace : en-têtes, jetons et clés n'y entrent jamais. `agent_sdk/src/agent_sdk/trace_store.py` écrit la trace (appelé par `Tracer.write()` de `agent_sdk/src/agent_sdk/trace.py`, qui enregistre aussi `usage`, `duration_ms` et `calls` de chaque appel au modèle, et `duration_ms` des outils que vous lui passez) ; ce que vous y mettez dépend de vous.
-- Les parcours officiels passent par tous les ateliers précédents (09, 10, 10b, 12, 13, 14) : une régression ancienne apparaît ici.
+- Les parcours officiels passent par tous les ateliers précédents (07, 09, 10, 12, 13, 14) : une régression ancienne apparaît ici.
 - Le parcours `write-after-attachment` officiel lit sa pièce jointe dans `routes/fixtures/` ; pour un parcours à vous, placez la vôtre sous `my-agent/routes/`.
 
 ## Vérifier

@@ -239,14 +239,14 @@ class Tracer:
         The state handed to the model at the start of the turn goes to `input(state=...)`."""
         self._trace["state"] = state
 
-    # --- identity, limits (10a, 10d) ------------------------------------------------------
+    # --- identity, limits (07) ----------------------------------------------------------
 
     def identity(self, user: str, token_type: str = "application", **extra: Any) -> None:
-        """The identity the tools acted with (10a). Never pass the token itself."""
+        """The identity the tools acted with (07). Never pass the token itself."""
         self._trace["identity"] = {"user": user, "token_type": token_type, **extra}
 
     def limit_reached(self, limit: str) -> None:
-        """The turn stopped at a limit (10d): `"duration"` or `"token_budget"`."""
+        """The turn stopped at a limit (07): `"duration"` or `"token_budget"`."""
         self._trace["limit_reached"] = limit
 
     # --- memory and skills (bonus, 13) -------------------------------------------------------
@@ -273,7 +273,7 @@ class Tracer:
             {"id": skill_id, "version": version, "cycle": self._cycle if cycle is None else cycle}
         )
 
-    # --- notices and failures (05, 09, 10d, bonus, 16) ---------------------------------------
+    # --- notices and failures (05, 07, 09, bonus, 16) ---------------------------------------
 
     def mention(self, content: str, **extra: Any) -> Event:
         """A notice shown to the user (partial answer, limit, memory...). Kept in the trace

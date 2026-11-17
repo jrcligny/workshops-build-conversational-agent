@@ -1,6 +1,6 @@
 """Location and interface of the sandbox, with no policy enforced.
 
-In workshop 10d, the tool server will run in a container (unprivileged user,
+In workshop 07, the tool server will run in a container (unprivileged user,
 read-only file system, egress proxy with an allowlist). The kit reads the policy
 file (my-agent/sandbox/policy.yaml, setting `sandbox_policy_file`) and evaluates a
 destination against its allowlist; applying it in the tool server is the student's work.
@@ -39,7 +39,7 @@ def is_egress_allowed(url: str) -> bool | None:
 
     Returns None while no policy is active (empty shell). An allowlist entry is a host
     (`127.0.0.1`, `api.example.com`) or a URL prefix (`http://127.0.0.1:8001/`). Calling this
-    check before every outgoing call of the tool server is the work of workshop 10d.
+    check before every outgoing call of the tool server is the work of workshop 07.
     """
     if not is_policy_enforced():
         return None

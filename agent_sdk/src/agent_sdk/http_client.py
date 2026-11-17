@@ -7,7 +7,7 @@ from `BUSINESS_API_URL` / `DOCS_SEARCH_URL` at each call. Any failure raises `Se
 with `status_code` (None when the service could not be reached) and the `detail` it returned.
 
 What stays yours: which route to call and with which filters (05, 09), validating the inputs
-before any call (04), the token to present (10a), and what an error means for the user (18).
+before any call (04), the token to present (07), and what an error means for the user (18).
 
     from agent_sdk.http_client import ServiceError, business_api
 

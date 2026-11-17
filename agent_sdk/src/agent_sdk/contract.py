@@ -50,8 +50,8 @@ class HarnessContract(Protocol):
 
         `attachments` is reserved for workshop 14.
         `interrupt_requested` (workshop 06) asks for a clean stop of the turn, with no new call.
-        `confirmation` (workshop 10b) carries the user's confirmation gesture in the interface.
-        `limits` (workshop 10d) may carry a duration and a budget.
+        `confirmation` (workshop 07) carries the user's confirmation gesture in the interface.
+        `limits` (workshop 07) may carry a duration and a budget.
         """
         ...
 

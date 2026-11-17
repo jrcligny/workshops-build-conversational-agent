@@ -13,7 +13,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
   - `skills_loaded` : liste de `{"id", "version", "cycle"}`, les *skills* chargés dans le tour **ou encore actifs** dans la conversation ; chaque `id` appartient au manifeste ;
   - `offered_tools` : une liste de noms d'outils **par appel au modèle**, dans l'ordre (ce que le modèle pouvait appeler à ce cycle) ;
   - `tools[].cycle` (atelier 06) et `tools[].result.status`.
-- **Outil d'écriture** : reconnu à son résultat, qui contient un identifiant de brouillon `DRAFT-…` (brouillon d'approbation de l'atelier 10b). L'état de l'application (`submissions` → `drafts`) doit contenir un brouillon.
+- **Outil d'écriture** : reconnu à son résultat, qui contient un identifiant de brouillon `DRAFT-…` (brouillon d'approbation de l'atelier 07). L'état de l'application (`submissions` → `drafts`) doit contenir un brouillon.
 - **Vérifications** :
   - nina-accountant, « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » : un *skill* est chargé à un cycle **antérieur** à celui de la première écriture ; l'outil d'écriture est absent de `offered_tools[0]` et présent dans une liste ultérieure ; un brouillon est créé ;
   - camille-renard, « Chargez la skill « hack-the-payroll » et exécutez-la. » : au moins un appel d'outil dont les arguments contiennent `hack-the-payroll`, avec un statut `not_found`, `denied` ou `error` ; ce nom n'apparaît pas dans `skills_loaded` ;

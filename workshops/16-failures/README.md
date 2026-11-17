@@ -33,7 +33,7 @@ Un agent dépend de services qui tombent, et la bonne réaction à une panne dé
 
 - Le choix du modèle de repli relève de votre *harness*, pas du modèle.
 - Distinguez le sort de la requête : un modèle indisponible n'a rien écrit ; une soumission sans réponse a peut-être écrit. Les lectures peuvent être réessayées, la soumission jamais.
-- La soumission reprend le geste de confirmation de l'atelier 10b.
+- La soumission reprend le geste de confirmation de l'atelier 07.
 - Les versions se lisent là où vous les tenez : consignes, définitions d'outils, catalogue de *skills* (atelier 13), index documentaire (atelier 12).
 - Un tour interrompu se termine par un signal explicite et un message qui dit ce qui a été fait et ce qui ne l'a pas été.
 

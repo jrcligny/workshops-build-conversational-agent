@@ -51,7 +51,7 @@ def compaction(**extra: Any) -> Event:
 
 
 def confirmation_requested(draft_id: str, **extra: Any) -> Event:
-    """A write is prepared and waits for the user's gesture (workshop 10b)."""
+    """A write is prepared and waits for the user's gesture (workshop 07)."""
     return Event("confirmation_requested", {"draft_id": draft_id, **extra})
 
 

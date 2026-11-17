@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 import httpx
 
 # Default of `open`: a signed-in interface, which hands the agent a valid entry token for
-# the user. Workshop 10a passes `app_token=None` (or a bad token) to test the refusal.
+# the user. Workshop 07 passes `app_token=None` (or a bad token) to test the refusal.
 SIGNED_IN = object()
 
 
