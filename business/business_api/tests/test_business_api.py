@@ -152,6 +152,24 @@ def test_grouping_by_supplier_and_month(observation, services):
     assert refused.status_code == 400 and "month" in refused.text
 
 
+def test_generic_query_is_bounded_declared_and_paged(observation, business_client):
+    observation.reset("volume")
+    late = {"customer_id": "C-VOLUMEX", "late": True}
+    first = business_client.post("/sources/orders/query", json={"filters": late, "limit": 20}).json()
+    assert len(first["rows"]) == 20 and first["truncated"] and first["next_offset"] == 20
+    assert all(r["late"] for r in first["rows"]) and first["total_status"] == "exact"
+    second = business_client.post("/sources/orders/query", json={"filters": late, "limit": 20, "offset": 20}).json()
+    assert not {r["reference"] for r in first["rows"]} & {r["reference"] for r in second["rows"]}
+    count = business_client.post("/sources/orders/query", json={"filters": late, "aggregate": "count"}).json()
+    assert count["value"] == first["total"]
+    every = business_client.post("/sources/orders/query", json={"filters": {"customer_id": "C-VOLUMEX"}, "limit": 20}).json()
+    assert every["total"] == 200 and every["total_status"] == "minimum"
+    groups = business_client.post(
+        "/sources/orders/query", json={"filters": {"customer_id": "C-VOLUMEX"}, "group_by": "order_date", "limit": 5}
+    ).json()
+    assert len(groups["rows"]) == 5 and groups["truncated"] and groups["total"] > 5
+
+
 def test_observation_catalog(observation):
     catalog = observation.reset("standard")
     assert "CMD-1042" in catalog["cases"]

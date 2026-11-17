@@ -32,10 +32,15 @@ detail_through_the_consultation_tool:
   conversation:                        # loaded, not played: the list was already shown
     - user: "Quelles sont les commandes en retard de Transports Morel ?"
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-VOLUMEX, filter: late}
+        - name: resolve_name
+          arguments: {entity_type: customer, name: Transports Morel}
           result:
-            orders:
+            matches:
+              - {id: C-VOLUMEX, name: Transports Morel, city: Rennes}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-VOLUMEX, late: true}, limit: 3}
+          result:
+            rows:
               - {reference: CMD-V0007, status: shipped, promised_date: "2026-02-23"}
               - {reference: CMD-V0364, status: shipped, promised_date: "2026-02-28"}
               - {reference: CMD-V0028, status: shipped, promised_date: "2026-02-26"}
@@ -43,6 +48,7 @@ detail_through_the_consultation_tool:
             total: 60
             total_status: exact
             truncated: true
+            next_offset: 3
       answer: >-
         Transports Morel a 60 commandes en retard ; voici les 3 premières (liste partielle) :
         CMD-V0007, CMD-V0364 et CMD-V0028, toutes expédiées. Voulez-vous la suite ?

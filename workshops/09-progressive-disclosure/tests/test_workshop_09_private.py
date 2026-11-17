@@ -1,6 +1,6 @@
 """Private tests of workshop 09 (not given to students): same checks (`checks.py`), other cases
 (`cases_private.yaml`): other phrasings, totals read from the business API (never hard-coded),
-a third portion, the detail of another row of the list.
+a third portion, the detail of another row of the list, a large grouping.
 """
 
 import pytest
@@ -26,10 +26,17 @@ def test_small_list_is_not_declared_partial(chat_client, observation, business_c
     assert 0 < expected <= checks.DISPLAY_LIMIT
     _, trace = successful_turn(chat_client, CASES["small_list_is_not_declared_partial"]["question"])
     listings = checks.listings(trace)
-    assert listings, "a list of orders is expected in a tool result (result.orders)"
+    assert listings, 'a list of orders is expected from the generic query (arguments.source "orders", result.rows)'
     result = listings[-1]
     assert (result.get("total"), result.get("total_status"), result.get("truncated")) == (expected, "exact", False)
-    assert result.get("returned") == len(result["orders"]) == expected
+    assert result.get("returned") == len(result["rows"]) == expected
+
+
+def test_large_grouping_is_bounded_and_declared(chat_client, observation, business_client):
+    # Private only: the bounds of chapter 9 also hold for the groupings of chapter 6.
+    checks.large_grouping_is_bounded_and_declared(
+        chat_client, observation, business_client, CASES["large_grouping_is_bounded_and_declared"]
+    )
 
 
 def test_two_next_portions_without_repeating_rows(chat_client, observation):

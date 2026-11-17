@@ -128,12 +128,12 @@ Gardez donc `application()` et `MCP_PATH`. La coquille les fournit déjà, avec 
 
 - Partez de la coquille `my-agent/mcp_server.py` : `create_server()`, `application()`, `MCP_PATH`, SDK officiel `mcp`. Dans le serveur, `agent_sdk.http_client` joint l'API métier.
 - Côté *harness*, `agent_sdk/src/agent_sdk/mcp_client.py` fournit `list_tools()`, `call_tool()` et `as_openai_tool()` (adresse lue dans `MCP_URL`), avec la liste de vérification du branchement dans sa docstring. Le catalogue d'outils et le champ `transport: "mcp"` de la trace restent à vous.
-- Les routes génériques sont dans `business/business_api/src/business_api/app.py` : `GET /sources`, `GET /sources/{name}` (champs, valeurs codées, agrégats) et `POST /sources/{name}/query` (`filters`, `limit`, `aggregate`, `group_by`). Une clé de filtre inconnue est refusée (400), mais pas une valeur codée invalide : la vérification revient au serveur MCP.
+- Les routes génériques sont dans `business/business_api/src/business_api/app.py` : `GET /sources`, `GET /sources/{name}` (champs, valeurs codées, agrégats) et `POST /sources/{name}/query` (`filters`, `limit`, `offset`, `aggregate`, `group_by`). Une clé de filtre inconnue est refusée (400), mais pas une valeur codée invalide : la vérification revient au serveur MCP.
 - Pendant `workshop check`, les tests de cet atelier démarrent votre serveur MCP et transmettent son adresse au harnais par `MCP_URL`, comme `workshop serve`. Lisez `MCP_URL` à chaque tour ; les adresses des autres services arrivent de la même façon (`BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`). Pour les tests d'autres ateliers, où `MCP_URL` n'est pas définie, le harnais démarre ou joint lui-même son serveur.
 - Le chargement du module est fait par `gateway/agent_gateway/src/agent_gateway/loader.py` (`load_mcp_server`).
 - Les questions des factures demandent le rôle `accountant` ou `financial_controller`.
 - `GET /sources/{name}` déclare les agrégats proposés (`aggregates`) et le champ de date (`date_field`). `group_by` accepte un champ ou une liste de champs, dont `month` (mois de ce champ de date). La médiane n'est pas une erreur HTTP : l'application renvoie `refused` et `available_aggregates`.
-- Un résultat sans agrégat est déjà borné et déclaré par l'application (`rows`, `total`, `truncated`, `limit`). Gardez ces champs jusqu'au modèle.
+- Un résultat sans agrégat, comme un regroupement, est déjà déclaré par l'application (`rows`, `total`, `total_status`, `truncated`, `limit`, `offset`, `next_offset`). Gardez ces champs jusqu'au modèle ; l'atelier 09 bornera l'affichage.
 
 ## Vérifier
 

@@ -104,5 +104,23 @@ def test_written_tool_results_match_the_business_application(business_client, ob
                 _same_fields(order, orders[order["reference"]], what)
             if "total" in result:
                 assert result["total"] == listed["total"], what
+        elif name == "resolve_name":
+            found = {m["id"]: m for m in business_client.get(
+                "/resolution", params={"type": args["entity_type"], "name": args["name"]}
+            ).json()}
+            written = result.get("matches") or []
+            assert {m["id"] for m in written} == set(found), what
+            for match in written:
+                _same_fields(match, found[match["id"]], what)
+        elif name == "query":
+            body = {k: args[k] for k in ("filters", "limit", "offset", "aggregate", "group_by") if k in args}
+            queried = business_client.post(f"/sources/{args['source']}/query", json=body).json()
+            rows = {r.get("reference"): r for r in queried.get("rows") or []}
+            for row in result.get("rows") or []:
+                assert row.get("reference") in rows, what
+                _same_fields(row, rows[row["reference"]], what)
+            for key in ("total", "total_status", "truncated", "next_offset", "value"):
+                if key in result:
+                    assert result[key] == queried.get(key), f"{what}: written {key}={result[key]!r}, business application {queried.get(key)!r}"
         else:
-            pytest.fail(f"{what}: unknown neutral tool (get_order, search_customers, list_orders)")
+            pytest.fail(f"{what}: unknown neutral tool (get_order, search_customers, list_orders, resolve_name, query)")

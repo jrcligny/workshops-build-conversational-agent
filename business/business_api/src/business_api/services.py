@@ -180,6 +180,7 @@ SOURCES = {
             "promised_date": "promised delivery date",
             "customer_id": "customer identifier",
             "order_date": "order date",
+            "late": "computed: true when the promised date has passed and the order is not delivered (filter only)",
         },
         "relations": {"customer_id": "customers.id"},
         "date_field": "order_date",
@@ -236,8 +237,40 @@ SOURCES = {
 }
 
 
+# Fields computed by the application, not stored: they filter rows after the SQL query.
+COMPUTED_FILTERS = {"orders": {"late"}}
+
+
+def _truthy(value) -> bool:
+    return value is True or str(value).strip().lower() in {"true", "1", "yes"}
+
+
+def _page(rows: list, limit: int | None, offset: int) -> dict:
+    """Bounded portion of `rows`, declared: retrieval cap, total, position of the next portion."""
+    total_status = "minimum" if len(rows) > ORDER_RETRIEVAL_CAP else "exact"
+    rows = rows[:ORDER_RETRIEVAL_CAP]
+    total = len(rows)
+    offset = max(offset or 0, 0)
+    end = total if limit is None else min(total, offset + limit)
+    return {
+        "rows": rows[offset:end],
+        "total": total,
+        "total_status": total_status,
+        "truncated": offset > 0 or end < total,
+        "limit": limit,
+        "offset": offset,
+        "next_offset": end if end < total else None,
+    }
+
+
 def query_source(
-    name: str, identity: dict, filters: dict, limit: int | None, aggregate: str | None, group_by: str | list[str] | None
+    name: str,
+    identity: dict,
+    filters: dict,
+    limit: int | None,
+    aggregate: str | None,
+    group_by: str | list[str] | None,
+    offset: int = 0,
 ) -> dict:
     if name not in SOURCES:
         raise ValueError("unknown source")
@@ -247,18 +280,26 @@ def query_source(
             "reason": "the median is not offered",
             "available_aggregates": SOURCES[name]["aggregates"],
         }
+    computed = COMPUTED_FILTERS.get(name, set())
+    order = SOURCES[name].get("date_field")
     sql = f"SELECT * FROM {name} WHERE organization_id = ?"
     params: list[Any] = [_org(identity)]
+    post_filters = {}
     for key, value in (filters or {}).items():
+        if key in computed:
+            post_filters[key] = _truthy(value)
+            continue
         if key not in SOURCES[name]["fields"] and key not in {"organization_id", "id", "customer_id", "status"}:
             raise ValueError(f"unrecognized filter: {key}")
         sql += f" AND {key} = ?"
         params.append(value)
+    sql += f" ORDER BY {order}, id" if order else " ORDER BY id"
     rows = [dict(r) for r in connection().execute(sql, params).fetchall()]
     if name == "orders":
         rows = [r for r in rows if not is_excluded(r, identity)]
         for r in rows:
             r["late"] = is_late(r)
+    rows = [r for r in rows if all(bool(r.get(k)) == v for k, v in post_filters.items())]
     total = len(rows)
     if aggregate or group_by:
         if group_by:
@@ -277,7 +318,7 @@ def query_source(
                 if aggregate == "average":
                     item["average"] = round(sum(values) / len(values), 2) if values else 0
                 result.append(item)
-            return {"rows": result, "total": len(result), "aggregate": aggregate, "group_by": group_by}
+            return {**_page(result, limit, offset), "aggregate": aggregate, "group_by": group_by}
         amounts = [float(r.get("amount") or 0) for r in rows]
         if aggregate == "count":
             value = total
@@ -288,11 +329,7 @@ def query_source(
         else:
             raise ValueError("unknown aggregate")
         return {"value": value, "aggregate": aggregate, "total": total}
-    truncated = False
-    if limit is not None and len(rows) > limit:
-        rows = rows[:limit]
-        truncated = True
-    return {"rows": rows, "total": total, "truncated": truncated, "limit": limit}
+    return _page(rows, limit, offset)
 
 
 def prepare_draft(typ: str, payload: dict, identity: dict) -> dict:

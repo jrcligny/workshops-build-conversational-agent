@@ -1,11 +1,14 @@
 """Checks of workshop 09, shared by the public and the private tests (one function per criterion).
 
-Contract read here (`tools[].result` of the order-list tool, jeu `volume`):
-- a summarized, bounded list: `orders` (at most 20 rows, each without detail fields such as `amount`,
-  `delivery_city`, `customer_id`), `returned` (rows in this portion), `total`, `total_status`
-  (`"exact"` or `"minimum"` when the application's retrieval cap is reached) and `truncated`;
-- the next portion through a position: rows not already received;
-- count mode: `arguments.mode == "count"` and `result.count`, without rows;
+The workshop bounds the generic query tool of workshop 06 (`source`, `filters`, …). Contract read here
+(`tools[]` of that tool, dataset `volume`):
+- a summarized, bounded list: a call with `arguments.source == "orders"` whose `result.rows` holds at
+  most 20 rows, each without detail fields such as `amount`, `delivery_city`, `customer_id`; next to it
+  `result.returned` (rows in this portion), `result.total`, `result.total_status` (`"exact"`, or
+  `"minimum"` when the application's retrieval cap is reached) and `result.truncated`;
+- the next portion through a position (`arguments.offset`): rows not already received;
+- count: `arguments.aggregate == "count"` and `result.value`, without rows;
+- a grouping (`arguments.group_by`) is bounded and declared the same way (private test);
 - the detail of one order through the consultation tool (business API `GET /orders/<reference>`), after a
   loaded conversation in which the list was already shown (`case["conversation"]`, only the detail
   question is played);
@@ -29,21 +32,45 @@ DISPLAY_LIMIT = 20
 DETAIL_KEYS = ("amount", "delivery_city", "delivery_date", "customer_id", "organization_id", "deleted")
 
 
+def is_listing(result) -> bool:
+    rows = result.get("rows") if isinstance(result, dict) else None
+    return isinstance(rows, list) and all(isinstance(r, dict) and "group" not in r for r in rows)
+
+
 def listings(trace) -> list[dict]:
-    return [tool_result(c) for c in tools(trace) if isinstance(tool_result(c).get("orders"), list)]
+    """Results of the generic query on the orders, as rows (neither a count nor a grouping)."""
+    return [
+        tool_result(c)
+        for c in tools(trace)
+        if tool_arguments(c).get("source") == "orders" and not tool_arguments(c).get("group_by") and is_listing(tool_result(c))
+    ]
 
 
 def references(listing: dict) -> list[str]:
-    return [str(row.get("reference")) for row in listing["orders"] if isinstance(row, dict)]
+    return [str(row.get("reference")) for row in listing["rows"] if isinstance(row, dict)]
+
+
+def morel_query(business_client, **body) -> dict:
+    customer = business_client.get("/customers", params={"name": "Transports Morel"}).json()[0]
+    filters = {"customer_id": customer["id"], **body.pop("filters", {})}
+    return business_client.post("/sources/orders/query", json={"filters": filters, **body}).json()
 
 
 def late_total(business_client) -> int:
-    customer = business_client.get("/customers", params={"name": "Transports Morel"}).json()[0]
-    return business_client.get(f"/customers/{customer['id']}/orders", params={"filter": "late"}).json()["total"]
+    return morel_query(business_client, filters={"late": True}, aggregate="count")["value"]
 
 
 def expected_late_total(case: dict, business_client) -> int:
     return case["total"] if case.get("total") is not None else late_total(business_client)
+
+
+def bounded_and_declared(result: dict, total: int) -> None:
+    rows = result["rows"]
+    assert 0 < len(rows) <= DISPLAY_LIMIT, f"at most {DISPLAY_LIMIT} rows are shown to the model"
+    assert result.get("returned") == len(rows), "result.returned gives the number of rows in this portion"
+    assert (result.get("total"), result.get("total_status"), result.get("truncated")) == (total, "exact", True), (
+        "result.total, result.total_status and result.truncated declare the cut"
+    )
 
 
 def bounded_summary_list_with_declared_total(chat_client, observation, business_client, case: dict) -> None:
@@ -51,14 +78,10 @@ def bounded_summary_list_with_declared_total(chat_client, observation, business_
     expected = expected_late_total(case, business_client)
     turn, trace = successful_turn(chat_client, case["question"])
     found = listings(trace)
-    assert found, "a list of orders is expected in a tool result (result.orders)"
+    assert found, 'a list of orders is expected from the generic query (arguments.source "orders", result.rows)'
     result = found[-1]
-    rows = result["orders"]
-    assert 0 < len(rows) <= DISPLAY_LIMIT, f"at most {DISPLAY_LIMIT} rows are shown to the model"
-    assert result.get("returned") == len(rows), "result.returned gives the number of rows in this portion"
-    assert (result.get("total"), result.get("total_status"), result.get("truncated")) == (expected, "exact", True), (
-        "result.total, result.total_status and result.truncated declare the cut"
-    )
+    rows = result["rows"]
+    bounded_and_declared(result, expected)
     if case.get("references_are_order_numbers"):
         assert all(str(r).startswith("CMD-") for r in references(result)) and len(references(result)) == len(rows)
     leaked = sorted({k for row in rows if isinstance(row, dict) for k in row if k in DETAIL_KEYS})
@@ -72,7 +95,7 @@ def bounded_summary_list_with_declared_total(chat_client, observation, business_
 def next_portions_without_repeating_rows(chat_client, observation, case: dict) -> None:
     observation.reset("volume")
     _, first = successful_turn(chat_client, case["question"])
-    assert listings(first), "the first portion comes from the order-list tool"
+    assert listings(first), "the first portion comes from the generic query"
     seen = set(references(listings(first)[-1]))
     for follow_up in case["follow_ups"]:
         _, trace = successful_turn(chat_client, follow_up)
@@ -88,7 +111,7 @@ def total_is_a_minimum_at_the_retrieval_cap(chat_client, observation, case: dict
     observation.reset("volume")
     turn, trace = successful_turn(chat_client, case["question"])
     found = listings(trace)
-    assert found, "a list of orders is expected in a tool result (result.orders)"
+    assert found, 'a list of orders is expected from the generic query (arguments.source "orders", result.rows)'
     result = found[-1]
     minimum = case["minimum_total"]
     assert (result.get("total"), result.get("total_status")) == (minimum, "minimum"), (
@@ -103,17 +126,27 @@ def count_mode(chat_client, observation, business_client, case: dict) -> None:
     observation.reset("volume")
     expected = expected_late_total(case, business_client)
     turn, trace = successful_turn(chat_client, case["question"])
-    counted = [c for c in tools(trace) if tool_result(c).get("count") == expected]
-    assert counted, "a count-mode call returns result.count, the number without the rows"
-    assert not tool_result(counted[-1]).get("orders"), "count mode returns no rows"
-    assert tool_arguments(counted[-1]).get("mode") == "count", "count mode is a tool argument (mode: \"count\")"
+    counted = [c for c in tools(trace) if tool_arguments(c).get("aggregate") == "count" and tool_result(c).get("value") == expected]
+    assert counted, 'a count is asked to the generic query (arguments.aggregate "count", result.value), not computed from rows'
+    assert not tool_result(counted[-1]).get("rows"), "the count returns no rows"
     mentions_any(turn, str(expected), "the answer gives the count", strict=True)
+
+
+def large_grouping_is_bounded_and_declared(chat_client, observation, business_client, case: dict) -> None:
+    observation.reset("volume")
+    expected = morel_query(business_client, group_by=case["group_by"])["total"]
+    assert expected > DISPLAY_LIMIT, "the case asks for more groups than the display limit"
+    turn, trace = successful_turn(chat_client, case["question"])
+    grouped = [c for c in tools(trace) if tool_arguments(c).get("source") == "orders" and tool_arguments(c).get("group_by")]
+    assert grouped, 'the grouping is asked to the generic query (arguments.group_by)'
+    bounded_and_declared(tool_result(grouped[-1]), expected)
+    mentions_any(turn, str(expected), "the answer gives the number of groups", strict=True)
 
 
 def detail_through_the_consultation_tool(chat_client, observation, business_client, case: dict) -> None:
     observation.reset("volume")
     chat_client.load(case["conversation"])
-    shown = [c["result"] for c in tool_results(case["conversation"]) if c["name"] == "list_orders"][-1]
+    shown = [c["result"] for c in tool_results(case["conversation"]) if is_listing(c["result"])][-1]
     reference = references(shown)[case["row"]]
     amount = business_client.get(f"/orders/{reference}").json()["amount"]
     turn, _ = successful_turn(chat_client, case["detail_question"].format(reference=reference))
