@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import json
 from typing import Any
 
 
@@ -17,6 +18,37 @@ class WorkingMemory:
         self._states: dict[str, dict[str, Any]] = {}
         # Conversations whose namesake candidates appeared in the current turn: the user has not chosen yet.
         self._choice_pending: set[str] = set()
+
+    def bind(self, conversation_id: str, state: dict[str, Any]) -> None:
+        """The state lives in the conversation context (agent_sdk.context ctx.state): updated in place."""
+        self._states[conversation_id] = state
+
+    def rebuild(self, conversation_id: str, messages: list[dict[str, Any]], lookup) -> None:
+        """A loaded conversation comes without state: replay its tool results, turn by turn, to rebuild it.
+
+        Written histories may name tools this agent does not offer (search_customers, list_orders): their
+        results are read the same way as those of find_by_name and query."""
+        calls: dict[str, tuple[str, dict]] = {}
+        for message in messages:
+            role = message.get("role")
+            if role == "user":
+                self.begin_turn(conversation_id)
+            elif role == "assistant":
+                for call in message.get("tool_calls") or []:
+                    function = call.get("function") or {}
+                    try:
+                        arguments = json.loads(function.get("arguments") or "{}")
+                    except (TypeError, ValueError):
+                        arguments = {}
+                    calls[call.get("id", "")] = (function.get("name", ""), arguments if isinstance(arguments, dict) else {})
+            elif role == "tool":
+                name, arguments = calls.get(message.get("tool_call_id", ""), (message.get("name", ""), {}))
+                try:
+                    result = json.loads(message.get("content") or "")
+                except (TypeError, ValueError):
+                    continue  # a cleared result (marker): nothing to read
+                if isinstance(result, dict):
+                    self.update(conversation_id, *_normalized(name or message.get("name", ""), arguments, result), lookup)
 
     def begin_turn(self, conversation_id: str) -> None:
         self._choice_pending.discard(conversation_id)
@@ -63,6 +95,11 @@ class WorkingMemory:
             elif customers:
                 state["candidates"] = customers
                 self._choice_pending.add(conversation_id)
+        elif name == "query" and status == "ok" and result.get("source") == "customers":
+            rows = result.get("rows") or []
+            if len(rows) == 1 and rows[0].get("id"):
+                # One customer read (for instance the namesake the user just chose): the conversation is about him.
+                self._set_customer(state, rows[0])
         elif name == "query" and status == "ok" and result.get("source") == "orders":
             customer_id = (result.get("filters") or {}).get("customer_id")
             known = {c["id"]: c for c in state.get("candidates") or []}
@@ -86,6 +123,14 @@ class WorkingMemory:
                     or lookup(customer_id)
                 )
                 self._set_customer(state, customer or {"id": customer_id, "name": customer_id})
+                orders = result.get("orders") or []
+                if len(orders) == 1 and result.get("total") == 1 and orders[0].get("reference"):
+                    # The customer's only order is the one the conversation is about.
+                    state["current_order"] = {
+                        "reference": orders[0]["reference"],
+                        "status_label": orders[0].get("status_label") or orders[0].get("status"),
+                        "customer_id": customer_id,
+                    }
         elif name == "get_order" and status in {"found", "approximate"}:
             order = result.get("order") or {}
             customer_id = order.get("customer_id")
@@ -96,7 +141,7 @@ class WorkingMemory:
                     self._set_customer(state, customer)
             state["current_order"] = {
                 "reference": order.get("reference"),
-                "status_label": order.get("status_label"),
+                "status_label": order.get("status_label") or order.get("status"),
                 "customer_id": customer_id,
             }
 
@@ -108,3 +153,21 @@ class WorkingMemory:
         order = state.get("current_order")
         if previous != customer.get("id") and order and order.get("customer_id") != customer.get("id"):
             state.pop("current_order", None)
+
+
+def _normalized(name: str, arguments: dict, result: dict) -> tuple[str, dict, dict]:
+    """Maps the results of neutral tool names onto this agent's own tools."""
+    if name == "search_customers":
+        customers = result.get("customers") or result.get("matches") or []
+        return "find_by_name", arguments, {"status": "ok", "entity_type": "customer", "matches": customers}
+    if name == "list_orders":
+        customer_id = arguments.get("customer_id") or (arguments.get("filters") or {}).get("customer_id")
+        orders = result.get("orders") or []
+        return "query", arguments, {
+            "status": "ok", "source": "orders", "filters": {"customer_id": customer_id}, "orders": orders,
+            "offset": 0, "returned": len(orders), "next_offset": None, "total": result.get("total", len(orders)),
+            "total_status": "exact",
+        }
+    if name == "get_order" and result.get("status") == "ok":
+        return name, arguments, {**result, "status": "found"}
+    return name, arguments, result
