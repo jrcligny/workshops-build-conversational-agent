@@ -29,6 +29,7 @@ WORKSHOPS = {
     "07": "07-acting-rights",
     "09": "09-progressive-disclosure",
     "10": "10-context-compaction",
+    "11": "11-no-memory",
     "12": "12-document-search",
     "13": "13-skills",
     "14": "14-read-without-obeying",

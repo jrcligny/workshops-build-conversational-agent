@@ -1,8 +1,8 @@
 # Atelier bonus — Une mémoire persistante
 
-Chapitre 12 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 11 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
-> **Écart assumé avec le livre.** Pour le fil rouge, le chapitre 12 retient « aucune mémoire, dite explicitement ». Cet atelier met en œuvre une autre option décrite dans le chapitre : une mémoire de préférences, écrite à la demande de l'utilisateur et relue au début de chaque conversation.
+> **Écart assumé avec le livre.** Pour le fil rouge, le chapitre 11 retient « aucune mémoire, dite explicitement ». Cet atelier met en œuvre une autre option décrite dans le chapitre : une mémoire de préférences, écrite à la demande de l'utilisateur et relue au début de chaque conversation. Il est hors parcours : `--non-regression` ne le rejoue jamais, et ses tests s'opposent à ceux de l'atelier 11 (aucune mémoire).
 
 ## Ce que vous allez construire
 

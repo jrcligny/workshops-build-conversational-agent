@@ -2,7 +2,7 @@
 
 Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se trouve dans [README.md](README.md).
 
-Sections du chapitre 12 exercées par cet atelier (écart assumé avec le fil rouge du livre) : « La mémoire persistante », « Que mémoriser, et qui l'écrit », « Relire, corriger, oublier » et « Données personnelles et confidentialité ».
+Sections du chapitre 11 exercées par cet atelier (écart assumé avec le fil rouge du livre) : « La mémoire persistante », « Que mémoriser, et qui l'écrit », « Relire, corriger, oublier » et « Données personnelles et confidentialité ».
 
 ## Ce que lisent les tests
 

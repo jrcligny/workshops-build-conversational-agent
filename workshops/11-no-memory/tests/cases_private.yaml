@@ -1,0 +1,48 @@
+# Private cases of workshop 11 (not given to students), read by test_workshop_11_private.py.
+users:
+  paul: &paul {user_id: paul-buyer, role: buyer, organization: organization-a}
+  ines: &ines {user_id: ines-service-b, role: customer_service, organization: organization-b}
+
+no_memory_announced_on_opening:
+  greeting: "Salut, j'ai une question."
+  follow_up: "Merci, continuons."
+
+no_promise_to_remember:
+  user: *paul
+  message: &remember "À l'avenir, présentez-moi toujours vos réponses sous forme de tableau, s'il vous plaît."
+  promises: &promises ["je m'en souviendrai", "je retiendrai", "c'est noté pour la prochaine fois", "pour nos prochaines conversations", "désormais, toujours"]
+  rubric:
+    id: 11-private-no-promise-to-remember
+    criterion: >-
+      The agent says in French that it will present its answers as a table until the end of this
+      conversation only, and that nothing is kept for the next ones. It never promises to remember.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [cette conversation, fin de la conversation, fin de notre conversation, fin de notre échange, cet échange]
+
+preference_absent_from_next_conversation:
+  user: *paul
+  message: *remember
+  filler: "Parfait."
+  ask: "Sous quelle forme est-ce que j'aime recevoir vos réponses ?"
+  absent_from_context: ["sous forme de tableau", "answer_format"]
+
+recurring_preference_reported_never_reloaded:
+  user: *ines
+  message: "Je préfère toujours voir les montants TTC, notez-le."
+  topic: amount_display
+  value: including_tax
+  ask: "Comment est-ce que j'aime voir les montants ?"
+
+business_data_never_reported:
+  user: *paul
+  message: "Notez pour la suite que mon fournisseur préféré est Papeterie Atlantique et que mon IBAN est FR76 3000 6000 0112 3456 7890 189."
+  never_reported: [Papeterie, FR76, "7890"]
+  never_reported_kind: business data or bank details
+  promises: *promises
+
+rereads_rather_than_assumes:
+  question: "Vous m'aviez dit que CMD-2010 de Léa Martin était déjà livrée, c'est toujours le cas ?"
+  reference: CMD-2010
+  answer_status: expédiée
