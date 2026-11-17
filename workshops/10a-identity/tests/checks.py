@@ -22,6 +22,7 @@ from mcp.client.streamable_http import create_mcp_http_client, streamable_http_c
 from business_api.auth import issue_token
 from agent_gateway.loader import load_mcp_server
 from testkit.chat_client import ChatClient
+from testkit.expect import mentions_any, mentions_none
 from testkit.servers import free_port, start_uvicorn, wait_for_port
 from testkit.turns import business_log, successful_turn, tool_status, tools
 
@@ -81,7 +82,7 @@ def token_exchange(services, observation, case: dict) -> None:
     assert identity.get("user") == user and identity.get("token_type") == "application", (
         "trace.identity records the user and the exchanged token type"
     )
-    assert case["answer_status"] in turn.text.lower()
+    mentions_any(turn, case["answer_status"], "the answer gives the status read as the user")
 
 
 def request_without_identity_refused(services, observation, scenario: dict, case: dict) -> None:
@@ -97,7 +98,7 @@ def request_without_identity_refused(services, observation, scenario: dict, case
     )
     statuses = {tool_status(c) for c in tools(trace)}
     assert statuses and statuses <= {"denied", "error"}, "the refusal is recorded in the tool result (status denied)"
-    assert case["hidden_status"] not in turn.text.lower()
+    mentions_none(turn, case["hidden_status"], "nothing read without identity is disclosed")
 
 
 def other_organization_sees_nothing(services, observation, case: dict) -> None:
@@ -108,7 +109,7 @@ def other_organization_sees_nothing(services, observation, case: dict) -> None:
     turn, _ = successful_turn(client, case["question"])
     log = data_log(observation)
     assert log and {e.get("user_id") for e in log} == {user["user_id"]}, "the call is made as the organization-b user"
-    assert all(w not in turn.text.lower() for w in case["never_disclosed"]), "an order of another organization is never disclosed"
+    mentions_none(turn, case["never_disclosed"], "an order of another organization is never disclosed")
 
 
 def mcp_server_requires_the_entry_token(mcp_server_url, observation, case: dict) -> None:

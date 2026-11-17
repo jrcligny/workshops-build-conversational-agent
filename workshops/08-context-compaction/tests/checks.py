@@ -28,16 +28,8 @@ import re
 from workshop_config import repo_path, settings
 from evaluation.judge import judge
 from testkit.conversation import to_messages, tool_results
-from testkit.turns import (
-    business_log,
-    events_of,
-    history,
-    model_calls,
-    model_input,
-    successful_turn,
-    tool_arguments,
-    tools,
-)
+from testkit.expect import calls_with, expect_event, mentions, mentions_all, mentions_none, state_of, strings_in
+from testkit.turns import business_log, history, model_calls, model_input, successful_turn
 
 
 def configure(monkeypatch, scenario: dict) -> None:
@@ -50,22 +42,6 @@ def compaction_prompt() -> str:
     path = repo_path(settings.my_agent_dir) / "compaction_prompt.md"
     text = path.read_text(encoding="utf-8") if path.exists() else ""
     return re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL).strip()
-
-
-def _strings(value) -> list[str]:
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, dict):
-        value = list(value.values())
-    if isinstance(value, list):
-        return [s for v in value for s in _strings(v)]
-    return []
-
-
-def _state(trace) -> dict:
-    state = trace.get("state")
-    assert isinstance(state, dict) and state, "trace.state must hold the conversation state as an object"
-    return state
 
 
 def _by_turn(messages: list[dict]) -> list[list[dict]]:
@@ -165,7 +141,7 @@ def compaction_own_prompt_and_rolling_summary(chat_client, services, scenario: d
     assert model_input(trace).get("message") == case["question"]
     summary = str(compaction.get("summary") or "").strip()
     assert summary, "compaction.summary holds the summary"
-    assert any(summary in s for s in _strings(model_input(trace))), "the model input contains the summary"
+    assert any(summary in s for s in strings_in(model_input(trace))), "the model input contains the summary"
     assert not str(compaction.get("previous_summary") or "").strip(), "the first summary starts from nothing"
 
     continuation = case.get("continuation") or scenario["continuation"]
@@ -199,8 +175,8 @@ def answer_from_summary_after_compaction(chat_client, observation, scenario: dic
 
 def compaction_reported_in_the_interface(chat_client, scenario: dict, case: dict) -> None:
     turn, _, _ = _compacting_turn(chat_client, scenario, case["question"])
-    assert events_of(turn, "compaction") or events_of(turn, "mention"), (
-        "the interface is told (compaction or mention event) that the start of the conversation was summarized"
+    expect_event(
+        turn, "compaction", "mention", message="the interface is told that the start of the conversation was summarized"
     )
 
 
@@ -215,16 +191,14 @@ def state_kept_after_compaction(chat_client, scenario: dict, case: dict) -> None
     assert all(customer.get(k) == v for k, v in case["customer"].items()), (
         f"input.state.current_customer is {case['customer']}"
     )
-    assert case["reference"] in str([tool_arguments(c) for c in tools(trace)]) or any(
-        w in turn.text.lower() for w in case["status_words"]
-    ), f"\"{case['question']}\" is resolved from the state: the answer is about {case['reference']}"
+    assert calls_with(trace, case["reference"]) or mentions(turn, case["status_words"]), f"\"{case['question']}\" is resolved from the state: the answer is about {case['reference']}"
 
 
 def choice_between_namesakes_kept(chat_client, scenario: dict, case: dict) -> None:
     _, trace = successful_turn(chat_client, case["request"])
-    assert len(_state(trace).get("candidates") or []) == 2, "state.candidates holds the two namesakes while the choice is pending"
+    assert len(state_of(trace).get("candidates") or []) == 2, "state.candidates holds the two namesakes while the choice is pending"
     _, trace = successful_turn(chat_client, case["choice"])
-    assert (_state(trace).get("current_customer") or {}).get("city") == case["city"], (
+    assert (state_of(trace).get("current_customer") or {}).get("city") == case["city"], (
         f"state.current_customer is the {case['city']} namesake"
     )
     filler = scenario["filler"]
@@ -232,18 +206,18 @@ def choice_between_namesakes_kept(chat_client, scenario: dict, case: dict) -> No
     chat_client.load(filler, append=True)
     turn, trace = successful_turn(chat_client, case["question"])
     assert isinstance(trace.get("compaction"), dict), "the turn compacts: the choice must survive the compaction"
-    assert (_state(trace).get("current_customer") or {}).get("city") == case["city"]
-    text = turn.text.lower()
-    assert case["city"].lower() in text and case["other_city"].lower() not in text
+    assert (state_of(trace).get("current_customer") or {}).get("city") == case["city"]
+    mentions_all(turn, case["city"], "the answer is about the chosen namesake")
+    mentions_none(turn, case["other_city"], "the answer is not about the other namesake")
 
 
 def customer_change_without_ambiguity(chat_client, case: dict) -> None:
     _, trace = successful_turn(chat_client, case["first"])
     if case.get("first_customer"):
-        assert (_state(trace).get("current_customer") or {}).get("name") == case["first_customer"]
+        assert (state_of(trace).get("current_customer") or {}).get("name") == case["first_customer"]
     if case.get("first_order"):
-        assert (_state(trace).get("current_order") or {}).get("reference") == case["first_order"]
+        assert (state_of(trace).get("current_order") or {}).get("reference") == case["first_order"]
     _, trace = successful_turn(chat_client, case["change"])
-    state = _state(trace)
+    state = state_of(trace)
     assert (state.get("current_customer") or {}).get("name") == case["new_customer"], "the current customer is replaced"
     assert case["dropped_order"] not in str(state.get("current_order") or ""), "the order of the previous customer is dropped"

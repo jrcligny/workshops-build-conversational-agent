@@ -13,17 +13,14 @@ Invoice approval is written by the `accountant` role (nina-accountant).
 from agent_sdk.skills import catalog_dir, load_manifest
 from workshop_config import settings
 from testkit.chat_client import ChatClient
-from testkit.turns import model_input, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
+from testkit.expect import business_writes, mentions_any
+from testkit.turns import model_input, successful_turn, tool_arguments, tool_name, tool_status, tools
 
 
 def client(services, user: dict) -> ChatClient:
     chat = ChatClient(services["interface"])
     chat.open(user_id=user["user_id"], role=user["role"], organization="organization-a")
     return chat
-
-
-def write_calls(trace) -> list[dict]:
-    return [c for c in tools(trace) if "DRAFT-" in str(tool_result(c))]
 
 
 def versioned_catalog_of_three_skills() -> None:
@@ -40,7 +37,7 @@ def versioned_catalog_of_three_skills() -> None:
 
 def skill_loaded_before_write(services, observation, case: dict) -> None:
     turn, trace = successful_turn(client(services, case["user"]), case["message"])
-    writes = write_calls(trace)
+    writes = business_writes(trace)
     assert writes, "the approval is prepared through a write tool (the result carries the draft id)"
     if case.get("draft_about"):
         assert any(case["draft_about"] in str(tool_arguments(c)) for c in writes), f"the draft is about {case['draft_about']}"
@@ -67,7 +64,7 @@ def skill_outside_catalog_refused(chat_client, case: dict) -> None:
 
 def write_according_to_permissions(services, observation, case: dict) -> None:
     _, trace = successful_turn(client(services, case["writer"]), case["message"])
-    writes = write_calls(trace)
+    writes = business_writes(trace)
     assert writes, "the accountant can prepare the approval"
     write_name = tool_name(writes[0])
     observation.reset("standard")
@@ -75,7 +72,7 @@ def write_according_to_permissions(services, observation, case: dict) -> None:
     assert trace.get("offered_tools"), "trace.offered_tools is recorded"
     assert not any(write_name in names for names in trace["offered_tools"]), "the write tool is never offered without the permission"
     assert observation.state("submissions")["drafts"] == []
-    assert any(w in turn.text.lower() for w in case["refusal_words"])
+    mentions_any(turn, case["refusal_words"], "the user is told they cannot approve")
 
 
 def skill_still_present_after_compaction(services, case: dict) -> None:

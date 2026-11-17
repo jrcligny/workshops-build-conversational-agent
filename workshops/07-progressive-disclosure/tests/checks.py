@@ -15,6 +15,7 @@ An expected total given by a case is checked as is; a case without one reads it 
 """
 
 from testkit.conversation import tool_results
+from testkit.expect import mentions, mentions_any
 from testkit.turns import (
     apply_rubric,
     business_log,
@@ -62,7 +63,7 @@ def bounded_summary_list_with_declared_total(chat_client, observation, business_
         assert all(str(r).startswith("CMD-") for r in references(result)) and len(references(result)) == len(rows)
     leaked = sorted({k for row in rows if isinstance(row, dict) for k in row if k in DETAIL_KEYS})
     assert not leaked, f"the rows are summarized, without detail fields: {leaked}"
-    assert str(expected) in turn.text, f"the answer gives the total ({expected})"
+    mentions_any(turn, str(expected), "the answer gives the total", strict=True)
     sizes = [c.get("context_size") for c in (trace.get("model") or {}).get("calls") or []]
     assert len(sizes) >= 2 and all(isinstance(s, int) and s > 0 for s in sizes), "model.calls[].context_size at each cycle"
     apply_rubric(case["rubric"], turn, trace)
@@ -93,8 +94,7 @@ def total_is_a_minimum_at_the_retrieval_cap(chat_client, observation, case: dict
     assert (result.get("total"), result.get("total_status")) == (minimum, "minimum"), (
         "beyond the retrieval cap, the total is declared a minimum"
     )
-    text = turn.text.lower()
-    assert str(minimum) in text and any(p in text for p in case["minimum_words"]), (
+    assert mentions(turn, str(minimum), strict=True) and mentions(turn, case["minimum_words"]), (
         f"the answer says the total is at least {minimum}"
     )
 
@@ -107,7 +107,7 @@ def count_mode(chat_client, observation, business_client, case: dict) -> None:
     assert counted, "a count-mode call returns result.count, the number without the rows"
     assert not tool_result(counted[-1]).get("orders"), "count mode returns no rows"
     assert tool_arguments(counted[-1]).get("mode") == "count", "count mode is a tool argument (mode: \"count\")"
-    assert str(expected) in turn.text
+    mentions_any(turn, str(expected), "the answer gives the count", strict=True)
 
 
 def detail_through_the_consultation_tool(chat_client, observation, business_client, case: dict) -> None:

@@ -10,14 +10,8 @@ only the turn under test is played.
 
 from evaluation.judge import judge
 from testkit.conversation import to_messages
-from testkit.turns import (
-    apply_rubric_repeatedly,
-    business_log,
-    model_calls,
-    model_input,
-    successful_turn,
-    tools,
-)
+from testkit.expect import mentions_none, no_business_call, no_tool_called
+from testkit.turns import apply_rubric_repeatedly, model_calls, model_input, successful_turn
 
 PROMPT_SOURCE_TERMS = ["source", "outil", "vérifi", "donnée"]
 PROMPT_NO_ASSERTION_TERMS = ["affirm", "invent", "devin", "suppos", "spécul", "confirm"]
@@ -66,8 +60,7 @@ def contract_and_short_prompt(chat_client, services, case: dict) -> None:
     prompt = system_prompt(trace)
     assert prompt.strip(), "a system prompt must appear in the trace (input.system_prompt)"
     assert len(prompt.split()) < case["max_prompt_words"]
-    for forbidden in case["forbidden_in_prompt"]:
-        assert forbidden.lower() not in prompt.lower()
+    mentions_none(prompt, case["forbidden_in_prompt"], "the system prompt stays short and generic")
     assert model_input(trace).get("message") == case["question"], "input.message must carry the user's message"
     assert_answer_comes_from_the_model(services, trace)
 
@@ -75,7 +68,7 @@ def contract_and_short_prompt(chat_client, services, case: dict) -> None:
 def no_tool_yet(chat_client, services, case: dict) -> None:
     _, trace = successful_turn(chat_client, case["question"])
     assert_answer_comes_from_the_model(services, trace)
-    assert tools(trace) == [], "no tool is allowed yet in workshop 03 (workshop 04 adds the first one)"
+    no_tool_called(trace, "no tool is allowed yet in workshop 03 (workshop 04 adds the first one)")
 
 
 def refusal_without_source_even_when_the_status_is_right(chat_client, observation, services, case: dict) -> None:
@@ -86,7 +79,7 @@ def refusal_without_source_even_when_the_status_is_right(chat_client, observatio
         chat_client.open()
         turn, trace = successful_turn(chat_client, case["question"])
         assert_answer_comes_from_the_model(services, trace)
-        assert business_log(observation) == []
+        no_business_call(observation)
         traces.append(trace)
         return turn, trace
 
@@ -104,7 +97,7 @@ def refusal_under_insistence(chat_client, observation, services, case: dict) -> 
             "input.history must carry the previous turns (question, refusal, first insistence, refusal)"
         )
         assert_answer_comes_from_the_model(services, trace)
-        assert business_log(observation) == []
+        no_business_call(observation)
         traces.append(trace)
         return turn, trace
 

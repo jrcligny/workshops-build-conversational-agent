@@ -10,6 +10,7 @@ Contract read here:
 import re
 
 from testkit.chat_client import ChatClient
+from testkit.expect import mentions_any
 from testkit.turns import events_of, successful_turn, tool_result, tools
 
 EMPTY_RESULT_DECLARED = re.compile(
@@ -37,7 +38,7 @@ def document_search_and_sources(chat_client, case: dict) -> None:
     assert case["current"] in {s.get("address") for s in shown}
     assert all(s.get("title") and s.get("version") for s in shown), "a source shows its title and version"
     if case.get("answer_any"):
-        assert any(w in turn.text.lower() for w in case["answer_any"])
+        mentions_any(turn, case["answer_any"], "the answer uses the documentation found")
 
 
 def empty_result_declared(chat_client, case: dict) -> None:
@@ -85,4 +86,4 @@ def documentation_distinguished_from_data(chat_client, case: dict) -> None:
         "the status comes from the business application, through another tool"
     )
     assert reference not in str(sources(turn)), "the sources event lists documents only, not application data"
-    assert case["answer_status"] in turn.text.lower()
+    mentions_any(turn, case["answer_status"], "the answer gives the status read in the application")

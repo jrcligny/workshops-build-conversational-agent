@@ -18,6 +18,7 @@ from pathlib import Path
 
 from agent_gateway.chat_app import reset_conversations
 from testkit.chat_client import ChatClient
+from testkit.expect import mentions_any, mentions_none
 from testkit.turns import business_log, events_of, model_input, successful_turn, tools
 
 TOPICS = {"amount_display": {"excluding_tax", "including_tax"}, "answer_format": {"table", "text"}}
@@ -88,7 +89,7 @@ def preference_recalled_in_a_new_conversation(services, case: dict) -> None:
     if case.get("context_any"):
         context = str(model_input(trace)).lower()
         assert any(w in context for w in case["context_any"]), "the preference reaches the model input"
-    assert any(w in recall.text.lower() for w in case["answer_any"])
+    mentions_any(recall, case["answer_any"], "the answer applies the recalled preference")
 
 
 def memory_partitioned_by_user_and_organization(services, case: dict) -> None:
@@ -99,8 +100,7 @@ def memory_partitioned_by_user_and_organization(services, case: dict) -> None:
         assert memory(trace).get("loaded") == [], f"memory.loaded is empty for {user['user_id']}: memory is read per user"
         for word in case.get("absent_from_context", []):
             assert word not in str(model_input(trace)).lower()
-        for words in case.get("absent_from_answer", []):
-            assert words not in turn.text.lower()
+        mentions_none(turn, case.get("absent_from_answer", []), f"nothing of another user's memory reaches {user['user_id']}")
 
 
 def consult_correct_forget(services, case: dict) -> None:
@@ -110,7 +110,7 @@ def consult_correct_forget(services, case: dict) -> None:
 
     client = conversation(services, user)
     consulted, _ = successful_turn(client, case["consult"])
-    assert case["consulted_word"] in consulted.text.lower(), "the user can consult what is kept"
+    mentions_any(consulted, case["consulted_word"], "the user can consult what is kept")
     _, trace = successful_turn(client, case["correct"])
     assert [e for e in entries(trace, "written", preference["topic"]) if e.get("value") == case["corrected_value"]], (
         "the correction is written"
@@ -144,8 +144,7 @@ def only_planned_topics_are_kept(services, case: dict) -> None:
         f"neither business data nor {case['never_stored_kind']} are stored"
     )
     assert not any(e.get("action") == "written" for e in events_of(turn, "memory"))
-    for promise in case["promises"]:
-        assert promise not in turn.text.lower(), "the agent does not promise to remember what it did not store"
+    mentions_none(turn, case["promises"], "the agent does not promise to remember what it did not store")
 
 
 def rereads_rather_than_assumes(chat_client, observation, case: dict) -> None:
@@ -154,6 +153,4 @@ def rereads_rather_than_assumes(chat_client, observation, case: dict) -> None:
     route = f"/orders/{case['reference']}"
     reads = [e for e in business_log(observation) if e.get("route") == route and e.get("code") == 200]
     assert tools(trace) and reads, "the agent rereads the order in the application rather than relying on a past conclusion"
-    assert case["answer_status"] in turn.text.lower(), (
-        f"the answer corrects the user's assumption with the status read now ({case['answer_status']})"
-    )
+    mentions_any(turn, case["answer_status"], "the answer corrects the user's assumption with the status read now")

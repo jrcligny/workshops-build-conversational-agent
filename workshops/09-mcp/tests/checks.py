@@ -17,6 +17,7 @@ from mcp import Client
 
 from agent_gateway.loader import load_mcp_server
 from testkit.chat_client import ChatClient
+from testkit.expect import mentions_all
 from testkit.servers import free_port, start_uvicorn, wait_for_port
 from testkit.turns import business_log, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
 
@@ -70,8 +71,7 @@ def tools_served_by_mcp(chat_client, observation, mcp_server_url, case: dict) ->
     assert any(e.get("route", "").startswith("/sources/") for e in business_log(observation)), (
         "the application is called through its generic query route"
     )
-    for expected in case.get("answer_contains", []):
-        assert expected in turn.text
+    mentions_all(turn, case.get("answer_contains", []), "the answer gives what the tools read", strict=True)
 
 
 def malformed_filter_actionable_error(chat_client, case: dict) -> None:

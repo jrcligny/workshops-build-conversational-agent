@@ -6,7 +6,8 @@ computed by the program is returned either as `status: approximate` with `order`
 `status: not_found` with `suggestions`; excluded orders are never returned.
 """
 
-from testkit.turns import history, model_calls, successful_turn, tool_arguments, tool_result, tool_status, tools
+from testkit.expect import called_with, mentions, mentions_all, mentions_any, mentions_none
+from testkit.turns import history, model_calls, successful_turn, tool_result, tool_status, tools
 
 
 def only_call(trace) -> dict:
@@ -22,12 +23,10 @@ def proposed(result: dict) -> str:
 def exact_order_lookup(chat_client, services, case: dict) -> None:
     turn, trace = successful_turn(chat_client, case["question"])
     call = only_call(trace)
-    assert case["reference"] in str(tool_arguments(call)), "the reference must be passed as a tool argument"
+    called_with(trace, case["reference"], "the reference must be passed as a tool argument")
     assert tool_status(call) == "ok", "a found order is a result with status 'ok'"
     assert case["status"] in str(tool_result(call)), "the result carries the status read from the business application"
-    assert case["answer_status"] in turn.text.lower(), (
-        f"the answer must state the status read from the tool ({case['answer_status']})"
-    )
+    mentions_any(turn, case["answer_status"], "the answer must state the status read from the tool")
     assert len([c for c in model_calls(services) if c.get("code") == 200]) >= 2, (
         "a question answered through a tool takes at least two model calls (request, then answer)"
     )
@@ -39,8 +38,8 @@ def swapped_reference_reported(chat_client, case: dict) -> None:
     asked, close = case["asked"], case["close"]
     assert tool_status(call) in {"approximate", "not_found"}, f"{asked} does not exist: status approximate or not_found"
     assert close in proposed(tool_result(call)), "the close reference is computed by the program (result.order or result.suggestions)"
-    assert asked in turn.text and close in turn.text, "the answer names the asked and the close reference"
-    assert case["close_status"] not in turn.text.lower() or "?" in turn.text, (
+    mentions_all(turn, [asked, close], "the answer names the asked and the close reference", strict=True)
+    assert not mentions(turn, case["close_status"]) or "?" in turn.text, (
         "the close order is suggested, not presented as the answer"
     )
 
@@ -54,7 +53,7 @@ def excluded_order_never_returned(chat_client, case: dict) -> None:
         assert not result.get("order") and not result.get("suggestions"), "an excluded order is never returned nor suggested"
     else:
         assert case["reference"] not in proposed(result), "an excluded order is never returned nor suggested"
-    assert not any(w in turn.text.lower() for w in case["hidden_reasons"]), "the agent must not reveal why the order is hidden"
+    mentions_none(turn, case["hidden_reasons"], "the agent must not reveal why the order is hidden")
 
 
 def invalid_reference_rejected_before_the_call(chat_client, observation, case: dict) -> None:

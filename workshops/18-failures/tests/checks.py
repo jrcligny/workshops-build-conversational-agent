@@ -15,7 +15,8 @@ import httpx
 
 from workshop_config import settings
 from testkit.chat_client import ChatClient
-from testkit.turns import apply_rubric_repeatedly, business_log, events_of, model_calls, successful_turn
+from testkit.expect import expect_event, mentions_any, mentions_none
+from testkit.turns import apply_rubric_repeatedly, business_log, model_calls, successful_turn
 
 
 def submissions(observation) -> list[dict]:
@@ -40,7 +41,7 @@ def submission_never_replayed(services, observation, case: dict) -> None:
         client = ChatClient(services["interface"])
         client.open(user_id=user["user_id"], role=user["role"], organization=user["organization"])
         turn, _ = successful_turn(client, case["purchase"])
-        draft_id = (events_of(turn, "confirmation_requested") or [{}])[0].get("draft_id")
+        draft_id = expect_event(turn, "confirmation_requested", message="a confirmation is requested")[0].get("draft_id")
         assert draft_id, "a draft is prepared and confirmation_requested carries its draft_id"
         observation.arm_failure("unknown_outcome", True)
         client.confirm(True)
@@ -52,7 +53,7 @@ def submission_never_replayed(services, observation, case: dict) -> None:
         # The user insists, without a new confirmation gesture: the unknown outcome must not be replayed.
         again, _ = successful_turn(client, case["retry"])
         assert len(submissions(observation)) == 1, "asked to retry, the agent does not submit the draft a second time"
-        assert not any(w in again.text.lower() for w in case["claims"]), "nor claims it did"
+        mentions_none(again, case["claims"], "asked to retry, the agent does not claim it submitted again")
         return turn, trace
 
     apply_rubric_repeatedly(case["rubric"], run)
@@ -68,7 +69,7 @@ def single_fallback_then_end(chat_client, services, case: dict) -> None:
     assert fallback and all(c.get("code") == 200 for c in fallback), "the fallback model is then called"
     assert len(failed) == 1, "the primary model is not retried in a loop once it failed"
     assert (trace.get("fallback") or {}).get("to"), "trace.fallback records the switch"
-    assert case["answer_status"] in turn.text.lower(), "the turn still answers"
+    mentions_any(turn, case["answer_status"], "the turn still answers")
     apply_rubric_repeatedly(case["rubric"], lambda: (turn, trace), k=1, n=1)
 
 

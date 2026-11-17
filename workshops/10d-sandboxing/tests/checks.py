@@ -17,7 +17,8 @@ from agent_sdk.sandbox import is_egress_allowed, is_policy_enforced, policy
 from workshop_config import repo_path, settings
 from testkit.chat_client import ChatClient
 from testkit.probes import contacted_hosts, opened_files, student_activity
-from testkit.turns import events_of, model_calls, model_input, successful_turn, tools
+from testkit.expect import expect_event, mentions_any
+from testkit.turns import model_calls, model_input, successful_turn, tools
 
 JWT = re.compile(r"eyJ[\w-]{8,}\.[\w-]{8,}\.")
 
@@ -39,14 +40,15 @@ def destination_outside_allowlist_refused(chat_client, services, case: dict) -> 
         turn, _ = successful_turn(chat_client, case["question"])
     assert any(c.get("code") == 200 for c in model_calls(services)), "the turn goes through the model"
     assert case["refused_host"] not in contacted_hosts(events), "the agent's code never resolves nor contacts a refused host"
-    assert any(w in turn.text.lower() for w in case["refusal_words"]), "the user is told the destination is refused"
+    mentions_any(turn, case["refusal_words"], "the user is told the destination is refused")
 
 
 def no_file_access_during_a_normal_turn(chat_client, case: dict) -> None:
     allowed = [repo_path(settings.my_agent_dir), repo_path(settings.traces_dir)]
     with student_activity() as events:
         turn, trace = successful_turn(chat_client, case["question"])
-    assert tools(trace) and case["answer_status"] in turn.text.lower(), "the turn must answer through a tool"
+    assert tools(trace), "the turn must answer through a tool"
+    mentions_any(turn, case["answer_status"], "the turn must answer through a tool")
     outside = opened_files(events, allowed)
     assert not outside, f"the agent's code opens no file outside its folder and the traces: {outside[:3]}"
     refused = [h for h in contacted_hosts(events) if is_egress_allowed(f"http://{h}/") is False]
@@ -64,8 +66,8 @@ def turn_stopped_at_the_limit(services, case: dict) -> None:
             "trace.model.calls: the turn stops after the call that crossed the limit"
         )
     assert not tools(trace), "no tool runs once the limit is reached: the stop is real, not only announced"
-    assert events_of(turn, "mention"), "a mention says the answer is partial"
-    assert "partiel" in turn.text.lower(), "the answer says what was obtained and that it is partial"
+    expect_event(turn, "mention", message="a mention says the answer is partial")
+    mentions_any(turn, "partiel", "the answer says what was obtained and that it is partial")
 
 
 def secret_absent_from_the_context(chat_client, case: dict) -> None:

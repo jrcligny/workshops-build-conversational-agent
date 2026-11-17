@@ -5,6 +5,7 @@ Trace contract read here: `cycles` (int, number of model calls in the loop), `to
 Interface events read here: `step` (data.cycle, data.tool), `mention`, `interruption`.
 """
 
+from testkit.expect import expect_event, expect_no_event, no_tool_called
 from testkit.turns import apply_rubric_repeatedly, events_of, repeatedly, successful_turn, tool_name, tools
 
 
@@ -48,7 +49,7 @@ def cycle_limit_partial_answer(chat_client, case: dict) -> None:
         chat_client.open()
         turn, trace = successful_turn(chat_client, case["question"])
         assert trace.get("cycle_limit_reached") is True, "trace.cycle_limit_reached must be true on this request"
-        assert events_of(turn, "mention"), "reaching the cycle cap is declared through a mention event"
+        expect_event(turn, "mention", message="reaching the cycle cap is declared through a mention event")
         return turn, trace
 
     apply_rubric_repeatedly(case["rubric"], run)
@@ -58,10 +59,10 @@ def interruption_stops_without_new_call(chat_client, case: dict) -> None:
     chat_client.open()
     chat_client.interrupt()
     turn, trace = successful_turn(chat_client, case["question"])
-    assert events_of(turn, "interruption"), "the interface receives an interruption event"
+    expect_event(turn, "interruption", message="the interface receives an interruption event")
     assert trace.get("interrupted") is True, "trace.interrupted records the clean stop"
-    assert tools(trace) == [], "no tool call is launched after the interruption"
-    assert "step" not in turn.types
+    no_tool_called(trace, "no tool call is launched after the interruption")
+    expect_no_event(turn, "step", "no step is reported after the interruption")
 
 
 def without_interruption_the_same_request_runs(chat_client, case: dict) -> None:
