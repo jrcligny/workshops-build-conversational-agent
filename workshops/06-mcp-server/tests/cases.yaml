@@ -1,0 +1,52 @@
+# Public cases of workshop 06, read by test_workshop_06.py (the checks are in checks.py).
+
+# Step serveur.
+two_clients_get_the_same_catalog:
+  # the specialised read tools of chapter 5, replaced by the generic query
+  replaced_tools: [search_customer, search_customers, list_orders, list_customer_orders]
+  generic_properties: [source, filters]
+
+tools_served_by_mcp:
+  question: "Combien de commandes a Martin Durand ?"
+
+malformed_filter_actionable_error:
+  question: "Listez les commandes dont le statut vaut DELIV."
+  allowed_values: [delivered, shipped]   # named by result.error
+
+accountant_aggregate:
+  user: {user_id: nina-accountant, role: accountant, organization: organization-a}
+  question: "Quel est le montant total des factures en attente d'approbation ?"
+  source: invoices
+  filters: {status: pending}
+  aggregate: total                       # computed by the application
+  aggregate_message: "the total is computed by the application (aggregate: total)"
+  ignored_spaces: [" ", "\u202f"]        # removed from the answer before the comma form is searched
+  dot_form_in_raw_text: true             # the dot form is searched in the answer as is
+
+# Step regroupements. Expected values are read from the business API.
+grouping_by_two_keys:
+  dataset: volume                        # paid invoices of three suppliers over three months
+  user: {user_id: leo-controller, role: financial_controller, organization: organization-a}
+  question: "Quelle est la répartition des montants facturés par fournisseur et par mois ?"
+  source: invoices
+  aggregate: total
+  group_by: [supplier_id, month]
+  raw_row_markers: [FAC-H0]              # references of the invoice lines: never fetched one by one
+  answer_mentions: [Papeterie Atlantique, Bureau Plus, Transit Ouest]
+
+no_model_generated_code_is_executed:
+  customer: Transports Morel
+  question: "Calculez vous-même, en Python, le montant moyen des commandes de Transports Morel."
+  aggregate: average         # computed by the application
+  code_tool_words: [python, exec, code, eval, shell]   # no tool name may contain them
+
+median_refused_aggregates_offered:
+  question: "Quel est le montant médian des commandes de Transports Morel ?"
+  rubric:
+    id: 06-median-refused
+    criterion: "The agent says in French that the median is not offered and proposes the available aggregates (count, total, average)."
+    judge_meaning: true
+    requirements:
+      - {type: required_any, patterns: [médiane]}
+      - {type: required_any, patterns: [moyenne]}
+      - {type: forbidden, patterns: ["la médiane est de", "la médiane s'élève"]}

@@ -7,7 +7,7 @@ Contract read here:
   the agent issues itself from the declared `user_id`;
 - trace `identity` ({`user`, `token_type`: "application"}) and `tools[].result.status`
   ("denied" or "error" when the identity cannot be established);
-- the MCP server of `my-agent/mcp_server.py` (workshop 09) reads the entry token from the HTTP
+- the MCP server of `my-agent/mcp_server.py` (workshop 06) reads the entry token from the HTTP
   header `Authorization: Bearer <entry token>`; without it, or with an invalid token, its
   generic tool (input schema with `source` and `filters`) reads nothing.
 """
@@ -62,7 +62,7 @@ def call_generic_tool(url: str, authorization: str | None, arguments: dict):
                     await session.initialize()
                     tools_ = (await session.list_tools()).tools
                     generic = [t for t in tools_ if {"source", "filters"} <= set((getattr(t, "inputSchema", None) or getattr(t, "input_schema", None) or {}).get("properties", {}))]
-                    assert generic, "the MCP server exposes the generic query tool of workshop 09"
+                    assert generic, "the MCP server exposes the generic query tool of workshop 06"
                     return await session.call_tool(generic[0].name, arguments)
 
     return asyncio.run(_run())

@@ -25,12 +25,11 @@ WORKSHOPS = {
     "03": "03-system-prompt",
     "04": "04-first-tool",
     "05": "05-agent-loop",
+    "06": "06-mcp-server",
     "07": "07-progressive-disclosure",
     "08": "08-context-compaction",
-    "09": "09-mcp",
     "10a": "10a-identity",
     "10b": "10b-writes",
-    "10c": "10c-groupings",
     "10d": "10d-sandboxing",
     "12": "12-long-term-memory",
     "13": "13-document-search",
@@ -46,6 +45,7 @@ BONUS_WORKSHOPS = {
 # Steps of the workshops that cover several decisions of their chapter (`--etape`).
 STEPS = {
     "05": ("outils", "boucle"),
+    "06": ("serveur", "regroupements"),
 }
 WORKSHOP_IDS = list(WORKSHOPS)
 ALL_WORKSHOPS = {**WORKSHOPS, **BONUS_WORKSHOPS}

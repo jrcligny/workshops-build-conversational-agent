@@ -1,15 +1,22 @@
-"""Checks of workshop 09, shared by the public and the private tests (one function per criterion).
+"""Checks of workshop 06, shared by the public and the private tests (one function per criterion).
 
-Contract read here:
+Step `serveur`, contract read here:
 - MCP catalog of `my-agent/mcp_server.py`: a generic query tool whose input schema has the
   properties `source` and `filters` (plus optional `aggregate`, `group_by`, `limit`); the two
   specialised read tools of chapter 5 are gone.
 - Trace: each `tools[]` entry has `transport: "mcp"` and a `name` present in that catalog;
   `arguments.source`, `arguments.filters`, `arguments.aggregate`; `result.status` and, on a
   rejected filter, `result.error` naming the allowed values.
+
+Step `regroupements`: calls to the generic query tool with `arguments.aggregate`
+(count | total | average) and `result.value` computed by the application; a grouping returns
+the application's groups (`result.rows`, one per group); for a refused aggregate,
+`result.refused` and `result.available_aggregates` returned by the application.
 """
 
 import asyncio
+import json
+import re
 
 import httpx
 import pytest
@@ -19,7 +26,16 @@ from agent_gateway.loader import load_mcp_server
 from agent_testkit.chat_client import ChatClient
 from agent_testkit.expect import mentions_all
 from agent_testkit.servers import free_port, start_uvicorn, wait_for_port
-from agent_testkit.turns import business_log, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
+from agent_testkit.turns import (
+    apply_rubric_repeatedly,
+    business_log,
+    successful_turn,
+    tool_arguments,
+    tool_name,
+    tool_result,
+    tool_status,
+    tools,
+)
 
 
 def serve_mcp_server():
@@ -53,7 +69,7 @@ def schema_properties(tool) -> set:
 def two_clients_get_the_same_catalog(mcp_server_url, case: dict) -> None:
     a, b = catalog(mcp_server_url), catalog(mcp_server_url)
     names = [t.name for t in a]
-    assert names, "the MCP catalog of workshop 09 must no longer be empty"
+    assert names, "the MCP catalog of workshop 06 must no longer be empty"
     assert [t.name for t in b] == names, "two clients get the same catalog"
     assert not (set(case["replaced_tools"]) & set(names)), "the two specialised tools of chapter 5 must be gone"
     assert any(set(case["generic_properties"]) <= schema_properties(t) for t in a), (
@@ -107,3 +123,77 @@ def accountant_aggregate_through_the_generic_query(services, observation, case: 
     assert f"{expected:g}".replace(".", ",") in text or f"{expected:g}" in dot_form_text, (
         f"the answer gives the {case['aggregate']} ({expected})"
     )
+
+
+# Step `regroupements`.
+
+
+def expected_value(business_client, customer_name: str, aggregate: str, filters: dict) -> float:
+    customer = business_client.get("/customers", params={"name": customer_name}).json()[0]
+    return business_client.post(
+        "/sources/orders/query", json={"filters": {"customer_id": customer["id"], **filters}, "aggregate": aggregate}
+    ).json()["value"]
+
+
+def aggregated(trace, aggregate: str) -> list:
+    return [c for c in tools(trace) if tool_arguments(c).get("aggregate") == aggregate]
+
+
+def number_in(value: float, text: str) -> bool:
+    compact = text.replace("\u202f", "").replace("\xa0", "").replace(" ", "")
+    return any(form in compact for form in (f"{value:g}", f"{value:.2f}", f"{value:.2f}".replace(".", ","), f"{value:g}".replace(".", ",")))
+
+
+def numbers_of(result) -> set:
+    return {round(float(n), 2) for n in re.findall(r"-?\d+(?:\.\d+)?", json.dumps(result))}
+
+
+def grouping_by_two_keys(services, observation, case: dict) -> None:
+    observation.reset(case["dataset"])
+    user = case["user"]
+    token = observation.token(user["user_id"])["app_token"]
+    expected = httpx.post(
+        f"{services['business_api']}/sources/{case['source']}/query",
+        json={"aggregate": case["aggregate"], "group_by": case["group_by"]},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=10,
+    ).json()["rows"]
+    values = {round(float(r[case["aggregate"]]), 2) for r in expected}
+    controller = ChatClient(services["interface"])
+    controller.open(**user)
+    turn, trace = successful_turn(controller, case["question"])
+    grouped = [c for c in tools(trace) if tool_arguments(c).get("group_by") and values <= numbers_of(tool_result(c))]
+    assert grouped, (
+        f"one call groups by {' and '.join(case['group_by'])} and returns every group computed by the application "
+        f"({len(expected)} groups)"
+    )
+    raw = [c for c in tools(trace) if any(ref in json.dumps(tool_result(c)) for ref in case["raw_row_markers"])]
+    assert not raw, "the invoice lines are not fetched to be grouped by the model"
+    mentions_all(turn, case["answer_mentions"], "the answer names every group")
+    largest = max(values)
+    assert number_in(largest, turn.text), f"the answer gives the amounts computed by the application (largest: {largest})"
+
+
+def no_model_generated_code_is_executed(chat_client, observation, business_client, case: dict) -> None:
+    observation.reset("volume")
+    aggregate = case["aggregate"]
+    expected = expected_value(business_client, case["customer"], aggregate, {})
+    turn, trace = successful_turn(chat_client, case["question"])
+    names = {tool_name(c).lower() for c in tools(trace)}
+    assert not any(w in n for n in names for w in case["code_tool_words"]), "no code execution tool"
+    calls = aggregated(trace, aggregate)
+    assert calls and tool_result(calls[-1]).get("value") == expected, (
+        f"the {aggregate} comes from the application (aggregate: \"{aggregate}\")"
+    )
+    assert number_in(expected, turn.text)
+
+
+def median_refused_aggregates_offered(chat_client, case: dict) -> None:
+    def run():
+        chat_client.open()
+        turn, trace = successful_turn(chat_client, case["question"])
+        refused = [c for c in tools(trace) if tool_result(c).get("refused")]
+        assert refused or not aggregated(trace, "median"), "a median request returns the application's refusal"
+        return turn, trace
+
+    apply_rubric_repeatedly(case["rubric"], run)

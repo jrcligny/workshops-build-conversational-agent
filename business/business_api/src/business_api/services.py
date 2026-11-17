@@ -146,6 +146,28 @@ def resolve_name(entity_type: str, name: str, identity: dict) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# A source with a date_field can also be grouped by "month" (YYYY-MM of that date).
+MONTH = "month"
+
+
+def _group_keys(name: str, group_by: str | list[str]) -> list[str]:
+    keys = [group_by] if isinstance(group_by, str) else list(group_by)
+    meta = SOURCES[name]
+    allowed = set(meta["fields"]) | set(meta["relations"]) | {"customer_id", "status"}
+    if meta.get("date_field"):
+        allowed.add(MONTH)
+    unknown = [k for k in keys if k not in allowed]
+    if not keys or unknown:
+        raise ValueError(f"unrecognized group_by: {', '.join(unknown) or '(empty)'}; allowed: {', '.join(sorted(allowed))}")
+    return keys
+
+
+def _group_value(row: dict, key: str, date_field: str | None) -> str:
+    if key == MONTH:
+        return str(row.get(date_field) or "")[:7]
+    return str(row.get(key, ""))
+
+
 # Codes and field names are English (API contract). The labels of coded values are
 # French: they are what the agent shows to its French-speaking users.
 SOURCES = {
@@ -157,8 +179,10 @@ SOURCES = {
             "amount": "amount including tax",
             "promised_date": "promised delivery date",
             "customer_id": "customer identifier",
+            "order_date": "order date",
         },
         "relations": {"customer_id": "customers.id"},
+        "date_field": "order_date",
         "coded_values": {
             "status": {
                 "delivered": "livrée",
@@ -180,8 +204,16 @@ SOURCES = {
     },
     "invoices": {
         "description": "Supplier invoices",
-        "fields": {"reference": "reference", "status": "status", "amount": "amount", "duplicate_of": "original invoice when duplicated"},
-        "relations": {"order_id": "orders.id"},
+        "fields": {
+            "reference": "reference",
+            "status": "status",
+            "amount": "amount",
+            "supplier_id": "supplier identifier",
+            "invoice_date": "invoice date",
+            "duplicate_of": "original invoice when duplicated",
+        },
+        "relations": {"order_id": "orders.id", "supplier_id": "suppliers.id"},
+        "date_field": "invoice_date",
         "coded_values": {
             "status": {"paid": "réglée", "pending": "en attente d'approbation", "approved": "approuvée"}
         },
@@ -204,7 +236,9 @@ SOURCES = {
 }
 
 
-def query_source(name: str, identity: dict, filters: dict, limit: int | None, aggregate: str | None, group_by: str | None) -> dict:
+def query_source(
+    name: str, identity: dict, filters: dict, limit: int | None, aggregate: str | None, group_by: str | list[str] | None
+) -> dict:
     if name not in SOURCES:
         raise ValueError("unknown source")
     if aggregate == "median":
@@ -228,13 +262,16 @@ def query_source(name: str, identity: dict, filters: dict, limit: int | None, ag
     total = len(rows)
     if aggregate or group_by:
         if group_by:
-            groups: dict[str, list[float]] = {}
+            keys = _group_keys(name, group_by)
+            date_field = SOURCES[name].get("date_field")
+            groups: dict[tuple, list[float]] = {}
             for r in rows:
-                key = str(r.get(group_by, ""))
+                key = tuple(_group_value(r, k, date_field) for k in keys)
                 groups.setdefault(key, []).append(float(r.get("amount") or 0))
             result = []
-            for key, values in groups.items():
-                item = {"group": key, "count": len(values)}
+            for key, values in sorted(groups.items()) if len(keys) > 1 else groups.items():
+                group = key[0] if isinstance(group_by, str) else dict(zip(keys, key))
+                item = {"group": group, "count": len(values)}
                 if aggregate == "total":
                     item["total"] = round(sum(values), 2)
                 if aggregate == "average":

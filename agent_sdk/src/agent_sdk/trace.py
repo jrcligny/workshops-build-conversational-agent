@@ -164,7 +164,7 @@ class Tracer:
         **extra: Any,
     ) -> dict[str, Any]:
         """Records one tool call: name, arguments, result (with its `status`), cycle (06),
-        duration (17) and transport (`"mcp"`, workshop 09). Returns the recorded entry."""
+        duration (17) and transport (`"mcp"`, workshop 06). Returns the recorded entry."""
         entry: dict[str, Any] = {"name": name, "arguments": arguments, "result": result, "cycle": self._cycle}
         if duration_ms is not None:
             entry["duration_ms"] = int(duration_ms)

@@ -1,4 +1,4 @@
-"""Calling an MCP server from the harness (workshop 09 onwards), synchronously.
+"""Calling an MCP server from the harness (workshop 06 onwards), synchronously.
 
 What it gives you:
 - `list_tools(token=None)`: the tools the server exposes, as
@@ -13,7 +13,7 @@ What stays yours: the tools the server exposes and how they reach the business A
 (`mcp_server.py`), recording `transport: "mcp"` on each call in the trace, the identity sent
 to the server and what the server does with it (10a).
 
-Wiring checklist for workshop 09:
+Wiring checklist for workshop 06:
 1. start the server: `uv run --project my-agent python my-agent/mcp_server.py`;
 2. declare your tools in `mcp_server.py` (`@server.tool()`), wired to the business API;
 3. from the harness, offer the model `[as_openai_tool(t) for t in list_tools(token)]` and run

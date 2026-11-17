@@ -58,7 +58,7 @@ class QueryIn(BaseModel):
     filters: dict[str, Any] = Field(default_factory=dict)
     limit: int | None = None
     aggregate: str | None = None
-    group_by: str | None = None
+    group_by: str | list[str] | None = None
 
 
 class PurchaseRequestDraftIn(BaseModel):
