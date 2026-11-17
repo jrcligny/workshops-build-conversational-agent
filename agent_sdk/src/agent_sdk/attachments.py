@@ -1,4 +1,4 @@
-"""Read-only attachments area (workshop 15). The area itself lives in my-agent/attachments/."""
+"""Read-only attachments area (workshop 14). The area itself lives in my-agent/attachments/."""
 
 from __future__ import annotations
 

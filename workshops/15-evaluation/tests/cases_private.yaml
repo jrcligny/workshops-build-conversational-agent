@@ -1,0 +1,7 @@
+# Private cases of workshop 15 (not given to students), read by test_workshop_15_private.py.
+# Another user, a turn that chains several tool calls.
+masked_and_observable_traces:
+  user: {user_id: nina-accountant, role: accountant, organization: organization-a}
+  question: "Trouvez le client Léa Martin de Lille, puis donnez-moi le montant de sa commande CMD-2010."
+  min_model_calls: 2     # a chained turn: one entry per model call
+  min_tool_calls: 2

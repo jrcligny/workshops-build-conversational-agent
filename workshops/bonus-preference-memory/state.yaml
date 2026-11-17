@@ -1,0 +1,3 @@
+workshop: 'bonus'
+title: 'Persistent memory'
+tests: tests/

@@ -43,13 +43,13 @@ class Settings(BaseSettings):
     # Frozen clock of the dataset (Europe/Paris, conventional repository date)
     frozen_clock: str = "2026-03-15T10:00:00"
 
-    # Workshop 08: compaction once the context holds this many turns; the last turns kept as they are.
+    # Workshop 10: compaction once the context holds this many turns; the last turns kept as they are.
     compaction_message_threshold: int = 8
     compaction_keep_turns: int = 2
     prompt_token_cap: int = 800
     judge_k: int = 3
     judge_n: int = 5
-    # Evaluation routes of workshop 17: each route runs on a fresh conversation, k out of n.
+    # Evaluation routes of workshop 15: each route runs on a fresh conversation, k out of n.
     # One run by default: a route is one case among many and the whole set fits in the daily quota.
     route_k: int = 1
     route_n: int = 1

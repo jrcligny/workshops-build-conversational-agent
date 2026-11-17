@@ -19,8 +19,8 @@ Students never import it. Dependencies go in one direction only:
   `check-inert`; its `route-report.*` are facade deliverables, not generated
   files) and `bootstrap_passes.txt` (`check-bootstrap`).
 
-The evaluation routes of workshop 17 (`routes.py`, `route_runner.py`) live in
-`workshops/17-evaluation/tests/`, loaded by path like `checks.py`.
+The evaluation routes of workshop 15 (`routes.py`, `route_runner.py`) live in
+`workshops/15-evaluation/tests/`, loaded by path like `checks.py`.
 
 Run from the repository root:
 
@@ -28,7 +28,7 @@ Run from the repository root:
 uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check 03
-uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check 09 --non-regression
 uv run --project tooling/cli workshop check-bootstrap
 ```
 
@@ -41,11 +41,11 @@ To regenerate the official evaluation-route digest after an authorized team
 change, run **from the repository root**:
 
 ```powershell
-uv run --project tooling/cli --group tests python workshops/17-evaluation/tests/routes.py --write
+uv run --project tooling/cli --group tests python workshops/15-evaluation/tests/routes.py --write
 ```
 
-The [route-set guide](../workshops/17-evaluation/routes/README.md) is itself
-covered by the digest. Students and workshop 19 tooling must not change the
+The [route-set guide](../workshops/15-evaluation/routes/README.md) is itself
+covered by the digest. Students and workshop 17 tooling must not change the
 official routes or their checksum.
 
 UI tests use the separate Chainlit project and its MCP 1 dependencies, never

@@ -23,7 +23,7 @@ Workshop checks run pytest with this project's `tests` dependency group (see the
 ```powershell
 uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli workshop check 03
-uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check 09 --non-regression
 uv run --project tooling/cli workshop check-bootstrap
 ```
 

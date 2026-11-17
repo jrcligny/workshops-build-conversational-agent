@@ -15,11 +15,11 @@ README.md            this file
 GETTING_STARTED.md   what is provided, what you write
 my-agent/            the ONLY folder students edit
   harness.py         runnable bootstrap of your agent
-  mcp_server.py      empty MCP server (wired in workshop 09)
+  mcp_server.py      empty MCP server (wired in workshop 06)
   sandbox/           sandbox policy (policy.yaml, workshop 10d)
-  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
-  attachments/       read-only attachments area (workshop 15)
-  local-mode/        landing structure of workshop 19 (specifications/, controls/)
+  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 13)
+  attachments/       read-only attachments area (workshop 14)
+  local-mode/        landing structure of workshop 17 (specifications/, controls/)
 workshops/           one folder per workshop: README.md (guide), contrat.md (test contract), state.yaml, tests/
 clients/chat_ui/     standard Chainlit UI (client of the agent gateway), own project and dependencies
 gateway/             running infrastructure, never edited by students

@@ -8,7 +8,7 @@ The result is a plain dict: print it, read it, adjust it.
 
 What stays yours: the tool names and parameters the workshops expect, descriptions that tell
 the model when to use the tool, validating the arguments the model sends (workshop 04), running
-the tool, and choosing which tools to offer at each call (workshops 14 and 15).
+the tool, and choosing which tools to offer at each call (workshops 13 and 14).
 There is no registry and nothing runs automatically.
 
     def get_order(reference: str) -> dict:

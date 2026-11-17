@@ -48,7 +48,7 @@ class HarnessContract(Protocol):
         information: the context sent to the model is `agent_sdk.context.context(conversation_id)`,
         which also keeps tool calls and their results.
 
-        `attachments` is reserved for workshop 15.
+        `attachments` is reserved for workshop 14.
         `interrupt_requested` (workshop 06) asks for a clean stop of the turn, with no new call.
         `confirmation` (workshop 10b) carries the user's confirmation gesture in the interface.
         `limits` (workshop 10d) may carry a duration and a budget.

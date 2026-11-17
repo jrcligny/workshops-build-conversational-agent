@@ -30,7 +30,7 @@ Only then does the team:
 1. Run the judged items in live mode, adjust the **judge rubrics** and the **k out of n** threshold (current starting point: 3 successes out of 5).
 2. Adjust the size cap of the workshop 03 *system prompt*.
 3. Measure paraphrased search and, if needed, reranking.
-4. Calibrate the rubric `08-summary-keeps-tool-facts` on the summaries produced by the real model with the reference `compaction_prompt.md` (the clearing of tool results, the dedicated call and the thresholds are already tested in simulated mode).
+4. Calibrate the rubric `10-summary-keeps-tool-facts` on the summaries produced by the real model with the reference `compaction_prompt.md` (the clearing of tool results, the dedicated call and the thresholds are already tested in simulated mode).
 5. Check the proxy in real conditions (valid token, refused token, Azure key absent from traces, explicit quota).
 6. Record real trajectories that will complement the hand-written replays in CI.
 7. Archive the calibration report. The validation *harness* is not distributed.

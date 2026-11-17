@@ -12,7 +12,7 @@ Le chapitre 11 applique le moindre privilège en quatre couches, dont aucune ne 
 - La trace enregistre au nom de qui les outils ont agi.
 - Sans jeton, avec un jeton mal formé ou signé par une autre clé, aucune donnée n'est lue : l'appel d'outil est tenté puis refusé, et la réponse ne donne pas l'information.
 - Une utilisatrice d'une autre organisation ne voit pas les commandes de la première.
-- Le serveur MCP de l'atelier 09 applique la même règle quand on l'appelle directement.
+- Le serveur MCP de l'atelier 06 applique la même règle quand on l'appelle directement.
 
 ## Exemples
 

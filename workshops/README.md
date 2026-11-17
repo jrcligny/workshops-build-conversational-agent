@@ -19,7 +19,7 @@ uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli workshop start 03
 uv run --project tooling/cli workshop check 03
-uv run --project tooling/cli workshop check 07 --non-regression
+uv run --project tooling/cli workshop check 09 --non-regression
 ```
 
 **Mode du modèle.** Le **mode live** est la référence pour tous les ateliers
@@ -47,24 +47,24 @@ jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 | 04 | 4 | [04-first-tool](04-first-tool/) | Premier outil |
 | 05 | 5 | [05-read-tools](05-read-tools/) | Deux outils de lecture |
 | 06 | 6 | [06-agent-loop](06-agent-loop/) | Boucle d'agent |
-| 07 | 8 | [07-progressive-disclosure](07-progressive-disclosure/) | Découvrir le contexte progressivement |
-| 08 | 9 (et 7) | [08-context-compaction](08-context-compaction/) | Compacter le contexte (et garder l'état de la conversation) |
-| 09 | 10 | [09-mcp](09-mcp/) | Contrat d'outil et MCP |
+| 07 | 8 | [09-progressive-disclosure](09-progressive-disclosure/) | Découvrir le contexte progressivement |
+| 08 | 9 (et 7) | [10-context-compaction](10-context-compaction/) | Compacter le contexte (et garder l'état de la conversation) |
+| 09 | 10 | [06-mcp-server](06-mcp-server/) | Contrat d'outil et MCP |
 | 10a | 11 | [10a-identity](10a-identity/) | Identité et échange de jeton |
 | 10b | 11 | [10b-writes](10b-writes/) | Écritures |
-| 10c | 11 | [10c-groupings](10c-groupings/) | Regroupements |
+| 10c | 11 | [06-mcp-server](06-mcp-server/) | Regroupements |
 | 10d | 11 | [10d-sandboxing](10d-sandboxing/) | Bac à sable |
-| 12 | 12 | [12-long-term-memory](12-long-term-memory/) | Mémoire persistante |
-| 13 | 13 | [13-document-search](13-document-search/) | Recherche documentaire |
-| 14 | 14 | [14-skills](14-skills/) | *Skills* |
-| 15 | 15 | [15-read-without-obeying](15-read-without-obeying/) | Lire sans obéir |
-| 17 | 16 | [17-evaluation](17-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
-| 18 | 17 | [18-failures](18-failures/) | Pannes et livraison |
-| 19 | 18 | [19-specification](19-specification/) | Spécifier un contrôle |
+| 12 | 12 | [bonus-preference-memory](bonus-preference-memory/) | Mémoire persistante |
+| 13 | 13 | [12-document-search](12-document-search/) | Recherche documentaire |
+| 14 | 14 | [13-skills](13-skills/) | *Skills* |
+| 15 | 15 | [14-read-without-obeying](14-read-without-obeying/) | Lire sans obéir |
+| 17 | 16 | [15-evaluation](15-evaluation/) | Observer et évaluer (avec les parcours `routes/`) |
+| 18 | 17 | [16-failures](16-failures/) | Pannes et livraison |
+| 19 | 18 | [17-specification](17-specification/) | Spécifier un contrôle |
 
 Les chapitres 1 et 2 n'ont pas d'atelier : ils posent le cadre (ce qu'est un agent
 conversationnel, pourquoi on le vérifie par répétition). Le chapitre 7 (l'état de la conversation) n'a pas
-d'atelier propre : ses critères sont vérifiés par l'atelier 08. Les ateliers ne sont pas renumérotés
+d'atelier propre : ses critères sont vérifiés par l'atelier 10. Les ateliers ne sont pas renumérotés
 d'après le nouveau plan du livre : les numéros 11 et 16 restent libres. La liste complète des tests est
 dans [docs/test-inventory.md](../docs/test-inventory.md), et les noms qu'ils lisent sont dans
 [docs/interface-contract.md](../docs/interface-contract.md#names-read-by-the-tests).

@@ -21,7 +21,7 @@ Les tests sont dans [tests/](tests/).
 - `identity.token_type` : `"application"`.
 - `tools[].result.status` : `"denied"` ou `"error"` quand l'identité ne peut pas être établie. La liste `tools[]` ne doit **pas** être vide dans ce cas : l'appel est tenté, puis refusé.
 
-**Le serveur MCP** (`my-agent/mcp_server.py`, lancé par le test comme à l'atelier 09 : `application()`, `MCP_PATH`).
+**Le serveur MCP** (`my-agent/mcp_server.py`, lancé par le test comme à l'atelier 06 : `application()`, `MCP_PATH`).
 
 - Il lit le jeton d'entrée dans l'en-tête HTTP `Authorization: Bearer <jeton d'entrée>`.
 - Le test liste les outils sans en-tête, puis appelle l'outil générique (celui dont le schéma contient `source` et `filters`) avec `{"source": "orders", "filters": {"id": "CMD-1042"}}`.

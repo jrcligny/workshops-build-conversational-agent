@@ -22,6 +22,6 @@ def test_cases_and_checks_are_loaded_next_to_the_test_file(tmp_path):
 def test_private_material_is_recognised():
     assert is_private_path(Path("workshops/04-first-tool/tests/test_workshop_04_private.py"))
     assert is_private_path(Path("workshops/04-first-tool/tests/cases_private.yaml"))
-    assert is_private_path(Path("workshops/15-read-without-obeying/tests/fixtures_private/note.txt"))
+    assert is_private_path(Path("workshops/14-read-without-obeying/tests/fixtures_private/note.txt"))
     assert not is_private_path(Path("workshops/04-first-tool/tests/cases.yaml"))
     assert not is_private_path(Path("workshops/04-first-tool/tests/checks.py"))

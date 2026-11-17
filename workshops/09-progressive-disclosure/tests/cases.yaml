@@ -1,0 +1,50 @@
+# Public cases of workshop 09, read by test_workshop_09.py (the checks are in checks.py).
+# All on the `volume` dataset.
+bounded_summary_list_with_declared_total:
+  question: &late_question "Quelles sont les commandes en retard de Transports Morel ?"
+  total: 60                            # late orders of Transports Morel
+  references_are_order_numbers: true   # every row has a CMD-… reference
+  rubric:
+    id: 09-partial-result-announced
+    criterion: >-
+      The agent says in French that it shows only part of the list, gives the total read from the tool
+      and offers the rest or a narrower request.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [partiel, partielle, une partie, extrait, premières]
+
+next_portion_without_repeating_rows:
+  question: *late_question
+  follow_ups: ["Montrez-moi les suivantes."]
+
+total_is_a_minimum_at_the_retrieval_cap:
+  question: "Listez toutes les commandes de Transports Morel."
+  minimum_total: 200                   # the application's retrieval cap
+  minimum_words: [au moins, plus de, minimum]
+
+count_mode:
+  question: "Combien de commandes en retard a Transports Morel ? Je veux seulement le nombre, pas les lignes."
+  total: 60
+
+detail_through_the_consultation_tool:
+  dataset: volume                      # the written results come from this dataset
+  conversation:                        # loaded, not played: the list was already shown
+    - user: "Quelles sont les commandes en retard de Transports Morel ?"
+      tools:
+        - name: list_orders
+          arguments: {customer_id: C-VOLUMEX, filter: late}
+          result:
+            orders:
+              - {reference: CMD-V0007, status: shipped, promised_date: "2026-02-23"}
+              - {reference: CMD-V0364, status: shipped, promised_date: "2026-02-28"}
+              - {reference: CMD-V0028, status: shipped, promised_date: "2026-02-26"}
+            returned: 3
+            total: 60
+            total_status: exact
+            truncated: true
+      answer: >-
+        Transports Morel a 60 commandes en retard ; voici les 3 premières (liste partielle) :
+        CMD-V0007, CMD-V0364 et CMD-V0028, toutes expédiées. Voulez-vous la suite ?
+  row: 0                               # the first row of the list
+  detail_question: "Quel est le montant de la première commande de cette liste ?"

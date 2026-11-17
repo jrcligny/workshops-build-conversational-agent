@@ -12,11 +12,11 @@ Two test applications (business API and document search), a model proxy (simulat
 
 ## What you write
 
-Your agent, in `my-agent/harness.py`: first the *system prompt* and the conversational loop (workshop 03), then the tools, the agent loop, compaction, and so on. In workshop 09, you wire `my-agent/mcp_server.py` to the business API.
+Your agent, in `my-agent/harness.py`: first the *system prompt* and the conversational loop (workshop 03), then the tools, the agent loop, compaction, and so on. In workshop 06, you wire `my-agent/mcp_server.py` to the business API.
 
 ## Models
 
-The `.env.example` default is **simulated** (scripted chat, deterministic embeddings, scripted judge): enough to start, and the mode of the CI. The **live** mode (`PROXY_MODE=live` in `.env`) forwards chat completions to Azure OpenAI through the proxy, which keeps the key on the server; it needs `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT` (plus `AZURE_OPENAI_FALLBACK_DEPLOYMENT` for workshop 18). Embeddings stay deterministic in every mode. The tests honour `PROXY_MODE` from `.env`. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
+The `.env.example` default is **simulated** (scripted chat, deterministic embeddings, scripted judge): enough to start, and the mode of the CI. The **live** mode (`PROXY_MODE=live` in `.env`) forwards chat completions to Azure OpenAI through the proxy, which keeps the key on the server; it needs `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_CHAT_DEPLOYMENT` (plus `AZURE_OPENAI_FALLBACK_DEPLOYMENT` for workshop 16). Embeddings stay deterministic in every mode. The tests honour `PROXY_MODE` from `.env`. The names of the Azure deployments are configurable (see [docs/decisions.md](docs/decisions.md)).
 
 **Which mode for which workshop.** The **live mode is the reference** for every workshop (set `PROXY_MODE=live` and `MODEL_MODE=live`). Workshop 03 can be started in simulated mode while you wait for Azure access, but validate it in live mode. From workshop 04 on, live mode is required: the agent must decide on its own which tool to call, which the simulated model does not do, so a test passed in simulated mode would only reward a hard-coded workflow. The simulated mode is the one of the CI, `check-bootstrap` and `check-inert`.
 
@@ -38,8 +38,8 @@ and `uv sync --project tooling/cli --group tests --locked --python 3.13` from th
 root. There is no root Python project or shared environment.
 
 - `uv run --project tooling/cli workshop start 07` shows the guide, without copying any solution.
-- `uv run --project tooling/cli workshop check 07` runs `workshops/07-progressive-disclosure/tests/` in the test project's environment.
-- `uv run --project tooling/cli workshop check 07 --non-regression` runs the tests of workshops 03 to 07.
+- `uv run --project tooling/cli workshop check 09` runs `workshops/09-progressive-disclosure/tests/` in the test project's environment.
+- `uv run --project tooling/cli workshop check 09 --non-regression` runs the tests of workshops 03 to 09.
 - `uv run --project tooling/cli workshop check-bootstrap` checks that every workshop test fails on the bootstrap of `my-agent/` (it converses through the model, without tool), except those listed in `tooling/cli/bootstrap_passes.txt`.
 - `uv run --project tooling/cli workshop check-inert` checks that every workshop test fails against an inert agent (one that answers without calling the model nor any tool).
 - In `--non-regression`, a test marked `superseded_by("<id>")` is skipped once the checked workshop reaches `<id>` (for example the "no tool yet" test of workshop 03 from workshop 04 on).

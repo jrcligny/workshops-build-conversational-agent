@@ -91,7 +91,7 @@ def list_users():
 
 @app.get("/attachments")
 def list_attachments():
-    """Contract entry point for workshop 15. The area is empty in the shell."""
+    """Contract entry point for workshop 14. The area is empty in the shell."""
     from agent_sdk.attachments import list_attachments as _list
 
     return {"attachments": _list()}

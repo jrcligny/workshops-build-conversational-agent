@@ -82,7 +82,7 @@ class Context:
         self.messages.extend(_as_dict(m) for m in messages)
 
     def replace(self, messages: list[Message | dict[str, Any]], summary: str | None = None) -> None:
-        """Replaces the stored messages (after clearing or compaction, 08), and the summary if given."""
+        """Replaces the stored messages (after clearing or compaction, 10), and the summary if given."""
         self.messages = [_as_dict(m) for m in messages]
         if summary is not None:
             self.summary = summary

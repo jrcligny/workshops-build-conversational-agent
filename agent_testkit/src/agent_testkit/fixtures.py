@@ -65,7 +65,7 @@ def services(session_dir):
         "DOCS_SEARCH_URL": urls["docs_search"],
         "PROXY_URL": urls["proxy"],
         "INTERFACE_URL": urls["interface"],
-        # Persistent memory of the agent (workshop 12): one store per test session, emptied by reset_state.
+        # Persistent memory of the agent (bonus workshop): one store per test session, emptied by reset_state.
         "MEMORY_DIR": str(session_dir / "memory"),
     }
     previous = {name: os.environ.get(name) for name in exported}

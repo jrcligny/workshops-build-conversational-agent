@@ -26,21 +26,21 @@ WORKSHOPS = {
     "04": "04-first-tool",
     "05": "05-agent-loop",
     "06": "06-mcp-server",
-    "07": "07-progressive-disclosure",
-    "08": "08-context-compaction",
     "10a": "10a-identity",
     "10b": "10b-writes",
     "10d": "10d-sandboxing",
-    "12": "12-long-term-memory",
-    "13": "13-document-search",
-    "14": "14-skills",
-    "15": "15-read-without-obeying",
-    "17": "17-evaluation",
-    "18": "18-failures",
-    "19": "19-specification",
+    "09": "09-progressive-disclosure",
+    "10": "10-context-compaction",
+    "12": "12-document-search",
+    "13": "13-skills",
+    "14": "14-read-without-obeying",
+    "15": "15-evaluation",
+    "16": "16-failures",
+    "17": "17-specification",
 }
 # Optional workshops outside the path: checked on their own, never by `--non-regression`.
 BONUS_WORKSHOPS = {
+    "bonus": "bonus-preference-memory",
 }
 # Steps of the workshops that cover several decisions of their chapter (`--etape`).
 STEPS = {

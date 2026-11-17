@@ -70,7 +70,7 @@ class Tracer:
         }
         self._cycle = 0
 
-    # --- what the model receives (03, 08, 12) ---------------------------------------------
+    # --- what the model receives (03, 10, bonus) ---------------------------------------------
 
     def input(
         self,
@@ -90,7 +90,7 @@ class Tracer:
             block["state"] = state
         block.update(extra)
 
-    # --- model calls (03, 07, 14, 17, 18) -------------------------------------------------
+    # --- model calls (03, 09, 13, 15, 16) -------------------------------------------------
 
     def model_call(
         self,
@@ -102,7 +102,7 @@ class Tracer:
     ) -> None:
         """Records one model call from its raw answer: model id, usage, stop reason, duration.
 
-        `offered_tools`: names of the tools offered at this call (14, 15); pass `[]` when you
+        `offered_tools`: names of the tools offered at this call (13, 14); pass `[]` when you
         offer none once you trace them, so the list stays one entry per call.
         `context_size`: your measure of the context sent at this call (07)."""
         choice = (response.get("choices") or [{}])[0]
@@ -136,7 +136,7 @@ class Tracer:
         """Calls `client.generate(messages, tools, model=model)`, records the call, returns the answer.
 
         The names of `tools` are recorded as `offered_tools` when you pass a list. A failed call
-        raises as is (see `ModelUnavailable`, workshop 18) and is not recorded."""
+        raises as is (see `ModelUnavailable`, workshop 16) and is not recorded."""
         started = time.perf_counter()
         response = client.generate(messages, tools, model=model)
         offered = None if tools is None else [(t.get("function") or t).get("name") for t in tools]
@@ -145,7 +145,7 @@ class Tracer:
         )
         return response
 
-    # --- cycles and tools (04, 06, 09, 17) ------------------------------------------------
+    # --- cycles and tools (04, 05, 06, 15) ------------------------------------------------
 
     def cycle(self) -> int:
         """Starts a new cycle of the agent loop (06) and returns its number, from 1.
@@ -182,7 +182,7 @@ class Tracer:
         """The turn stopped on the user's request (06)."""
         self._trace["interrupted"] = True
 
-    # --- context (07, 08) -----------------------------------------------------------------
+    # --- context (09, 10) -----------------------------------------------------------------
 
     def compaction_call(self, client: Any, messages: list[dict], model: str = "default") -> dict[str, Any]:
         """Calls the model for the compaction summary (08): `messages` start with your compaction
@@ -249,7 +249,7 @@ class Tracer:
         """The turn stopped at a limit (10d): `"duration"` or `"token_budget"`."""
         self._trace["limit_reached"] = limit
 
-    # --- memory and skills (12, 14) -------------------------------------------------------
+    # --- memory and skills (bonus, 13) -------------------------------------------------------
 
     def memory(
         self,
@@ -273,7 +273,7 @@ class Tracer:
             {"id": skill_id, "version": version, "cycle": self._cycle if cycle is None else cycle}
         )
 
-    # --- notices and failures (06, 07, 10d, 12, 18) ---------------------------------------
+    # --- notices and failures (05, 09, 10d, bonus, 16) ---------------------------------------
 
     def mention(self, content: str, **extra: Any) -> Event:
         """A notice shown to the user (partial answer, limit, memory...). Kept in the trace
