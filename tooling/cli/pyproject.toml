@@ -56,7 +56,7 @@ packages = ["src/workshop_tools"]
 testpaths = ["../../agent_sdk", "../../agent_testkit", "../../business", "../../gateway", "../../tooling", "../../workshops"]
 norecursedirs = [".*", "__pycache__", "node_modules", "venv", "inert_agent"]
 # Fixture loading and source paths remain explicit when running from another cwd.
-addopts = "-q --strict-markers --import-mode=importlib -p agent_testkit.fixtures -p agent_testkit.superseded -p agent_testkit.private"
+addopts = "-q --strict-markers --import-mode=importlib -p agent_testkit.fixtures -p agent_testkit.superseded -p agent_testkit.private -p agent_testkit.steps"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [

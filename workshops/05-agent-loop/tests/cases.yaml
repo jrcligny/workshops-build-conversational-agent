@@ -1,0 +1,51 @@
+# Public cases of workshop 05, read by test_workshop_05.py (the checks are in checks.py).
+# One scenario for both steps: which orders of a customer are late?
+
+# --- Step `outils`: the read tools ---
+namesakes_several_candidates:
+  question: "Quelles commandes de Léa Martin sont en retard ?"
+  candidates:              # customer id: city named in the answer
+    C-MARTIN-LILLE: Lille
+    C-MARTIN-LYON: Lyon
+  orders_of_one_namesake: [CMD-2010]
+
+# The expected total is read from the business API, never hard-coded.
+late_filter_applied_by_the_tool:
+  dataset: volume
+  customer: Transports Morel
+  question: "Combien de commandes en retard a Transports Morel ?"
+
+# --- Step `boucle`: the same question now takes several calls ---
+several_cycles:
+  question: &chained "Quelles commandes de Léa Martin, celle de Lille, sont en retard ?"
+  label: 05-several-cycles          # label of the repeated check
+
+independent_calls_grouped:
+  question: "Quelles commandes sont en retard chez les deux Léa Martin, celle de Lille et celle de Lyon ?"
+  label: 05-independent-calls-grouped
+
+steps_reported_to_the_interface:
+  question: *chained
+
+cycle_limit_partial_answer:
+  question: >-
+    Faites une revue complète de toutes les commandes de Transports Morel, une par une,
+    en vérifiant le détail de chacune pour repérer les retards, sans vous arrêter.
+  rubric:
+    id: 05-cycle-limit-partial
+    criterion: >-
+      At the cycle limit, the agent says in French that its answer is partial and names what
+      it could not verify; it does not present the review as complete.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [partiel, partielle, incomplet, incomplète]
+      - type: forbidden
+        patterns: [revue complète effectuée, toutes les commandes ont été vérifiées]
+
+# The same request, interrupted then not interrupted.
+interruption_stops_without_new_call:
+  question: &interrupted "Retrouvez Léa Martin de Lille, listez ses commandes en retard, puis détaillez chacune."
+
+without_interruption_the_same_request_runs:
+  question: *interrupted

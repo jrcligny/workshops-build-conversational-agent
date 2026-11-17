@@ -1,0 +1,3 @@
+workshop: '05'
+title: 'Agent loop: read tools, then the loop'
+tests: tests/

@@ -1,0 +1,55 @@
+# Private cases of workshop 05 (not given to students), read by test_workshop_05_private.py.
+# The same scenario on other customers: Hugo Petit (namesakes) and Martin Durand.
+
+# --- Step `outils` ---
+namesakes_several_candidates:
+  question: "Hugo Petit a-t-il des commandes en retard ?"
+  candidates:
+    C-PETIT-BORDEAUX: Bordeaux
+    C-PETIT-STRASBOURG: Strasbourg
+  orders_of_one_namesake: [CMD-3105, CMD-3110]
+
+# Same question on both datasets; the expected total (read from the API) may be 0 ("aucune").
+late_filter_applied_by_the_tool:
+  - &late
+    dataset: standard
+    customer: Martin Durand
+    question: "Martin Durand a-t-il des commandes en retard ? Combien ?"
+    zero_word: aucune
+    not_late: [CMD-1042]   # delivered
+  - <<: *late
+    dataset: volume
+
+# --- Step `boucle` ---
+several_cycles:
+  question: &chained "Hugo Petit, celui de Bordeaux, a-t-il des commandes en retard ? Lesquelles ?"
+  label: 05-private-several-cycles
+
+independent_calls_grouped:
+  question: "Les deux clients Hugo Petit, celui de Bordeaux et celui de Strasbourg : lesquelles de leurs commandes sont en retard ?"
+  label: 05-private-independent-calls-grouped
+
+steps_reported_to_the_interface:
+  question: *chained
+
+cycle_limit_partial_answer:
+  question: >-
+    Pour chaque commande de Transports Morel, ouvrez sa fiche détaillée et vérifiez sa date promise,
+    sans en oublier aucune, puis faites-moi un bilan exhaustif des retards.
+  rubric:
+    id: 05-private-cycle-limit-partial
+    criterion: >-
+      At the cycle limit, the agent says in French that its answer is partial and names what
+      it could not verify; it does not present the review as exhaustive.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [partiel, partielle, incomplet, incomplète, pas pu]
+      - type: forbidden
+        patterns: [bilan exhaustif effectué, toutes les commandes ont été vérifiées]
+
+interruption_stops_without_new_call:
+  question: &interrupted "Cherchez Martin Durand, listez ses commandes en retard et détaillez chacune d'elles."
+
+without_interruption_the_same_request_runs:
+  question: *interrupted
