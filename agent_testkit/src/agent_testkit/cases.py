@@ -4,7 +4,7 @@ Each workshop's `tests/` folder holds:
 - `checks.py`: one function per success criterion, parameterised by a case (no `test_` name);
 - `cases.yaml`: the public cases, loaded by `test_workshop_XX.py`;
 - `cases_private.yaml`: the private cases, loaded by `test_workshop_XX_private.py` only
-  (not given to students, see `testkit.private`).
+  (not given to students, see `agent_testkit.private`).
 
 The test files stay thin: they load their cases, then call the same checks. Tests are collected
 with `--import-mode=importlib`, so `checks.py` is loaded by path rather than imported.
@@ -21,7 +21,7 @@ from typing import Any
 
 import yaml
 
-from testkit.private import PRIVATE_CASES
+from agent_testkit.private import PRIVATE_CASES
 
 PUBLIC_CASES = "cases.yaml"
 __all__ = ["PRIVATE_CASES", "PUBLIC_CASES", "load_cases", "load_checks"]

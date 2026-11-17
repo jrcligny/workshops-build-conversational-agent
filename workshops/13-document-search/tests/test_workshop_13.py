@@ -5,7 +5,7 @@ The checks (and the contract they read) are in `checks.py`; the cases in `cases.
 
 import pytest
 
-from testkit.cases import load_cases, load_checks
+from agent_testkit.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

@@ -139,7 +139,7 @@ From the repository root:
 uv sync --project clients/chat_ui --extra dev
 uv run --project clients/chat_ui --extra dev pytest --confcutdir clients/chat_ui clients/chat_ui/tests
 uv sync --project tooling/cli --group tests --locked --python 3.13
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 ```
 
 `--confcutdir` bounds UI test configuration discovery to the UI project. Shared

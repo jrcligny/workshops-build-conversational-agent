@@ -21,7 +21,7 @@ import sys
 import pytest
 
 from workshop_config import REPO_ROOT, repo_path, settings
-from testkit.cases import load_checks
+from agent_testkit.cases import load_checks
 
 pytestmark = pytest.mark.workshop
 

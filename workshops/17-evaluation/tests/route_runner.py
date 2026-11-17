@@ -40,7 +40,7 @@ import yaml
 
 from model_gateway.tokens import reset_usage
 from workshop_config import repo_path, settings
-from evaluation.judge import judge
+from agent_testkit.evaluation.judge import judge
 
 EDGE_CASES = (
     "approximate-reference",

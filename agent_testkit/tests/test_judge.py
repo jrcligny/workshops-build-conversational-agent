@@ -1,4 +1,4 @@
-"""Judge rubric: structural layer and meaning layer (k-out-of-n repetition: testkit/tests/test_turns.py)."""
+"""Judge rubric: structural layer and meaning layer (k-out-of-n repetition: test_turns.py)."""
 
 import json
 
@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from workshop_config import settings
-from evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french, model_meaning_judge
+from agent_testkit.evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french, model_meaning_judge
 
 pytestmark = pytest.mark.shell
 

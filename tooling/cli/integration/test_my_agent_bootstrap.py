@@ -8,7 +8,7 @@ import pytest
 from mcp import Client
 
 from agent_gateway.loader import load_mcp_server
-from testkit.servers import free_port, start_uvicorn, wait_for_port
+from agent_testkit.servers import free_port, start_uvicorn, wait_for_port
 
 pytestmark = pytest.mark.shell
 
@@ -59,7 +59,7 @@ def test_http_client_carries_the_token_and_raises_readable_errors(services, rese
 
 def test_mcp_client_lists_and_calls_the_server_tools(monkeypatch):
     from agent_gateway.loader import load_mcp_server
-    from testkit.servers import free_port, start_uvicorn, wait_for_port
+    from agent_testkit.servers import free_port, start_uvicorn, wait_for_port
 
     from agent_sdk import mcp_client as mcp
     module = load_mcp_server()
@@ -106,7 +106,7 @@ def test_bootstrap_continues_a_loaded_conversation_and_refuses_unoffered_tools(s
     import httpx
 
     from agent_sdk.context import context
-    from testkit.conversation import to_messages
+    from agent_testkit.conversation import to_messages
 
     written = [{
         "user": "Où en est la commande CMD-2010 ?",

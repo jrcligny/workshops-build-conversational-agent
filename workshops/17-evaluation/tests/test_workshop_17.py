@@ -11,8 +11,8 @@ import json
 
 import pytest
 
-from testkit.cases import load_cases, load_checks
-from testkit.chat_client import ChatClient
+from agent_testkit.cases import load_cases, load_checks
+from agent_testkit.chat_client import ChatClient
 
 pytestmark = pytest.mark.workshop
 

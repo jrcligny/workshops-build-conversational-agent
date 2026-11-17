@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
-from testkit.private import is_private_path
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.private import is_private_path
 
 
 def test_cases_and_checks_are_loaded_next_to_the_test_file(tmp_path):

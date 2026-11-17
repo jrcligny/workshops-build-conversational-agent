@@ -6,7 +6,7 @@ into `main`). All these tests **fail against the inert agent** (`workshop check-
 bootstrap of `my-agent/`** (`workshop check-bootstrap`), except, for the bootstrap, those listed in
 `tooling/cli/bootstrap_passes.txt`: the bootstrap already converses through the model. The infrastructure tests in
 `<component>/tests/` and `tooling/cli/integration/` must pass. Shared fixtures, clients, runtime probes and evaluation
-helpers live in `tooling/testkit/` and `tooling/evaluation/`, not in the
+helpers live in `agent_testkit/` (judge in `agent_testkit.evaluation`), not in the
 runtime kit. The names each test reads are listed in
 [interface-contract.md](interface-contract.md#names-read-by-the-tests).
 
@@ -49,7 +49,7 @@ no root Python project or pytest configuration.
 ```powershell
 uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check 07
 uv run --project tooling/cli workshop check 07 --non-regression
 uv run --project tooling/cli workshop check-bootstrap

@@ -4,7 +4,7 @@ Contract read here:
 - `my-agent/sandbox/policy.yaml`: `active: true`, a non-empty `allowlist` (hosts or URL
   prefixes) that admits the business application and refuses any other destination; the
   kit evaluates it with `agent_sdk.sandbox.is_egress_allowed(url)`.
-- Runtime probes (`tooling/testkit/src/testkit/probes.py`): files opened and hosts resolved by the
+- Runtime probes (`agent_testkit/src/agent_testkit/probes.py`): files opened and hosts resolved by the
   code of `my-agent/` during the turn.
 - Trace: `limit_reached` ("duration" or "token_budget") when a turn stops at its limit;
   interface event `mention` saying the answer is partial.
@@ -15,10 +15,10 @@ from urllib.parse import urlsplit
 
 from agent_sdk.sandbox import is_egress_allowed, is_policy_enforced, policy
 from workshop_config import repo_path, settings
-from testkit.chat_client import ChatClient
-from testkit.probes import contacted_hosts, opened_files, student_activity
-from testkit.expect import expect_event, mentions_any
-from testkit.turns import model_calls, model_input, successful_turn, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.probes import contacted_hosts, opened_files, student_activity
+from agent_testkit.expect import expect_event, mentions_any
+from agent_testkit.turns import model_calls, model_input, successful_turn, tools
 
 JWT = re.compile(r"eyJ[\w-]{8,}\.[\w-]{8,}\.")
 

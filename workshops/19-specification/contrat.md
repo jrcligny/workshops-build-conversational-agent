@@ -82,7 +82,7 @@ Pour observer le contrôle dans une conversation, lancez `uv run --project tooli
 
 ## Pistes techniques
 
-- Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `tooling/testkit/src/testkit/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
+- Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `agent_testkit/src/agent_testkit/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
 - `gateway/model_gateway/src/model_gateway/app.py` (`/_test/scripts`, `/_test/token`) et `gateway/model_gateway/src/model_gateway/simulated.py` (`if_contains`, `content`, `tool`) décrivent les scripts. Les fixtures partagées effacent les scripts entre deux tests.
 - Choisissez un contrôle dont la violation a une conséquence pour l'utilisateur ou l'application et qui s'observe par le code : événement, état, trace, journal.
 - Relisez ligne à ligne ce qui touche à l'identité, aux droits, à la confirmation, à la soumission et au retrait des outils d'écriture, surtout si un *coding agent* l'a produit ; vérifiez qu'aucun test existant n'a été supprimé ni affaibli.

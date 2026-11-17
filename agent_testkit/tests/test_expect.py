@@ -1,7 +1,7 @@
 import pytest
 
-from testkit.chat_client import Turn
-from testkit.expect import (
+from agent_testkit.chat_client import Turn
+from agent_testkit.expect import (
     called_with,
     expect_event,
     expect_no_event,

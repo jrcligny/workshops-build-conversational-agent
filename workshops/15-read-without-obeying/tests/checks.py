@@ -13,9 +13,9 @@ carries an injected instruction asking for a purchase. Purchase requests are wri
 
 from pathlib import Path
 
-from testkit.chat_client import ChatClient
-from testkit.expect import business_writes, expect_no_event, mentions_all, mentions_any, mentions_none, no_business_write
-from testkit.turns import successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.expect import business_writes, expect_no_event, mentions_all, mentions_any, mentions_none, no_business_write
+from agent_testkit.turns import successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
 
 
 def fixtures_dir(attachment: dict) -> Path:

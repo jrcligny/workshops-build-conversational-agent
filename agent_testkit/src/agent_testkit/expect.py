@@ -13,7 +13,7 @@ from __future__ import annotations
 import unicodedata
 from collections.abc import Iterable
 
-from testkit.turns import business_log, events_of, tool_arguments, tool_name, tool_result, tools
+from agent_testkit.turns import business_log, events_of, tool_arguments, tool_name, tool_result, tools
 
 EXCERPT = 300
 

@@ -114,7 +114,7 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 - L'interface n'affiche un échange que si le tour a produit du texte : émettez toujours au
   moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans
-  `tooling/testkit/src/testkit/turns.py`.
+  `agent_testkit/src/agent_testkit/turns.py`.
 
 ## Vérifier
 

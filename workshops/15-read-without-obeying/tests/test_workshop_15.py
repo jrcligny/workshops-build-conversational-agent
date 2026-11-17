@@ -8,7 +8,7 @@ The quote (`tests/fixtures/sample-quote.txt`) carries an injected instruction as
 import pytest
 
 from workshop_config import settings
-from testkit.cases import load_cases, load_checks
+from agent_testkit.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

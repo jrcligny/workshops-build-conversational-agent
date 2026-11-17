@@ -1,17 +1,19 @@
 # Workshop test environment
 
-Three projects under `tooling/`, with dependencies in one direction only:
-`cli` → `testkit` → `evaluation`.
+`agent_testkit/` is what tests the agent, as `agent_sdk/` is what the agent imports.
+Students never import it. Dependencies go in one direction only:
+`tooling/cli` → `agent_testkit` → `agent_testkit.evaluation`.
 
-- `tooling/testkit/` (package `testkit`): what `workshops/*/tests` import. Pytest
+- `agent_testkit/` (package `agent_testkit`): what `workshops/*/tests` import. Pytest
   plugins (`fixtures`, `superseded`, `private`), `ChatClient`, `cases`
   (`load_cases`, `load_checks`), `conversation` (injected conversations),
-  `turns`, `servers` and `probes`. Its own tests are in `tests/`.
-- `tooling/evaluation/` (package `evaluation`): the judge (structural layer,
-  then meaning layer), tested in `tests/test_judge.py`. The k-out-of-n
-  repetition (`testkit.turns.apply_rubric_repeatedly`) is tested in testkit.
+  `expect` (business assertions), `turns`, `servers` and `probes`. Its tests are in `tests/`.
+- `agent_testkit.evaluation`: the judge (structural layer, then meaning layer),
+  tested in `tests/test_judge.py`. It imports nothing else from `agent_testkit`;
+  the k-out-of-n repetition (`agent_testkit.turns.apply_rubric_repeatedly`) is
+  tested in `tests/test_turns.py`.
 - `tooling/cli/`: runs the tests. Its `tests` dependency group (never installed
-  by `python start.py`) holds testkit, evaluation and the services; its
+  by `python start.py`) holds `agent_testkit` and the services; its
   `pyproject.toml` holds the pytest configuration. It also holds what checks the
   kit itself: `integration/` (cross-component tests), `inert_agent/` (overlay of
   `check-inert`; its `route-report.*` are facade deliverables, not generated
@@ -24,7 +26,7 @@ Run from the repository root:
 
 ```powershell
 uv sync --project tooling/cli --group tests --locked --python 3.13
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check 03
 uv run --project tooling/cli workshop check 07 --non-regression
 uv run --project tooling/cli workshop check-bootstrap
@@ -42,7 +44,7 @@ change, run **from the repository root**:
 uv run --project tooling/cli --group tests python workshops/17-evaluation/tests/routes.py --write
 ```
 
-The [route-set guide](../../workshops/17-evaluation/routes/README.md) is itself
+The [route-set guide](../workshops/17-evaluation/routes/README.md) is itself
 covered by the digest. Students and workshop 19 tooling must not change the
 official routes or their checksum.
 
@@ -53,5 +55,5 @@ this environment's MCP 2 dependencies:
 uv run --project clients/chat_ui --extra dev pytest --confcutdir clients/chat_ui clients/chat_ui/tests
 ```
 
-See the [test inventory](../../docs/test-inventory.md) and
-[UI guide](../../clients/chat_ui/README.md).
+See the [test inventory](../docs/test-inventory.md) and
+[UI guide](../clients/chat_ui/README.md).

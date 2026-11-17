@@ -5,7 +5,7 @@ CMD-2010), another long review and other interrupted requests.
 
 import pytest
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

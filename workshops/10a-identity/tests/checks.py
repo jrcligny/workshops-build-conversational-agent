@@ -21,10 +21,10 @@ from mcp.client.streamable_http import create_mcp_http_client, streamable_http_c
 
 from business_api.auth import issue_token
 from agent_gateway.loader import load_mcp_server
-from testkit.chat_client import ChatClient
-from testkit.expect import mentions_any, mentions_none
-from testkit.servers import free_port, start_uvicorn, wait_for_port
-from testkit.turns import business_log, successful_turn, tool_status, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.expect import mentions_any, mentions_none
+from agent_testkit.servers import free_port, start_uvicorn, wait_for_port
+from agent_testkit.turns import business_log, successful_turn, tool_status, tools
 
 DATA_ROUTES = ("/orders", "/sources", "/customers", "/invoices")
 

@@ -1,10 +1,10 @@
-"""k-out-of-n repetition of a judge rubric (`testkit.turns.apply_rubric_repeatedly`)."""
+"""k-out-of-n repetition of a judge rubric (`agent_testkit.turns.apply_rubric_repeatedly`)."""
 
 import pytest
 
 from workshop_config import settings
-from testkit.chat_client import Turn
-from testkit.turns import apply_rubric_repeatedly
+from agent_testkit.chat_client import Turn
+from agent_testkit.turns import apply_rubric_repeatedly
 
 pytestmark = pytest.mark.shell
 

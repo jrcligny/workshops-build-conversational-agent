@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from testkit.cases import load_checks
+from agent_testkit.cases import load_checks
 
 pytestmark = pytest.mark.shell
 

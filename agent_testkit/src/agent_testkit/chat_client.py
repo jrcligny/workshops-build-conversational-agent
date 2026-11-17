@@ -58,9 +58,9 @@ class ChatClient:
         """Starts the conversation from a written history instead of playing it turn by turn.
 
         `conversation` is either the written turns of a case (`{user, tools, answer}`, see
-        `testkit.conversation`) or chat messages; with `append`, it follows the turns
+        `agent_testkit.conversation`) or chat messages; with `append`, it follows the turns
         already played. Returns the number of turns."""
-        from testkit.conversation import to_messages
+        from agent_testkit.conversation import to_messages
 
         if not self.conversation_id:
             self.open()

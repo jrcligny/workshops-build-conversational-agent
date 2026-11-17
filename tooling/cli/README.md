@@ -18,7 +18,7 @@ launcher synchronizes each of the six application projects independently with
 its own lockfile and environment. Ctrl+C stops only the services it started.
 
 Workshop checks run pytest with this project's `tests` dependency group (see the
-[test environment](../testkit/README.md)). Prepare it before checking:
+[test environment](../../agent_testkit/README.md)). Prepare it before checking:
 
 ```powershell
 uv sync --project tooling/cli --group tests --locked --python 3.13

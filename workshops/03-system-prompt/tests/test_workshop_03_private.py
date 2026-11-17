@@ -5,7 +5,7 @@ another first name and a three-turn history.
 
 import pytest
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

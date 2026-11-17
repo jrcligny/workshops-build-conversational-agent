@@ -16,10 +16,10 @@ import pytest
 from mcp import Client
 
 from agent_gateway.loader import load_mcp_server
-from testkit.chat_client import ChatClient
-from testkit.expect import mentions_all
-from testkit.servers import free_port, start_uvicorn, wait_for_port
-from testkit.turns import business_log, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.expect import mentions_all
+from agent_testkit.servers import free_port, start_uvicorn, wait_for_port
+from agent_testkit.turns import business_log, successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
 
 
 def serve_mcp_server():

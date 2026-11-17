@@ -8,7 +8,7 @@ Main target: Windows, with Python 3.13 (from python.org or uv). See [docs/instal
 
 The agent you build answers in French, and the workshop guides are in French (code and technical docs stay English; see `docs/decisions.md`).
 
-Two test applications (business API and document search), a model proxy (simulated or live), a chat interface and traces live outside `my-agent/` (`business/`, `gateway/`, `agent_sdk/`, `clients/`), and you do not edit them. The CLI and launcher live in `tooling/cli/`; shared test helpers live in `tooling/testkit/` and the judge in `tooling/evaluation/`; test dependencies are the `tests` group of `tooling/cli/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The bootstrap also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
+Two test applications (business API and document search), a model proxy (simulated or live), a chat interface and traces live outside `my-agent/` (`business/`, `gateway/`, `agent_sdk/`, `clients/`), and you do not edit them. The CLI and launcher live in `tooling/cli/`; what tests the agent (helpers, assertions, judge) lives in `agent_testkit/`; test dependencies are the `tests` group of `tooling/cli/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The bootstrap also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
 
 ## What you write
 
@@ -43,4 +43,4 @@ root. There is no root Python project or shared environment.
 - `uv run --project tooling/cli workshop check-bootstrap` checks that every workshop test fails on the bootstrap of `my-agent/` (it converses through the model, without tool), except those listed in `tooling/cli/bootstrap_passes.txt`.
 - `uv run --project tooling/cli workshop check-inert` checks that every workshop test fails against an inert agent (one that answers without calling the model nor any tool).
 - In `--non-regression`, a test marked `superseded_by("<id>")` is skipped once the checked workshop reaches `<id>` (for example the "no tool yet" test of workshop 03 from workshop 04 on).
-- `uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling` runs the infrastructure tests, which must pass.
+- `uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling` runs the infrastructure tests, which must pass.

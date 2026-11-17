@@ -6,8 +6,8 @@ customer service) and another malformed reference.
 
 import pytest
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
-from testkit.turns import successful_turn, tool_result, tool_status
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.turns import successful_turn, tool_result, tool_status
 
 pytestmark = pytest.mark.workshop
 

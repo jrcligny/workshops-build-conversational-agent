@@ -1,6 +1,6 @@
 """Integrity of the evaluation routes (workshop 17), checked by workshops 17 and 19 and by the kit tests.
 
-Loaded by path (`testkit.cases.load_checks`), like `checks.py`; it imports nothing from the kit.
+Loaded by path (`agent_testkit.cases.load_checks`), like `checks.py`; it imports nothing from the kit.
 
 The digest covers every file of the routes folder except the checksum file itself:
 relative POSIX path, then content with line endings normalised to LF, so the value

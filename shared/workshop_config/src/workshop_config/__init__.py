@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     # One run by default: a route is one case among many and the whole set fits in the daily quota.
     route_k: int = 1
     route_n: int = 1
-    # Meaning layer of the judge: auto | semantic | structural (see tooling/evaluation/src/evaluation/judge.py).
+    # Meaning layer of the judge: auto | semantic | structural (see agent_testkit/src/agent_testkit/evaluation/judge.py).
     judge_mode: str = "auto"
     # OpenAI-compatible base URL of the judge model (for example the proxy's /v1) and its bearer token.
     judge_base_url: str = ""

@@ -7,11 +7,11 @@ import httpx
 import pytest
 import yaml
 
-from testkit.conversation import to_messages, tool_results
+from agent_testkit.conversation import to_messages, tool_results
 
 pytestmark = pytest.mark.shell
 
-WORKSHOPS = Path(__file__).resolve().parents[3] / "workshops"
+WORKSHOPS = Path(__file__).resolve().parents[2] / "workshops"
 SAMPLE = [
     {
         "user": "Où en est la commande CMD-2010 ?",
@@ -38,6 +38,10 @@ def _written_conversations():
     for path in sorted(WORKSHOPS.glob("*/tests/cases*.yaml")):
         walk(yaml.safe_load(path.read_text(encoding="utf-8")) or {}, f"{path.parent.parent.name}/{path.name}")
     return found
+
+
+def test_written_conversations_are_found():
+    assert _written_conversations(), f"no written conversation under {WORKSHOPS}"
 
 
 def test_written_turns_become_linked_chat_messages():

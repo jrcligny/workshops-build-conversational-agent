@@ -38,7 +38,7 @@ uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 ```
 
@@ -56,7 +56,7 @@ uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
 cp .env.example .env
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 ```
 
@@ -157,10 +157,10 @@ Tooling is a separate project set, not a root package:
 - `tooling/cli/` owns the CLI and launcher under `src/workshop_tools/`, with
   its own `pyproject.toml`, `uv.lock` and `.venv`.
 - The same project runs the tests: its `tests` dependency group (not installed by
-  `python start.py`) holds the services, `tooling/testkit/` (pytest plugins,
-  `ChatClient`, cases, conversations) and `tooling/evaluation/` (the judge), and its
+  `python start.py`) holds the services and `agent_testkit/` (pytest plugins,
+  `ChatClient`, cases, conversations, assertions and the judge), and its
   `pyproject.toml` holds the pytest configuration. Dependencies go one way:
-  `cli` → `testkit` → `evaluation`.
+  `tooling/cli` → `agent_testkit` → `agent_testkit.evaluation`.
 
 Infrastructure tests live next to the component they test (`<component>/tests/`, `tooling/cli/integration/`), while workshop acceptance
 tests stay next to their guides. Chainlit's MCP 1 and the agent's MCP 2 remain
@@ -169,12 +169,12 @@ isolated; UI tests use the UI project's `dev` extra, not the `tests` group of `t
 Run the infrastructure suite from the repository root:
 
 ```powershell
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 ```
 
 The `-c` explicitly selects the test project's configuration and fixture plugin;
 there is no root pytest configuration or fixture file. See the
-[test environment guide](../tooling/testkit/README.md) for evaluation commands.
+[test environment guide](../agent_testkit/README.md) for evaluation commands.
 
 To validate real startup and automatic shutdown of all six projects, run
 `uv run --project tooling/cli workshop serve --check --port-offset 100`.

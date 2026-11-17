@@ -94,7 +94,7 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 ## Judge: facts first, then meaning, repeated
 
 - **Order:** what code can check (application state, traces, logs, interface events) is
-  asserted first; a rubric then judges the meaning (`tooling/evaluation/src/evaluation/judge.py`):
+  asserted first; a rubric then judges the meaning (`agent_testkit/src/agent_testkit/evaluation/judge.py`):
   a structural layer (required or forbidden patterns) always, then a semantic layer by a
   judge model when `JUDGE_MODE` is `auto` and `JUDGE_BASE_URL` is set, or always when
   `JUDGE_MODE=semantic`. A failed semantic verdict fails the test.
@@ -121,7 +121,7 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 
 A workshop sometimes deliberately reverses an earlier one (workshop 03 has no tool, workshop
 04 adds one). Such a test is marked `@pytest.mark.superseded_by("04")`
-(`tooling/testkit/src/testkit/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
+(`agent_testkit/src/agent_testkit/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
 and the test is skipped, with an explicit reason, once the target reaches the marker.
 
 ## Private generalization tests
@@ -131,7 +131,7 @@ with other inputs (other customers, references, wordings, users, thresholds, att
 `tests/fixtures_private/`): an implementation tuned to the public cases fails them. They are
 for the trainers, not the students:
 
-- they are deselected unless pytest gets `--private` (`tooling/testkit/src/testkit/private.py`);
+- they are deselected unless pytest gets `--private` (`agent_testkit/src/agent_testkit/private.py`);
   `workshop check <id> --private` runs them, `check-inert` and `check-bootstrap` always include them;
 - `.gitattributes` marks them `export-ignore`: the student material is produced with
   `git archive`, which leaves them out.

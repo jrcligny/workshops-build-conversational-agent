@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-# This project also runs the tests: its `tests` group holds testkit, evaluation and the services.
+# This project also runs the tests: its `tests` group holds agent_testkit and the services.
 TEST_PROJECT = REPO_ROOT / "tooling" / "cli"
 WORKSHOPS_DIR = REPO_ROOT / "workshops"
 SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"

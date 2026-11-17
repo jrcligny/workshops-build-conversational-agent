@@ -8,8 +8,8 @@ phrasings of the typed confirmation.
 
 import pytest
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
-from testkit.turns import business_log, events_of, successful_turn
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.turns import business_log, events_of, successful_turn
 
 pytestmark = pytest.mark.workshop
 

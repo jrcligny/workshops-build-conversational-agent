@@ -15,7 +15,7 @@ The chat interface is `gateway/agent_gateway/src/agent_gateway/chat_app.py`.
 | Multi-turn | The same conversation id is reused. The *harness* replays the whole context of the conversation (`agent_sdk.context`: user and assistant messages, tool calls and their results) in the model input; the `history` parameter is only the transcript shown by the interface (texts). A conversation may also start from a written history (`POST /conversations/{id}/history`, tests; with `"append": true`, the written history follows the turns already played): the agent continues it as its own, and refuses without running any call the model makes to a tool it does not offer (`agent_sdk.context.unoffered_call_results`). |
 | Service addresses | `BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`, `INTERFACE_URL` are set in the environment by `workshop serve` and by the test fixtures (`workshop check`); `MCP_URL` too, by `workshop serve` and by the tests of workshops 09 and 10a, which start the MCP server of `my-agent/`. Read them at call time: the ports differ between the two. |
 
-The tests use the internal client (`tooling/testkit/src/testkit/chat_client.py`), not a browser.
+The tests use the internal client (`agent_testkit/src/agent_testkit/chat_client.py`), not a browser.
 The standard Chainlit UI in `clients/chat_ui/` consumes the same HTTP/SSE
 contract from its own Python environment. From the repository root, run
 `uv run --project tooling/cli workshop serve` to start

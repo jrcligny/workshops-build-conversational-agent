@@ -6,8 +6,8 @@ computed by the program is returned either as `status: approximate` with `order`
 `status: not_found` with `suggestions`; excluded orders are never returned.
 """
 
-from testkit.expect import called_with, mentions, mentions_all, mentions_any, mentions_none
-from testkit.turns import history, model_calls, successful_turn, tool_result, tool_status, tools
+from agent_testkit.expect import called_with, mentions, mentions_all, mentions_any, mentions_none
+from agent_testkit.turns import history, model_calls, successful_turn, tool_result, tool_status, tools
 
 
 def only_call(trace) -> dict:

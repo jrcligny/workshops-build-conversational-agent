@@ -26,8 +26,8 @@ from model_gateway.tokens import reset_usage  # noqa: E402
 from agent_sdk import trace_store as tracer  # noqa: E402
 from agent_gateway.chat_app import app as interface_app, reset_conversations  # noqa: E402
 from workshop_config import settings  # noqa: E402
-from testkit.chat_client import ChatClient  # noqa: E402
-from testkit.servers import start_uvicorn, free_port, wait_for  # noqa: E402
+from agent_testkit.chat_client import ChatClient  # noqa: E402
+from agent_testkit.servers import start_uvicorn, free_port, wait_for  # noqa: E402
 
 OBSERVATION_TOKEN = "workshop-observation"
 

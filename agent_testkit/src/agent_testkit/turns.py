@@ -6,7 +6,7 @@ import httpx
 
 from model_gateway.tokens import reset_usage
 from workshop_config import settings
-from evaluation.judge import judge
+from agent_testkit.evaluation.judge import judge
 from agent_sdk.trace_store import read_all
 
 

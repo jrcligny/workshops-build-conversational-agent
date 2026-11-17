@@ -17,9 +17,9 @@ from datetime import datetime
 from pathlib import Path
 
 from agent_gateway.chat_app import reset_conversations
-from testkit.chat_client import ChatClient
-from testkit.expect import mentions_any, mentions_none
-from testkit.turns import business_log, events_of, model_input, successful_turn, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.expect import mentions_any, mentions_none
+from agent_testkit.turns import business_log, events_of, model_input, successful_turn, tools
 
 TOPICS = {"amount_display": {"excluding_tax", "including_tax"}, "answer_format": {"table", "text"}}
 

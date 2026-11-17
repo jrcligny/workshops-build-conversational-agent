@@ -892,6 +892,37 @@ requires-dist = [
 ]
 
 [[package]]
+name = "workshop-agent-testkit"
+version = "0.1.0"
+source = { editable = "../../agent_testkit" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pytest" },
+    { name = "pyyaml" },
+    { name = "uvicorn" },
+    { name = "workshop-agent-gateway" },
+    { name = "workshop-agent-sdk" },
+    { name = "workshop-business-api" },
+    { name = "workshop-config" },
+    { name = "workshop-docs-search" },
+    { name = "workshop-model-gateway" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.27" },
+    { name = "pytest", specifier = ">=8.3" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "uvicorn", specifier = ">=0.32" },
+    { name = "workshop-agent-gateway", editable = "../../gateway/agent_gateway" },
+    { name = "workshop-agent-sdk", editable = "../../agent_sdk" },
+    { name = "workshop-business-api", editable = "../../business/business_api" },
+    { name = "workshop-config", editable = "../../shared/workshop_config" },
+    { name = "workshop-docs-search", editable = "../../business/docs_search" },
+    { name = "workshop-model-gateway", editable = "../../gateway/model_gateway" },
+]
+
+[[package]]
 name = "workshop-business-api"
 version = "0.1.0"
 source = { editable = "../../business/business_api" }
@@ -965,21 +996,6 @@ requires-dist = [
 ]
 
 [[package]]
-name = "workshop-evaluation"
-version = "0.1.0"
-source = { editable = "../evaluation" }
-dependencies = [
-    { name = "httpx" },
-    { name = "workshop-config" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "workshop-config", editable = "../../shared/workshop_config" },
-]
-
-[[package]]
 name = "workshop-model-gateway"
 version = "0.1.0"
 source = { editable = "../../gateway/model_gateway" }
@@ -1004,39 +1020,6 @@ requires-dist = [
     { name = "uvicorn", specifier = ">=0.32" },
     { name = "workshop-config", editable = "../../shared/workshop_config" },
     { name = "workshop-text-vectors", editable = "../../shared/text_vectors" },
-]
-
-[[package]]
-name = "workshop-testkit"
-version = "0.1.0"
-source = { editable = "../testkit" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pytest" },
-    { name = "pyyaml" },
-    { name = "uvicorn" },
-    { name = "workshop-agent-gateway" },
-    { name = "workshop-agent-sdk" },
-    { name = "workshop-business-api" },
-    { name = "workshop-config" },
-    { name = "workshop-docs-search" },
-    { name = "workshop-evaluation" },
-    { name = "workshop-model-gateway" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "pytest", specifier = ">=8.3" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "uvicorn", specifier = ">=0.32" },
-    { name = "workshop-agent-gateway", editable = "../../gateway/agent_gateway" },
-    { name = "workshop-agent-sdk", editable = "../../agent_sdk" },
-    { name = "workshop-business-api", editable = "../../business/business_api" },
-    { name = "workshop-config", editable = "../../shared/workshop_config" },
-    { name = "workshop-docs-search", editable = "../../business/docs_search" },
-    { name = "workshop-evaluation", editable = "../evaluation" },
-    { name = "workshop-model-gateway", editable = "../../gateway/model_gateway" },
 ]
 
 [[package]]
@@ -1068,12 +1051,11 @@ tests = [
     { name = "uvicorn" },
     { name = "workshop-agent-gateway" },
     { name = "workshop-agent-sdk" },
+    { name = "workshop-agent-testkit" },
     { name = "workshop-business-api" },
     { name = "workshop-config" },
     { name = "workshop-docs-search" },
-    { name = "workshop-evaluation" },
     { name = "workshop-model-gateway" },
-    { name = "workshop-testkit" },
     { name = "workshop-text-vectors" },
 ]
 
@@ -1096,11 +1078,10 @@ tests = [
     { name = "uvicorn", specifier = ">=0.32" },
     { name = "workshop-agent-gateway", editable = "../../gateway/agent_gateway" },
     { name = "workshop-agent-sdk", editable = "../../agent_sdk" },
+    { name = "workshop-agent-testkit", editable = "../../agent_testkit" },
     { name = "workshop-business-api", editable = "../../business/business_api" },
     { name = "workshop-config", editable = "../../shared/workshop_config" },
     { name = "workshop-docs-search", editable = "../../business/docs_search" },
-    { name = "workshop-evaluation", editable = "../evaluation" },
     { name = "workshop-model-gateway", editable = "../../gateway/model_gateway" },
-    { name = "workshop-testkit", editable = "../testkit" },
     { name = "workshop-text-vectors", editable = "../../shared/text_vectors" },
 ]

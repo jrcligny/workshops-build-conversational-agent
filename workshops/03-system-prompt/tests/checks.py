@@ -8,10 +8,10 @@ The turns that only set the scene are loaded as a written conversation (`chat_cl
 only the turn under test is played.
 """
 
-from evaluation.judge import judge
-from testkit.conversation import to_messages
-from testkit.expect import mentions_none, no_business_call, no_tool_called
-from testkit.turns import apply_rubric_repeatedly, model_calls, model_input, successful_turn
+from agent_testkit.evaluation.judge import judge
+from agent_testkit.conversation import to_messages
+from agent_testkit.expect import mentions_none, no_business_call, no_tool_called
+from agent_testkit.turns import apply_rubric_repeatedly, model_calls, model_input, successful_turn
 
 PROMPT_SOURCE_TERMS = ["source", "outil", "vérifi", "donnée"]
 PROMPT_NO_ASSERTION_TERMS = ["affirm", "invent", "devin", "suppos", "spécul", "confirm"]

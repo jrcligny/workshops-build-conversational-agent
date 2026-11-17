@@ -27,6 +27,8 @@ gateway/             running infrastructure, never edited by students
   model_gateway/     OpenAI-compatible model proxy (simulated / replay / live Azure OpenAI)
 agent_sdk/           what my-agent imports without editing it: contract types, Tracer, model client,
                      tool schemas, HTTP/MCP clients, readers of skills, sandbox and attachments
+agent_testkit/       what tests the agent (never imported by my-agent): pytest plugins, ChatClient,
+                     cases, conversations, assertions (expect), semantic judge (evaluation)
 business/            what the agent queries
   business_api/      business API test app (FastAPI + SQLite)
   docs_search/       document search test app (SQLite FTS5 + sqlite-vec), corpus/ included
@@ -35,8 +37,6 @@ tooling/
   cli/               CLI and six-service launcher (workshop check, serve, check-bootstrap, check-inert);
                      test runner (`tests` group, pytest configuration), cross-component tests
                      (integration/), inert agent, declared bootstrap passes
-  testkit/           what workshops/*/tests import: pytest plugins, ChatClient, cases, conversations
-  evaluation/        semantic judge (k out of n repetition in testkit)
 ruff.toml            editor/static lint configuration only, not a Python project
 docs/                interface contract, installation, decisions, test inventory, team validation
 ```
@@ -58,7 +58,7 @@ uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap   # succeeds when every workshop test fails on the bootstrap, except tooling/cli/bootstrap_passes.txt
 uv run --project tooling/cli workshop check 03      # stays red until workshop 03 is done
 ```
@@ -70,7 +70,7 @@ uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
 uv sync --project tooling/cli --group tests --locked --python 3.13
 cp .env.example .env
-uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 uv run --project tooling/cli workshop check 03
 ```
@@ -117,7 +117,7 @@ The licence is not decided yet. No `LICENSE` file is published for now.
 - [Getting started](GETTING_STARTED.md)
 - [Installation](docs/installation.md)
 - [Workshop tooling](tooling/cli/README.md)
-- [Test environment](tooling/testkit/README.md)
+- [Test environment](agent_testkit/README.md)
 - [Interface contract](docs/interface-contract.md)
 - [Workshop test inventory](docs/test-inventory.md)
 - [Team validation procedure](docs/team-validation.md) (phase B, once Azure is available)

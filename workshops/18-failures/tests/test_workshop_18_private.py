@@ -5,7 +5,7 @@ order for the fallback (CMD-2010, shipped) and other questions around the index 
 
 import pytest
 
-from testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from agent_testkit.cases import PRIVATE_CASES, load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

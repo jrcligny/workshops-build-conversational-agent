@@ -26,10 +26,10 @@ import json
 import re
 
 from workshop_config import repo_path, settings
-from evaluation.judge import judge
-from testkit.conversation import to_messages, tool_results
-from testkit.expect import calls_with, expect_event, mentions, mentions_all, mentions_none, state_of, strings_in
-from testkit.turns import business_log, history, model_calls, model_input, successful_turn
+from agent_testkit.evaluation.judge import judge
+from agent_testkit.conversation import to_messages, tool_results
+from agent_testkit.expect import calls_with, expect_event, mentions, mentions_all, mentions_none, state_of, strings_in
+from agent_testkit.turns import business_log, history, model_calls, model_input, successful_turn
 
 
 def configure(monkeypatch, scenario: dict) -> None:

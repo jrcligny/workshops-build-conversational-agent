@@ -12,9 +12,9 @@ Invoice approval is written by the `accountant` role (nina-accountant).
 
 from agent_sdk.skills import catalog_dir, load_manifest
 from workshop_config import settings
-from testkit.chat_client import ChatClient
-from testkit.expect import business_writes, mentions_any
-from testkit.turns import model_input, successful_turn, tool_arguments, tool_name, tool_status, tools
+from agent_testkit.chat_client import ChatClient
+from agent_testkit.expect import business_writes, mentions_any
+from agent_testkit.turns import model_input, successful_turn, tool_arguments, tool_name, tool_status, tools
 
 
 def client(services, user: dict) -> ChatClient:

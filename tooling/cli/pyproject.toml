@@ -9,8 +9,7 @@ dependencies = ["httpx>=0.27"]
 # Not a default group: `python start.py` (`uv sync`) never installs it.
 [dependency-groups]
 tests = [
-    "workshop-testkit",
-    "workshop-evaluation",
+    "workshop-agent-testkit",
     "fastapi>=0.115",
     "mcp>=2.3.0",
     "pydantic>=2.9",
@@ -33,8 +32,7 @@ tests = [
 ]
 
 [tool.uv.sources]
-workshop-testkit = { path = "../testkit", editable = true }
-workshop-evaluation = { path = "../evaluation", editable = true }
+workshop-agent-testkit = { path = "../../agent_testkit", editable = true }
 workshop-config = { path = "../../shared/workshop_config", editable = true }
 workshop-text-vectors = { path = "../../shared/text_vectors", editable = true }
 workshop-business-api = { path = "../../business/business_api", editable = true }
@@ -55,10 +53,10 @@ packages = ["src/workshop_tools"]
 [tool.pytest.ini_options]
 # Kit tests sit next to the component they test (`<component>/tests/`, `tooling/cli/integration/`);
 # clients/chat_ui has its own project.
-testpaths = ["../../agent_sdk", "../../business", "../../gateway", "../../tooling", "../../workshops"]
+testpaths = ["../../agent_sdk", "../../agent_testkit", "../../business", "../../gateway", "../../tooling", "../../workshops"]
 norecursedirs = [".*", "__pycache__", "node_modules", "venv", "inert_agent"]
 # Fixture loading and source paths remain explicit when running from another cwd.
-addopts = "-q --strict-markers --import-mode=importlib -p testkit.fixtures -p testkit.superseded -p testkit.private"
+addopts = "-q --strict-markers --import-mode=importlib -p agent_testkit.fixtures -p agent_testkit.superseded -p agent_testkit.private"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [

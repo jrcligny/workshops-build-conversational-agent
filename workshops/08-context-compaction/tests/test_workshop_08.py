@@ -7,7 +7,7 @@ conversation loaded instead of played, in `cases.yaml`.
 
 import pytest
 
-from testkit.cases import load_cases, load_checks
+from agent_testkit.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 
