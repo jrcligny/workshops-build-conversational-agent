@@ -101,3 +101,35 @@ def test_bootstrap_converses_through_the_model_without_tool(chat_client, traces)
         {"role": "assistant", "content": first.text},
     ], "the history is sent to the model"
     assert len(trace["model"]["calls"]) == 1 and trace["output"] == turn.text, "one model call, its answer relayed"
+
+def test_bootstrap_continues_a_loaded_conversation_and_refuses_unoffered_tools(services, chat_client, traces):
+    import httpx
+
+    from agent_sdk.context import context
+    from workshop_tests.testing.conversation import to_messages
+
+    written = [{
+        "user": "Où en est la commande CMD-2010 ?",
+        "tools": [{"name": "get_order", "arguments": {"reference": "CMD-2010"}, "result": {"status": "ok", "order": {"status": "shipped"}}}],
+        "answer": "La commande CMD-2010 est expédiée.",
+    }]
+    chat_client.load(written)
+    # The model tries to call the neutral tool of the written history, then answers once refused.
+    call = {"id": "call_x", "type": "function", "function": {"name": "get_order", "arguments": "{\"reference\": \"CMD-2010\"}"}}
+    token = httpx.post(f"{services['proxy']}/_test/token", timeout=5).json()["token"]
+    httpx.post(
+        f"{services['proxy']}/_test/scripts",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"scripts": [
+            {"if_last_role": "tool", "content": "Elle est expédiée, d'après la lecture précédente."},
+            {"if_contains": "rappeler", "content": "", "tool": call},
+        ]},
+        timeout=5,
+    )
+    turn = chat_client.turn("Vous pouvez me rappeler son statut ?")
+    assert turn.ok and "expédiée" in turn.text
+    trace = traces.last()
+    assert trace["tools"] == [] and len(trace["model"]["calls"]) == 2, "the unoffered call is refused, never run"
+    assert trace["input"]["history"] == to_messages(written), "the loaded conversation is replayed as it was written"
+    roles = [m["role"] for m in context(chat_client.conversation_id).messages]
+    assert roles[-4:] == ["user", "assistant", "tool", "assistant"], "the refused call and its refusal stay in the context"

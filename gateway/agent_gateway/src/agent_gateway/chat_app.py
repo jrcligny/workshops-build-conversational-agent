@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from agent_sdk.context import clear_contexts
+from agent_sdk.context import clear_contexts, seed
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
 from agent_gateway.loader import load_harness
 
@@ -66,6 +66,10 @@ class ConfirmationIn(BaseModel):
     confirmed: bool = True
 
 
+class HistoryIn(BaseModel):
+    messages: list[dict]
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -102,6 +106,27 @@ def create_conversation(body: ConversationIn):
     _conversations[conversation_id] = body.model_dump()
     _histories[conversation_id] = []
     return {"id": conversation_id, "user": body.model_dump()}
+
+
+@app.post("/conversations/{conversation_id}/history")
+def load_history(conversation_id: str, body: HistoryIn):
+    """Starts a conversation from a written history (tests, demonstrations), instead of playing it.
+
+    The messages (user, assistant with `tool_calls`, `tool` results) become the agent's context
+    (`agent_sdk.context.seed`); the transcript shown keeps, per turn, the user's text and the last
+    non-empty assistant text."""
+    if conversation_id not in _conversations:
+        raise HTTPException(status_code=404, detail="unknown conversation")
+    seed(conversation_id, body.messages)
+    transcript: list[Message] = []
+    for message in body.messages:
+        role, content = message.get("role"), message.get("content") or ""
+        if role == "user":
+            transcript += [Message(role="user", content=content), Message(role="assistant", content="")]
+        elif role == "assistant" and content and transcript:
+            transcript[-1] = Message(role="assistant", content=content)
+    _histories[conversation_id] = transcript
+    return {"turns": len(transcript) // 2}
 
 
 @app.post("/conversations/{conversation_id}/confirmation")
