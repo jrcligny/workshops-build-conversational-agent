@@ -1,26 +1,21 @@
-"""End-to-end tests of workshop 05. They must fail on the empty shell."""
+"""End-to-end tests of workshop 05. They must fail on the empty shell.
+
+The checks (and the trace contract they read) are in `checks.py`; the cases in `cases.yaml`.
+"""
 
 import pytest
 
-from workshop_tests.testing.turns import successful_turn, tools
+from agent_testkit.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 
+checks = load_checks(__file__)
+CASES = load_cases(__file__)
+
 
 def test_namesakes_several_candidates(chat_client):
-    turn, trace = successful_turn(chat_client, "Quelles sont les commandes de Léa Martin ?")
-    text = turn.text.lower()
-    assert "lille" in text and "lyon" in text
-    # the agent does not pick one of the two on behalf of the user
-    assert "laquelle" in text or "plusieurs" in text or "homonym" in text or "deux" in text or "?" in turn.text
-    assert tools(trace)
+    checks.namesakes_several_candidates(chat_client, CASES["namesakes_several_candidates"])
 
 
-def test_late_filter_applied_by_the_tool(chat_client, observation):
-    observation.reset("volume")
-    turn, trace = successful_turn(chat_client, "Quelles sont les commandes en retard de Transports Morel ?")
-    assert turn.text
-    assert tools(trace)
-    assert "late" in str(tools(trace)).lower()
-    # the filter is in the call, not only in a selection made afterwards by the model
-    assert any("late" in str(t.get("arguments") or t.get("parameters") or t).lower() for t in tools(trace))
+def test_late_filter_applied_by_the_tool(chat_client, observation, business_client):
+    checks.late_filter_applied_by_the_tool(chat_client, observation, business_client, CASES["late_filter_applied_by_the_tool"])

@@ -1,0 +1,33 @@
+# Private cases of workshop 10a (not given to students), read by test_workshop_10a_private.py.
+token_exchange:
+  user: paul-buyer
+  open: {user_id: paul-buyer, role: buyer, organization: organization-a}
+  question: "La commande CMD-2010 est-elle déjà partie ? Quel est son statut ?"
+  answer_status: expédiée
+
+request_without_identity_refused:
+  question: "La commande CMD-2010 est-elle déjà partie ? Quel est son statut ?"
+  hidden_status: expédiée
+  only_calls_of_this_turn: true    # only the calls made during the turn are checked
+  scenarios:
+    - id: no-token
+      open: {user_id: paul-buyer, role: buyer, organization: organization-a}
+      app_token: null
+    - id: malformed
+      open: {user_id: nina-accountant, role: accountant, organization: organization-a}
+      app_token: "Bearer abc.def"
+    - id: forged-signature
+      open: {user_id: nina-accountant, role: accountant, organization: organization-a}
+      app_token: forged
+      forged: {sub: nina-accountant, role: accountant, organization: organization-a, key: a-key-unknown-to-the-application}
+
+other_organization_sees_nothing:
+  user: {user_id: omar-buyer-b, role: buyer, organization: organization-b}
+  question: "La commande CMD-2010 est-elle déjà partie ? Quel est son statut ?"
+  never_disclosed: [expédiée, "450"]
+
+mcp_server_requires_the_entry_token:
+  user: nina-accountant
+  arguments: {source: invoices, filters: {status: pending}}
+  invalid_authorizations: [null, "Basic {token}", "Bearer {forged}"]
+  forged: {sub: nina-accountant, role: accountant, organization: organization-a, key: a-key-unknown-to-the-application}

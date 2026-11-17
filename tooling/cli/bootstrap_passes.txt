@@ -1,0 +1,13 @@
+# Workshop tests the bootstrap of my-agent/ passes: it already converses through the model.
+# Workshop 03: the wiring (prompt loaded, history replayed, no tool) is provided; the refusal tests are not.
+# Format: <test file>::<test name>. Read by `workshop check-bootstrap`; check-inert tolerates none.
+test_workshop_03_private.py::test_contract_and_short_prompt
+test_workshop_03_private.py::test_history_replayed_on_second_turn
+test_workshop_03_private.py::test_no_tool_yet
+test_workshop_03.py::test_contract_and_short_prompt
+test_workshop_03.py::test_history_replayed_on_second_turn
+test_workshop_03.py::test_no_tool_yet
+test_workshop_08_private.py::test_no_compaction_below_threshold
+test_workshop_08.py::test_no_compaction_below_threshold
+test_workshop_10d_private.py::test_destination_outside_allowlist_refused
+test_workshop_10d.py::test_destination_outside_allowlist_refused

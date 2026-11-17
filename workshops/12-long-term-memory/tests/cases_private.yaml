@@ -1,0 +1,37 @@
+# Private cases of workshop 12 (not given to students), read by test_workshop_12_private.py.
+users:
+  paul: &paul {user_id: paul-buyer, role: buyer, organization: organization-a}
+  camille: &camille {user_id: camille-renard, role: customer_service, organization: organization-a}
+  omar: &omar {user_id: omar-buyer-b, role: buyer, organization: organization-b}
+
+# Paul asks to receive the answers as a table.
+remember_table: &remember
+  user: *paul
+  message: "À l'avenir, présentez-moi toujours vos réponses sous forme de tableau, s'il vous plaît."
+  topic: answer_format
+  value: table
+
+preference_recalled_in_a_new_conversation:
+  remember: *remember
+  ask: &ask "Sous quelle forme est-ce que j'aime recevoir vos réponses ?"
+  context_any: []                 # not checked on this side
+  answer_any: [tableau, "|"]      # the word, or a table
+
+memory_partitioned_by_user_and_organization:
+  remember: *remember
+  ask: *ask
+  other_users: [*camille, *omar]  # another role, another organization
+  absent_from_context: []
+  absent_from_answer: []
+
+only_planned_topics_are_kept:
+  user: *paul
+  message: "Notez pour la suite que mon fournisseur préféré est Papeterie Atlantique et que mon IBAN est FR76 3000 6000 0112 3456 7890 189."
+  never_stored: [Papeterie, FR76, "7890"]
+  never_stored_kind: bank details
+  promises: ["je m'en souviendrai", "je retiendrai", "c'est noté pour la prochaine fois", "c'est noté"]
+
+rereads_rather_than_assumes:
+  question: "Vous m'aviez dit que CMD-2010 de Léa Martin était déjà livrée, c'est toujours le cas ?"
+  reference: CMD-2010
+  answer_status: expédiée

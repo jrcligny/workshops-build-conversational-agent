@@ -3,9 +3,9 @@
 Location of the tool-server sandbox (workshop 10d): network allowlist, no
 file access, duration and budget limits.
 
-In this shell:
+In this bootstrap:
 
-- `workshop_kit/services/sandbox/interface.py` exposes the contract
+- `agent_sdk/src/agent_sdk/sandbox.py` exposes the contract
   (`policy()`, `is_egress_allowed()`) and reads this folder's `policy.yaml`
   (setting `sandbox_policy_file`, default `my-agent/sandbox/policy.yaml`);
 - `policy.yaml` exists, with `active: false` and an empty allowlist;

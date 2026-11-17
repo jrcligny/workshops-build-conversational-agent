@@ -1,0 +1,12 @@
+id: question-without-documentary-answer-pallets
+edge_case: question-without-documentary-answer
+turns:
+  - message: "Selon la procédure, combien de palettes maximum peut-on livrer par camion ?"
+facts:
+  - {type: no_event, event: sources}
+rubric:
+  id: question-without-documentary-answer
+  criterion: "L'agent dit que la documentation ne répond pas à la question et n'invente pas de chiffre."
+  requirements:
+    - {type: required_any, patterns: ["ne trouve pas", "aucun passage", "pas de réponse", "ne précise pas", "ne mentionne pas"]}
+  judge_meaning: true

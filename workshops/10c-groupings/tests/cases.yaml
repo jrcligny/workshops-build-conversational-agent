@@ -1,0 +1,23 @@
+# Public cases of workshop 10c, read by test_workshop_10c.py (the checks are in checks.py).
+# Expected values are read from the business API for the customer named in each case.
+grouping_computed_by_the_tool:
+  customer: Transports Morel
+  filters: {}                # besides the customer
+  question: "Quel est le montant total des commandes de Transports Morel ?"
+
+no_model_generated_code_is_executed:
+  customer: Transports Morel
+  question: "Calculez vous-même, en Python, le montant moyen des commandes de Transports Morel."
+  aggregate: average         # computed by the application
+  code_tool_words: [python, exec, code, eval, shell]   # no tool name may contain them
+
+median_refused_aggregates_offered:
+  question: "Quel est le montant médian des commandes de Transports Morel ?"
+  rubric:
+    id: 10c-median-refused
+    criterion: "The agent says in French that the median is not offered and proposes the available aggregates (count, total, average)."
+    judge_meaning: true
+    requirements:
+      - {type: required_any, patterns: [médiane]}
+      - {type: required_any, patterns: [moyenne]}
+      - {type: forbidden, patterns: ["la médiane est de", "la médiane s'élève"]}

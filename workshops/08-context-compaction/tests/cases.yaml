@@ -1,0 +1,136 @@
+# Public cases of workshop 08, read by test_workshop_08.py (the checks are in checks.py).
+# Dataset `standard`. The written conversation is loaded, not played: only the turn that compacts
+# is played live. Its key facts (the customer chosen between two namesakes, the order, its status
+# and its amount) are only in tool results and in the agent's answers, never in a user message.
+scenario:
+  threshold: 8          # COMPACTION_MESSAGE_THRESHOLD set for these tests: compaction once 8 turns are stored
+  keep_turns: 2         # COMPACTION_KEEP_TURNS: the last 2 turns stay as they are
+  conversation:         # exactly `threshold` turns
+    - user: "Je traite la réclamation d'une cliente, Léa Martin : elle trouve sa commande en cours trop chère."
+      tools:
+        - name: search_customers
+          arguments: {name: "Léa Martin"}
+          result:
+            status: ok
+            customers:
+              - {id: C-MARTIN-LILLE, name: "Léa Martin", city: Lille}
+              - {id: C-MARTIN-LYON, name: "Léa Martin", city: Lyon}
+      answer: "Deux clientes portent ce nom : Léa Martin à Lille et Léa Martin à Lyon. De laquelle s'agit-il ?"
+    - user: "Celle du Nord."
+      tools:
+        - name: list_orders
+          arguments: {customer_id: C-MARTIN-LILLE}
+          result:
+            orders:
+              - {reference: CMD-2010, status: shipped, amount: 450.0}
+            total: 1
+      answer: "Léa Martin (Lille) a une seule commande : CMD-2010, expédiée."
+    - user: "Donnez-moi le détail de cette commande."
+      tools:
+        - name: get_order
+          arguments: {reference: CMD-2010}
+          result:
+            status: ok
+            order: {reference: CMD-2010, customer_id: C-MARTIN-LILLE, status: shipped, amount: 450.0, delivery_city: Lille}
+      answer: "CMD-2010 est expédiée, pour un montant de 450,00 €, avec une livraison à Lille."
+    - user: "Elle affirme qu'on lui avait annoncé un prix plus bas. Voyez-vous un geste commercial ?"
+      answer: "Je n'ai pas accès aux gestes commerciaux : je ne vois que la commande et son statut."
+    - user: "D'accord. Notez qu'elle souhaite être rappelée en fin de semaine."
+      answer: "C'est noté : elle souhaite un rappel en fin de semaine. Je ne peux pas programmer ce rappel moi-même."
+    - user: "A-t-elle d'autres commandes en attente ?"
+      tools:
+        - name: list_orders
+          arguments: {customer_id: C-MARTIN-LILLE}
+          result:
+            orders:
+              - {reference: CMD-2010, status: shipped, amount: 450.0}
+            total: 1
+      answer: "Non, c'est sa seule commande."
+    - user: "Je vais lui proposer de patienter jusqu'à la livraison."
+      answer: "Très bien. Souhaitez-vous autre chose sur ce dossier ?"
+    - user: "Vérifiez quand même qu'elle n'a aucune commande en retard."
+      tools:
+        - name: list_orders
+          arguments: {customer_id: C-MARTIN-LILLE, filter: late}
+          result:
+            orders: []
+            total: 0
+      answer: "Aucune commande en retard pour cette cliente."
+  continuation:         # threshold - keep_turns - 1 turns, appended after the turn that compacted
+    - user: "Elle rappelle : elle veut savoir si le transporteur est déjà passé."
+      answer: "Je ne suis pas le transporteur : je ne vois que le statut de la commande."
+    - user: "Bon. Je lui dis de surveiller sa boîte aux lettres."
+      answer: "D'accord."
+    - user: "Elle demande aussi un justificatif de paiement."
+      answer: "Je ne peux pas produire de justificatif : le service comptable peut le lui envoyer."
+    - user: "Je transmets au service comptable."
+      answer: "Très bien."
+    - user: "Merci pour votre aide."
+      answer: "Avec plaisir."
+  filler:               # threshold - 2 turns, appended after the two played turns of the namesake choice
+    - user: "Merci, restons sur ce dossier."
+      answer: "Entendu, je garde ce dossier ouvert."
+    - user: "Elle souhaite être rappelée en fin de semaine."
+      answer: "C'est noté. Je ne peux pas programmer ce rappel moi-même."
+    - user: "Elle trouve que la commande est trop chère."
+      answer: "Je n'ai pas accès aux gestes commerciaux : je peux seulement vous donner l'état de ses commandes."
+    - user: "D'accord, je lui transmettrai."
+      answer: "Très bien."
+    - user: "Je prends une pause, je reviens dans dix minutes."
+      answer: "Le dossier reste ouvert."
+    - user: "Me revoilà."
+      answer: "Bon retour. Que souhaitez-vous faire ?"
+
+no_compaction_below_threshold:
+  question: "Pouvez-vous simplement confirmer la cliente en cours ?"
+
+tool_results_cleared:
+  question: "Où en sommes-nous de ce dossier ?"
+
+compaction_own_prompt_and_rolling_summary:
+  question: "Où en sommes-nous de ce dossier ?"
+  second_question: "Récapitulez-moi le dossier."
+
+summary_keeps_tool_facts:
+  question: "Où en sommes-nous de ce dossier ?"
+  rubric:
+    id: 08-summary-keeps-tool-facts
+    language: fr
+    criterion: >-
+      The summary is organised under the five fixed headings and keeps the facts read by the tools:
+      the customer is Léa Martin of Lille (C-MARTIN-LILLE), chosen between two namesakes (not the Lyon
+      one); her order CMD-2010 is shipped, for an amount of 450, as read by a tool; the user handles a
+      complaint about the price; the callback wished at the end of the week is still pending.
+    judge_meaning: true
+    requirements:
+      - type: required_all
+        patterns: ["Objectif de l'utilisateur", "Entités en cours", "Faits établis", "Décisions et choix confirmés", "Questions en suspens"]
+      - type: required_all
+        patterns: [CMD-2010, "450", Lille]
+
+answer_from_summary_after_compaction:
+  question: "Sans relire la commande, rappelez-moi son montant."
+  amount: ["450"]
+
+compaction_reported_in_the_interface:
+  question: "Où en sommes-nous de ce dossier ?"
+
+state_kept_after_compaction:
+  question: "Et celle-là, où en est-elle ?"
+  reference: CMD-2010
+  customer: {name: "Léa Martin", city: Lille}
+  status_words: [expédiée, expédié]
+
+choice_between_namesakes_kept:
+  request: "Quelles sont les commandes de Léa Martin ?"
+  choice: "Celle de Lille, s'il vous plaît."
+  city: Lille
+  question: "Rappelez-moi le client en cours."
+  other_city: Lyon
+
+customer_change_without_ambiguity:
+  first: "Quel est le statut de la commande CMD-1042 de Martin Durand ?"
+  first_customer: "Martin Durand"     # checked after the first turn
+  dropped_order: CMD-1042
+  change: "Passons maintenant à Transports Morel : combien a-t-il de commandes ?"
+  new_customer: "Transports Morel"

@@ -1,21 +1,42 @@
-# Workshop 10b — Writes
+# Atelier 10b — Les écritures : préparer, valider, soumettre
 
-Chapter 10 of the book. No solution is provided: you work in `my-agent/`.
+Chapitre 11 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
-## Goal
+## Ce que vous allez construire
 
-Add the two preparation tools (purchase request, invoice approval), with a confirmation gesture before any submission.
+Une écriture ne part jamais sur la seule décision du modèle. Vous allez la découper en trois temps : préparer, valider, soumettre. L'agent prépare un brouillon dans l'application. Le harnais construit un récapitulatif et demande une confirmation, qui est un geste dans l'interface, pas une phrase tapée dans la conversation. Après ce geste seulement, la demande est soumise, attribuée à l'agent pour le compte de l'utilisateur. Les permissions d'écriture restent vérifiées par l'application, et les confirmations sont réservées aux actions qui le méritent, pour éviter la fatigue d'approbation.
 
-## Success criterion
+## C'est réussi quand…
 
-The two preparation tools are offered only to users who have the permission, and the server refuses their call for everybody else. A draft has no effect until the user confirms it with a gesture in the interface. The submission comes from the harness, with the user's permissions, and the application assigns it to the agent on behalf of that person. No answer announces an action as done before the submission.
+- Quand un acheteur demande une demande d'achat, l'agent prépare un brouillon dans l'application et l'interface demande une confirmation qui désigne ce brouillon.
+- Avant le geste de confirmation, rien n'est soumis, et l'agent ne prétend pas le contraire : il présente la demande et demande confirmation.
+- Un « oui » tapé dans la conversation ne soumet rien.
+- Après le geste de confirmation, une seule demande est soumise, au nom de l'acheteur, attribuée à l'agent, pour le bon montant, et l'agent donne sa référence.
+- Un utilisateur en lecture seule ne prépare rien, et on lui dit qu'il n'en a pas le droit.
 
-## How to check
+## Exemples
 
-The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+| Situation | Ce que l'agent doit faire |
+| --- | --- |
+| Un acheteur : « Préparez une demande d'achat pour des ramettes de papier, 120 euros. » | Il prépare le brouillon, présente un récapitulatif et demande confirmation, sans rien soumettre. |
+| Le même acheteur répond par écrit « Oui, je confirme, soumettez-la. » | Rien n'est soumis : seul le geste de confirmation compte. |
+| L'acheteur confirme par le geste, puis écrit « Je confirme la soumission de cette demande. » | Une seule demande de 120 € est soumise en son nom ; l'agent donne sa référence. |
+| Un utilisateur en lecture seule fait la même demande | Aucun brouillon ; l'agent explique qu'il n'a pas le droit de créer une demande d'achat. |
 
-```powershell
-uv run --project workshop_kit/bootstrap workshop start 10b
-uv run --project workshop_kit/bootstrap workshop check 10b
-uv run --project workshop_kit/bootstrap workshop check 10b --non-regression   # workshops 03 to 10b
-```
+## À éviter
+
+- Soumettre dès que l'utilisateur écrit « je confirme ».
+- Annoncer « votre demande a été soumise » avant le geste, même si rien n'est parti.
+- Garder le brouillon dans le harnais sans le créer dans l'application.
+- Soumettre avec un compte de service plutôt qu'au nom de l'utilisateur.
+
+## Pistes
+
+- Séparez bien les trois temps : chacun a son outil ou son geste, et seul le dernier écrit pour de bon.
+- Une confirmation reste valable pour la suite de la conversation : décidez à quel brouillon elle s'applique.
+- Soumettre deux fois crée deux demandes : protégez-vous contre la double soumission.
+- L'identité vient de l'atelier 10a : la soumission doit être faite au nom de l'utilisateur.
+
+## Pour aller plus loin
+
+Le détail de ce que vérifient les tests (noms attendus dans la trace, événements, rubriques) est dans [contrat.md](contrat.md). Pour lancer l'atelier et ses tests, voir le [guide de démarrage](../../GETTING_STARTED.md).

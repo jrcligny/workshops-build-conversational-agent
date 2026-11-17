@@ -35,15 +35,15 @@ powershell -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
 uv python install 3.13
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
-uv run --project workshop_kit/bootstrap workshop check-shell
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
+uv run --project tooling/cli workshop check-bootstrap
 ```
 
 The `workshop` command is provided by the tooling project
-(`uv run --project workshop_kit/bootstrap workshop ...`). It uses neither `fork` nor
+(`uv run --project tooling/cli workshop ...`). It uses neither `fork` nor
 POSIX signals; it works on Windows. Its check commands delegate to the separate
 test project's environment and pytest configuration.
 
@@ -53,11 +53,11 @@ test project's environment and pytest configuration.
 git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
 uv python install 3.13
-uv sync --project workshop_kit/bootstrap --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 cp .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
-uv run --project workshop_kit/bootstrap workshop check-shell
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
+uv run --project tooling/cli workshop check-bootstrap
 ```
 
 On macOS, do not use `/usr/bin/python3` (often built without SQLite extension
@@ -70,18 +70,19 @@ If the document index refuses to start, the error message gives the
 interpreter, the SQLite version and the cause. Check:
 
 ```powershell
-uv run --project workshop_kit/apps/docs_search python -c "import sqlite3; print(hasattr(sqlite3.Connection, 'enable_load_extension'), sqlite3.sqlite_version)"
+uv run --project business/docs_search python -c "import sqlite3; print(hasattr(sqlite3.Connection, 'enable_load_extension'), sqlite3.sqlite_version)"
 ```
 
 The expected values are `True` and a recent SQLite version (3.41 or newer
 recommended). Then run
-`uv sync --project workshop_kit/apps/docs_search --locked --python 3.13` again
-with an official interpreter (or select `workshop_tests` if the failure is in tests).
+`uv sync --project business/docs_search --locked --python 3.13` again
+with an official interpreter (or `uv sync --project tooling/cli --group tests --locked --python 3.13` if the failure is in tests).
 
 ## Check the framework
 
-`uv run --project workshop_kit/bootstrap workshop check-shell` succeeds if, and only if, every workshop test
-**fails** on the empty shell. This is the expected behaviour.
+`uv run --project tooling/cli workshop check-bootstrap` succeeds if, and only if, every workshop test
+**fails** on the bootstrap of `my-agent/`, except those listed in `tooling/cli/bootstrap_passes.txt`
+(the bootstrap already converses through the model). This is the expected behaviour.
 
 The `.env` file must never be committed. The `AZURE_OPENAI_API_KEY` key stays
 empty during design: the `simulated` mode is enough.
@@ -100,12 +101,12 @@ installed beforehand; the script uses the standard library and does not require
 an activated virtual environment. It works from any directory when given its
 absolute path. `--port-offset 10` and `--reset-data` work on both platforms.
 
-The script synchronizes only `workshop_kit/bootstrap/` with its lockfile, then runs
-`uv run --project workshop_kit/bootstrap --no-sync workshop serve`. It never installs
+The script synchronizes only `tooling/cli/` with its lockfile, then runs
+`uv run --project tooling/cli --no-sync workshop serve`. It never installs
 test dependencies. Alternatively, from the repository root on any supported OS:
 
 ```bash
-uv run --project workshop_kit/bootstrap workshop serve
+uv run --project tooling/cli workshop serve
 ```
 
 The launcher synchronizes each application's own dependencies, initializes missing
@@ -122,7 +123,7 @@ the launcher; unrelated processes are never reused or stopped.
 | MCP | <http://127.0.0.1:8004/mcp> |
 | Chainlit UI | <http://127.0.0.1:8080> |
 
-Use `uv run --project workshop_kit/bootstrap workshop serve --port-offset 10` (or `python start.py --port-offset 10`)
+Use `uv run --project tooling/cli workshop serve --port-offset 10` (or `python start.py --port-offset 10`)
 to shift **all six** ports by 10 when defaults are occupied. The UI then opens
 on port 8090, connected to the conversation API on 8010. Logs are written to
 `.workshop/logs/`, one file per service.
@@ -138,12 +139,12 @@ and `.venv`. There is no shared application environment or uv workspace lock:
 
 | Application | Python project |
 |---|---|
-| Business API | `workshop_kit/apps/business_api/` |
-| Document search | `workshop_kit/apps/docs_search/` |
-| Model proxy | `workshop_kit/llm_proxy/` |
-| Conversation API | `workshop_kit/shell/` |
+| Business API | `business/business_api/` |
+| Document search | `business/docs_search/` |
+| Model proxy | `gateway/model_gateway/` |
+| Conversation API | `gateway/agent_gateway/` |
 | MCP tools server | `my-agent/` |
-| Chainlit UI | `workshop_kit/chat-ui/` |
+| Chainlit UI | `clients/chat_ui/` |
 
 All six select Python 3.13. The launcher synchronizes their lockfiles with
 `uv sync --project <path> --locked`, then starts each with its own interpreter.
@@ -151,34 +152,35 @@ Shared source imports are resolved using the repository on `PYTHONPATH`, not by
 installing the test project's combined dependencies into the services.
 Database initialization also runs in the owning application's environment.
 
-Tooling and tests are two additional, separate projects, not a root package:
+Tooling is a separate project set, not a root package:
 
-- `workshop_kit/bootstrap/` owns the CLI and launcher under `src/workshop_tools/`, with
+- `tooling/cli/` owns the CLI and launcher under `src/workshop_tools/`, with
   its own `pyproject.toml`, `uv.lock` and `.venv`.
-- `workshop_tests/` owns test dependencies and pytest configuration in its
-  `pyproject.toml` (`package = false`), plus its own `uv.lock`, `.venv` and
-  `.python-version`. It depends on the local `workshop-tools` project in editable
-  mode. Its `testing/` and `evaluation/` folders provide shared fixtures and helpers.
+- The same project runs the tests: its `tests` dependency group (not installed by
+  `python start.py`) holds the services and `agent_testkit/` (pytest plugins,
+  `ChatClient`, cases, conversations, assertions and the judge), and its
+  `pyproject.toml` holds the pytest configuration. Dependencies go one way:
+  `tooling/cli` → `agent_testkit` → `agent_testkit.evaluation`.
 
-Infrastructure tests live in `workshop_kit/tests/`, while workshop acceptance
+Infrastructure tests live next to the component they test (`<component>/tests/`, `tooling/cli/integration/`), while workshop acceptance
 tests stay next to their guides. Chainlit's MCP 1 and the agent's MCP 2 remain
-isolated; UI tests use the UI project's `dev` extra, not `workshop_tests/`.
+isolated; UI tests use the UI project's `dev` extra, not the `tests` group of `tooling/cli/`.
 
 Run the infrastructure suite from the repository root:
 
 ```powershell
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
 ```
 
 The `-c` explicitly selects the test project's configuration and fixture plugin;
 there is no root pytest configuration or fixture file. See the
-[test environment guide](../workshop_tests/README.md) for evaluation commands.
+[test environment guide](../agent_testkit/README.md) for evaluation commands.
 
 To validate real startup and automatic shutdown of all six projects, run
-`uv run --project workshop_kit/bootstrap workshop serve --check --port-offset 100`.
+`uv run --project tooling/cli workshop serve --check --port-offset 100`.
 CI runs this on Windows/Linux.
 
-The [UI guide](../workshop_kit/chat-ui/README.md) explains the welcome message,
+The [UI guide](../clients/chat_ui/README.md) explains the welcome message,
 configuration, and UI-specific tests. The UI does not implement the empty agent.
 
 ## Start individual services (advanced)
@@ -188,10 +190,10 @@ them for `workshop check`.
 
 ```powershell
 $env:PYTHONPATH = (Get-Location).Path
-uv run --project workshop_kit/apps/business_api uvicorn workshop_kit.apps.business_api.app:app --port 8001
-uv run --project workshop_kit/apps/docs_search uvicorn workshop_kit.apps.docs_search.app:app --port 8002
-uv run --project workshop_kit/llm_proxy uvicorn workshop_kit.llm_proxy.app:app --port 8003
-uv run --project workshop_kit/shell uvicorn workshop_kit.shell.chat_app:app --port 8000
+uv run --project business/business_api uvicorn business_api.app:app --port 8001
+uv run --project business/docs_search uvicorn docs_search.app:app --port 8002
+uv run --project gateway/model_gateway uvicorn model_gateway.app:app --port 8003
+uv run --project gateway/agent_gateway uvicorn agent_gateway.chat_app:app --port 8000
 uv run --project my-agent python my-agent/mcp_server.py
 ```
 

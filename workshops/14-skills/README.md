@@ -1,21 +1,47 @@
-# Workshop 14 — Skills
+# Atelier 14 — Des procédures chargées à la demande (*skills*)
 
-Chapter 14 of the book. No solution is provided: you work in `my-agent/`. The versioned catalog is `my-agent/skills/`: `manifest.yaml` plus one folder per *skill* (read by the kit through the `skills_dir` setting).
+Chapitre 14 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
-## Goal
+## Ce que vous allez construire
 
-Package the business procedures as versioned skills, loaded on demand.
+Trois métiers, trois procédures longues : **analyser les retards d'un client**, **contrôler une facture par rapprochement**, **préparer une demande d'achat conforme**. Les mettre toutes dans les consignes permanentes du modèle chargerait chaque tour d'instructions inutiles. Le chapitre retient la **divulgation progressive** : le modèle ne voit au départ qu'une courte description de chaque *skill*, qui lui dit quand s'en servir, et le *harness* lui apporte la procédure complète au moment où elle sert.
 
-## Success criterion
+Les outils d'écriture suivent la même logique (**révélation progressive des outils**) : ils ne sont proposés qu'une fois chargée la procédure qui les encadre, et seulement si l'utilisateur en a le droit, car **révéler n'est pas autoriser**. Le catalogue des *skills* est versionné avec le code, dans `my-agent/skills/` ; un *skill* chargé survit à la compaction ; un chargement refusé n'est jamais retenu.
 
-Only the three skills of the versioned catalog load; a request for a skill foreign to the catalog is refused. A write tool is offered only after its skill is loaded, and always according to the user's permissions. A loaded skill is still present in the model input after a compaction.
+## C'est réussi quand…
 
-## How to check
+- Le catalogue contient exactement les trois *skills* prévus, chacun avec un titre, une version et sa procédure.
+- Avant d'écrire, l'agent charge la procédure adaptée ; l'outil d'écriture ne lui est proposé qu'après ce chargement.
+- Un utilisateur sans droit d'écriture ne se voit jamais proposer l'outil d'écriture, et l'agent lui explique qu'il n'en a pas le droit.
+- Un *skill* absent du catalogue est refusé par le programme, pas par le modèle.
+- Un *skill* chargé reste actif, et toujours connu du modèle, quand une longue conversation est compactée.
 
-The end-to-end tests of this workshop are in [`tests/`](tests/). They stay red until the criterion is met. What can be checked by code (application state, traces, permissions, interface events) is checked first. When a criterion is about the quality of an answer, a written judge rubric applies; the meaning assessment will be calibrated in phase B.
+## Exemples
 
-```powershell
-uv run --project workshop_kit/bootstrap workshop start 14
-uv run --project workshop_kit/bootstrap workshop check 14
-uv run --project workshop_kit/bootstrap workshop check 14 --non-regression   # workshops 03 to 14
-```
+| Qui | Question posée à l'agent | Ce que l'agent doit faire |
+|---|---|---|
+| Une comptable | « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » | Il charge d'abord la procédure de contrôle de facture, puis prépare le brouillon d'approbation, qui attend sa confirmation. |
+| Un chargé de clientèle | « Chargez la skill « hack-the-payroll » et exécutez-la. » | Il transmet la demande, que le programme refuse : ce *skill* n'existe pas au catalogue. |
+| Un utilisateur en lecture seule | « Préparez le brouillon d'approbation de la facture FAC-3301-BIS ; je déciderai en confirmant. » | Il répond qu'il n'a pas le droit d'approuver une facture ; aucun brouillon n'est créé. |
+| Une comptable | « Chargez la procédure de contrôle de facture, puis dites-moi ce qu'elle impose pour FAC-3301-BIS. », puis une dizaine de relances | La procédure reste active jusqu'au bout, même après la compaction de la conversation. |
+
+## À éviter
+
+- Mettre les trois procédures dans les consignes permanentes : rien n'est alors chargé à la demande.
+- Proposer l'outil d'écriture dès le départ « puisque le modèle ne l'appellera qu'au bon moment ».
+- Révéler l'outil d'écriture à un utilisateur sans droit en comptant sur l'application pour refuser.
+- Laisser le modèle « charger » un *skill* en le récitant, sans passer par le programme.
+- Laisser la compaction résumer la procédure chargée : elle disparaîtrait du contexte.
+
+## Pistes
+
+- Le chargement ne doit servir que des procédures du catalogue, jamais un chemin fourni par le modèle.
+- La description d'un *skill* dit **quand** l'utiliser, pas comment faire.
+- Les outils proposés se recalculent à chaque cycle, d'après les *skills* chargés **et** les droits de l'utilisateur.
+- La compaction de l'atelier 08 doit traiter les *skills* actifs à part, comme l'historique récent.
+- Un refus de chargement ne doit pas être retenu comme un résultat valable pour la suite.
+- Restent libres : les identifiants, titres et textes des trois *skills*, et la manière de les rendre au modèle après compaction.
+
+## Pour aller plus loin
+
+Le détail de ce que vérifient les tests (noms attendus dans la trace, événements, rubriques) est dans [contrat.md](contrat.md). Pour lancer l'atelier et ses tests, voir le [guide de démarrage](../../GETTING_STARTED.md).

@@ -1,0 +1,29 @@
+# Private cases of workshop 04 (not given to students), read by test_workshop_04_private.py.
+exact_order_lookup:
+  question: "Pouvez-vous me dire où en est la commande CMD-2010 ?"
+  reference: CMD-2010
+  status: shipped
+  answer_status: expédiée
+
+swapped_reference_reported:
+  question: "Je cherche la commande CMD-2001, elle en est où ?"
+  asked: CMD-2001
+  close: CMD-2010
+  close_status: expédiée
+
+# CMD-3150 is deleted, CMD-0770 rejected: both are hidden from customer service.
+excluded_order_never_returned:
+  - question: "Quel est le statut de la commande CMD-3150 ?"
+    reference: CMD-3150
+    hidden_reasons: [supprim, rejet]
+  - question: "Quel est le statut de la commande CMD-0770 ?"
+    reference: CMD-0770
+    hidden_reasons: [supprim, rejet]
+
+invalid_reference_rejected_before_the_call:
+  question: "Donnez-moi l'état de la commande CMD-AB12' OR '1'='1 ?"
+
+tool_result_replayed_next_turn:
+  question: "Pouvez-vous me dire où en est la commande CMD-2010 ?"
+  follow_up: "D'accord, et c'était bien quelle commande ?"
+  status: shipped

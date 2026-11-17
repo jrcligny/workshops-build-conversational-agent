@@ -1,7 +1,7 @@
 # Skills catalog (empty base)
 
 Versioned storage for workshop 14. You edit this folder; the kit reads it
-through `workshop_kit/services/skills_catalog/catalog.py` (setting `skills_dir`,
+through `agent_sdk/src/agent_sdk/skills.py` (setting `skills_dir`,
 default `my-agent/skills`). Expected format:
 
 - `manifest.yaml` at the root, with a `skills` list;
@@ -19,4 +19,4 @@ skills:
     path: invoice-check
 ```
 
-The catalog shipped with the shell is **empty**: no *skill* is provided.
+The catalog shipped with the bootstrap is **empty**: no *skill* is provided.

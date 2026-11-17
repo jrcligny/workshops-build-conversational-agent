@@ -1,0 +1,15 @@
+id: approximate-reference-cmd-1402
+edge_case: approximate-reference
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - message: "Quel est le statut de la commande CMD-1402 ?"
+facts:
+  - {type: tool_called, argument_contains: CMD-1402}
+  - {type: tool_status, argument_contains: CMD-1402, status_in: [approximate, not_found]}
+  - {type: text_contains, value: CMD-1042}
+rubric:
+  id: approximate-reference
+  criterion: "L'agent dit que CMD-1402 n'existe pas et propose CMD-1042 comme piste, sans affirmer que c'est la même commande."
+  requirements:
+    - {type: forbidden, patterns: ["CMD-1402 est livrée", "la commande CMD-1402 a été livrée"]}
+  judge_meaning: true

@@ -17,3 +17,4 @@ dist/
 **/.chainlit/translations/
 .files/
 .workshop/
+my-agent/memory/

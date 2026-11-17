@@ -21,16 +21,18 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install tooling project dependencies
-        run: uv sync --project workshop_kit/bootstrap --locked
+        run: uv sync --project tooling/cli --locked
       - name: Install test project dependencies
-        run: uv sync --project workshop_tests --locked
+        run: uv sync --project tooling/cli --group tests --locked
       - name: Infrastructure tests (business API, document search, proxy, shell)
-        run: uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml workshop_kit/tests
+        run: uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk agent_testkit business gateway tooling
       - name: Validate startup of all six isolated application projects
-        run: uv run --project workshop_kit/bootstrap workshop serve --check --port-offset 100
+        run: uv run --project tooling/cli workshop serve --check --port-offset 100
       - name: Workshop tests must fail on the empty shell
-        run: uv run --project workshop_kit/bootstrap workshop check-shell
+        run: uv run --project tooling/cli workshop check-bootstrap
+      - name: Workshop tests must fail against the inert agent
+        run: uv run --project tooling/cli workshop check-inert
       - name: Install the chat UI in its own project environment
-        run: uv sync --project workshop_kit/chat-ui --extra dev --locked
+        run: uv sync --project clients/chat_ui --extra dev --locked
       - name: Chainlit adapter and presentation tests
-        run: uv run --project workshop_kit/chat-ui pytest --confcutdir workshop_kit/chat-ui workshop_kit/chat-ui/tests
+        run: uv run --project clients/chat_ui pytest --confcutdir clients/chat_ui clients/chat_ui/tests

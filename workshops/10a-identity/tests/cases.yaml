@@ -1,0 +1,34 @@
+# Public cases of workshop 10a, read by test_workshop_10a.py (the checks are in checks.py).
+token_exchange:
+  user: camille-renard
+  open: {}                    # the interface only hands over the entry token
+  question: "Quel est le statut de la commande CMD-1042 ?"
+  answer_status: livrée
+
+request_without_identity_refused:
+  question: "Quel est le statut de la commande CMD-1042 ?"
+  hidden_status: livrée
+  only_calls_of_this_turn: false   # the whole call log of the test is checked
+  scenarios:
+    - id: no-token
+      open: {user_id: camille-renard, role: customer_service}
+      app_token: null
+    - id: malformed
+      open: {user_id: camille-renard, role: customer_service}
+      app_token: not-a-token
+    - id: forged-signature
+      open: {user_id: camille-renard, role: customer_service}
+      app_token: forged             # well-formed entry token, signed with an unknown key
+      forged: {sub: camille-renard, role: customer_service, organization: organization-a, key: not-the-secret-of-the-business-application}
+
+other_organization_sees_nothing:
+  user: {user_id: ines-service-b, role: customer_service, organization: organization-b}
+  question: "Quel est le statut de la commande CMD-1042 ?"
+  never_disclosed: [livrée]
+
+mcp_server_requires_the_entry_token:
+  user: camille-renard
+  arguments: {source: orders, filters: {id: CMD-1042}}
+  # {token}: the user's entry token, {forged}: an entry token signed with an unknown key
+  invalid_authorizations: [null, "Bearer not-a-token", "Bearer {forged}"]
+  forged: {sub: camille-renard, role: customer_service, organization: organization-a, key: not-the-secret-of-the-business-application}

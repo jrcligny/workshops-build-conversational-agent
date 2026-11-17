@@ -11,6 +11,8 @@ import os
 
 from mcp.server import MCPServer
 
+# The SDK is installed in this environment: `agent_sdk.http_client` and `agent_sdk.tool_schema` help here.
+
 NAME = "workshop-tools"
 VERSION = "0.1.0"
 MCP_PATH = "/mcp"

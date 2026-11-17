@@ -5,7 +5,11 @@ requires-python = ">=3.13"
 dependencies = [
     "mcp>=2.3.0",
     "httpx>=0.27",
+    "workshop-agent-sdk",
 ]
 
 [tool.uv]
 package = false
+
+[tool.uv.sources]
+workshop-agent-sdk = { path = "../agent_sdk", editable = true }
