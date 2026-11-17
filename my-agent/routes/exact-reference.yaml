@@ -1,0 +1,16 @@
+id: exact-reference-cmd-1042
+edge_case: approximate-reference
+counterfactual_of: approximate-reference-cmd-1024
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - message: "Quel est le statut de la commande CMD-1042 ?"
+facts:
+  - {type: tool_called, argument_contains: CMD-1042}
+  - {type: tool_status, argument_contains: CMD-1042, status_in: [ok]}
+  - {type: text_contains, value: livrée}
+rubric:
+  id: exact-reference
+  criterion: "La référence existe : l'agent donne directement le statut de CMD-1042 (livrée) sans parler de référence approchante."
+  requirements:
+    - {type: forbidden, patterns: ["n'existe pas", "introuvable", "la plus proche"]}
+  judge_meaning: true

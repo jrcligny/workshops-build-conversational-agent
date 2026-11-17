@@ -1,7 +1,23 @@
-# Versioned skills catalog — empty base (workshop 14).
-# Expected format: an id, a title, a path to the skill folder (relative to
-# my-agent/skills/), a version. Read by agent_sdk.skills (setting `skills_dir`).
-# The catalog is empty: the student fills it in during workshop 14
-# (customer delays, invoice check, compliant purchase request).
-version: "0"
-skills: []
+# Versioned skills catalog (workshop 14). Read by agent_sdk.skills (setting `skills_dir`) and by
+# my-agent/agent_skills.py. Only the skills listed here can be loaded; a write tool is offered to the
+# model only once the skill that unlocks it is loaded, and only if the user's role allows it.
+version: "1"
+skills:
+  - id: customer-delays
+    title: Retards d'un client
+    version: "1.2"
+    path: customer-delays
+    description: Faire le point sur les commandes en retard d'un client et sur la procédure applicable.
+    unlocks: []
+  - id: invoice-check
+    title: Contrôle et approbation d'une facture fournisseur
+    version: "1.2"
+    path: invoice-check
+    description: Contrôler une facture fournisseur avant d'en préparer l'approbation.
+    unlocks: [prepare_invoice_approval]
+  - id: compliant-purchase-request
+    title: Demande d'achat conforme
+    version: "1.0"
+    path: compliant-purchase-request
+    description: Préparer une demande d'achat conforme (objet, montant, fournisseur).
+    unlocks: [prepare_purchase_request]

@@ -1,0 +1,14 @@
+id: no-documentary-answer-telework
+edge_case: question-without-documentary-answer
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - message: "Que dit la documentation interne sur la politique de télétravail des transporteurs ?"
+facts:
+  - {type: tool_called}
+  - {type: no_event, event: sources}
+rubric:
+  id: no-documentary-answer
+  criterion: "L'agent dit que la documentation accessible ne traite pas la question et n'invente aucune règle."
+  requirements:
+    - {type: required_any, patterns: ["rien trouvé", "aucun passage", "ne traite pas", "ne couvre pas", "pas trouvé", "aucune information", "ne mentionne pas", "ne trouve pas"]}
+  judge_meaning: true
