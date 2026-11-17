@@ -47,6 +47,8 @@ All UI resources belong to this project, not the repository root:
 - `.chainlit/config.toml`: French language, theme, and enabled features.
 
 The welcome message is read from the markdown resource, not embedded in Python.
+It links to the « Appels au modèle » view of the model proxy (`/calls`, see
+[installation](../../docs/installation.md)), which shows what the model received at each call.
 Start a new conversation to see an updated welcome message. No agent code needs
 to be changed. Uploads, audio, message editing and direct MCP connections are
 disabled. The kit API is the only route to the agent.

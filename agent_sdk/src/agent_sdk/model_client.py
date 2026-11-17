@@ -2,9 +2,43 @@
 
 from __future__ import annotations
 
+import contextvars
+from contextlib import contextmanager
 from typing import Any, Iterator
 
 import httpx
+
+# Headers telling the proxy which conversation and turn a model call belongs to, so the calls it
+# saves (`.workshop/llm-calls/`) are grouped per conversation and per turn. Set by the gateway
+# around each turn (`turn_scope`), never by the harness.
+CONVERSATION_HEADER = "X-Workshop-Conversation"
+TURN_HEADER = "X-Workshop-Turn"
+
+_current_turn: contextvars.ContextVar[tuple[str, int] | None] = contextvars.ContextVar("workshop_turn", default=None)
+# Fallback for model calls made from a thread the harness started (contextvars do not cross it).
+_latest_turn: tuple[str, int] | None = None
+
+
+@contextmanager
+def turn_scope(conversation_id: str, turn: int) -> Iterator[None]:
+    """Marks the model calls made during the block as belonging to this conversation turn."""
+    global _latest_turn
+    scope = (conversation_id, int(turn))
+    token = _current_turn.set(scope)
+    _latest_turn = scope
+    try:
+        yield
+    finally:
+        _current_turn.reset(token)
+        if _latest_turn == scope:
+            _latest_turn = None
+
+
+def correlation_headers() -> dict[str, str]:
+    scope = _current_turn.get() or _latest_turn
+    if scope is None:
+        return {}
+    return {CONVERSATION_HEADER: scope[0], TURN_HEADER: str(scope[1])}
 
 
 class ModelUnavailable(RuntimeError):
@@ -40,7 +74,7 @@ class ModelClient:
         self.timeout = timeout
 
     def _headers(self) -> dict[str, str]:
-        return {"Authorization": f"Bearer {self.token}"}
+        return {"Authorization": f"Bearer {self.token}", **correlation_headers()}
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
         try:

@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import time
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
-from model_gateway import live, replay, simulated
+from model_gateway import calls, live, replay, simulated
+from model_gateway.calls_view import PAGE as CALLS_PAGE
 from model_gateway.tokens import STUDENTS, consume, issue_student_token, require_student, usage
 from workshop_config import settings
 
@@ -89,7 +92,27 @@ def health():
 
 
 @app.post("/v1/chat/completions")
-def chat(body: ChatIn, student: dict = Depends(require_student)):
+def chat(
+    body: ChatIn,
+    student: dict = Depends(require_student),
+    conversation: str | None = Header(default=None, alias=calls.CONVERSATION_HEADER),
+    turn: str | None = Header(default=None, alias=calls.TURN_HEADER),
+):
+    started = time.perf_counter()
+    saved = {"conversation_id": conversation, "turn": turn, "student": student["sub"], "mode": _mode()}
+    try:
+        response = _chat(body, student)
+    except HTTPException as exc:
+        calls.record(
+            **saved, request=body.model_dump(), error={"status": exc.status_code, "detail": str(exc.detail)},
+            duration_ms=round((time.perf_counter() - started) * 1000),
+        )
+        raise
+    calls.record(**saved, request=body.model_dump(), response=response, duration_ms=round((time.perf_counter() - started) * 1000))
+    return response
+
+
+def _chat(body: ChatIn, student: dict) -> dict[str, Any]:
     if body.stream:
         # During design, streaming is simulated by a single response; the interface splits it if needed.
         pass
@@ -131,6 +154,25 @@ def embeddings(body: EmbeddingsIn, student: dict = Depends(require_student)):
 def read_log(student: dict = Depends(require_student)):
     # During design, a test student may read the test log.
     return list(_LOG)
+
+
+@app.get("/calls", response_class=HTMLResponse)
+def calls_view():
+    """The « Appels au modèle » view: what the model received at each call, turn by turn."""
+    return HTMLResponse(CALLS_PAGE)
+
+
+@app.get("/calls/conversations")
+def calls_conversations():
+    return {"folder": str(calls.folder() or ""), "conversations": calls.conversations()}
+
+
+@app.get("/calls/conversations/{conversation_id}")
+def calls_of_conversation(conversation_id: str, since: int = 0):
+    entries = calls.calls(conversation_id, since)
+    if entries is None:
+        raise HTTPException(status_code=404, detail="unknown conversation")
+    return {"id": conversation_id, "calls": entries}
 
 
 @app.post("/_test/scripts")

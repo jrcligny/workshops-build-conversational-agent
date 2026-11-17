@@ -38,6 +38,7 @@ def session_dir(tmp_path_factory):
     settings.business_api_db = str(root / "business_api.db")
     settings.docs_search_db = str(root / "docs_search.db")
     settings.traces_dir = str(root / "traces")
+    settings.llm_calls_dir = str(root / "llm-calls")
     settings.token_secret = "workshop-test-secret-32-bytes-long!"
     settings.observation_token = OBSERVATION_TOKEN
     reassign(settings.business_api_db)

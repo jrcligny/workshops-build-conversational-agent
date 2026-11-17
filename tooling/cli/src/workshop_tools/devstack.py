@@ -206,7 +206,9 @@ def supervise(stack: list[Service], check_only: bool = False) -> int:
             if check_only:
                 print("All six isolated services are ready. Stopping validation stack.", flush=True)
                 return 0
-            print(f"\nChat ready: {stack[-1].url}\nLogs: {LOGS}\nPress Ctrl+C to stop all services.", flush=True)
+            proxy = next((s for s in stack if s.name == "proxy"), None)
+            calls_line = f"\nModel calls: {proxy.url}/calls" if proxy else ""
+            print(f"\nChat ready: {stack[-1].url}{calls_line}\nLogs: {LOGS}\nPress Ctrl+C to stop all services.", flush=True)
             tick = threading.Event()
             while True:
                 for service, process in processes:

@@ -10,7 +10,7 @@ The model client itself is wired in `harness.py` (`model_client()`).
 | `context` | `context(conversation_id)`: every message the model has seen (user, assistant with `tool_calls`, `tool` results), kept between turns, and the rolling summary; `seed` for written conversations (tests) | what you record, clear and summarize (10) |
 | `events` | one builder per event type of the contract | when to emit them and what they say |
 | `trace` | `Tracer`: one method per thing that happens in a turn (model call, tool call, state, compaction, memory, mention...), writing the trace in the format the tests read (through `trace_store`) | what you record, and when: the decisions of each workshop |
-| `model_client` | `ModelClient` and `ModelUnavailable`, the OpenAI-compatible client of the course proxy | the prompt, the tools offered, the fallback decision |
+| `model_client` | `ModelClient` and `ModelUnavailable`, the OpenAI-compatible client of the course proxy; during a turn it tags each call with its conversation and turn, so the proxy saves it for the « Appels au modèle » view | the prompt, the tools offered, the fallback decision |
 | `http_client` | the HTTP transport to the business API and the document search (URL, token, timeout, readable errors) | which route to call, input validation, interpreting answers |
 | `mcp_client` | listing and calling the tools of an MCP server from the harness | which tools the server exposes, the identity it receives |
 | `tool_schema` | an OpenAI tool declaration built from an annotated function | the tool names, parameters, descriptions and validation |
