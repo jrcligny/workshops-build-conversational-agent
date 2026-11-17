@@ -158,7 +158,7 @@ class ProxyFailureIn(BaseModel):
 
 @app.post("/_test/failures")
 def arm_proxy_failure(body: ProxyFailureIn):
-    """Arms a test failure (primary model unavailable, workshop 18)."""
+    """Arms a test failure (primary model unavailable, workshop 16)."""
     _FAILURES[body.type] = body.active
     return {"type": body.type, "active": body.active}
 

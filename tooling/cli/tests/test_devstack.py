@@ -198,3 +198,15 @@ def test_workshop_checks_delegate_to_the_test_project(monkeypatch):
     assert str(cli.TEST_PROJECT / "pyproject.toml") in command
     assert str(cli.workshop_tests_dir("03")) in command
     assert "VIRTUAL_ENV" not in run.call_args.kwargs["env"]
+
+def test_workshop_check_passes_a_known_step_and_refuses_an_unknown_one(monkeypatch):
+    monkeypatch.setattr(cli.shutil, "which", lambda _: "uv")
+    run = Mock(return_value=0)
+    monkeypatch.setattr(cli.subprocess, "call", run)
+    assert cli.cmd_check("05", False, step="boucle") == 0
+    command = run.call_args.args[0]
+    assert command[command.index("--etape") + 1] == "boucle"
+    run.reset_mock()
+    assert cli.cmd_check("05", False, step="confinement") == 2
+    assert cli.cmd_check("03", False, step="outils") == 2
+    run.assert_not_called()

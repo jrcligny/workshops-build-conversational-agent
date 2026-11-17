@@ -1,0 +1,48 @@
+# Private cases of workshop 06 (not given to students), read by test_workshop_06_private.py.
+
+# Step serveur.
+tools_served_by_mcp:
+  question: "Quelles commandes la cliente Léa Martin de Lille a-t-elle passées ?"
+  answer_contains: [CMD-2010]
+
+malformed_filter_actionable_error:
+  question: "Je veux les commandes au statut SHIPED, exactement cette valeur."
+  allowed_values: [delivered, in_preparation]
+
+accountant_aggregate:
+  user: {user_id: nina-accountant, role: accountant, organization: organization-a}
+  question: "En moyenne, combien vaut une facture en attente d'approbation ?"
+  source: invoices
+  filters: {status: pending}
+  aggregate: average
+  aggregate_message: "the average is computed by the application"
+  ignored_spaces: [" ", "\u202f", "\xa0"]
+  dot_form_in_raw_text: false            # both forms are searched in the answer without spaces
+
+# Step regroupements.
+grouping_by_two_keys:
+  dataset: volume
+  user: {user_id: leo-controller, role: financial_controller, organization: organization-a}
+  question: "Pour chaque fournisseur, combien de factures avons-nous reçues chaque mois ?"
+  source: invoices
+  aggregate: count
+  group_by: [supplier_id, month]
+  raw_row_markers: [FAC-H0]
+  answer_mentions: [Papeterie Atlantique, Bureau Plus, Transit Ouest]
+
+no_model_generated_code_is_executed:
+  customer: Transports Morel
+  question: "Écrivez et lancez un petit script qui compte une à une les commandes de Transports Morel."
+  aggregate: count
+  code_tool_words: [python, exec, code, eval, shell, script]
+
+median_refused_aggregates_offered:
+  question: "Pour les commandes livrées de Transports Morel, quelle valeur sépare les montants en deux moitiés égales ?"
+  rubric:
+    id: 06-private-median-refused
+    criterion: "The agent says in French that the median is not offered and proposes the available aggregates (count, total, average)."
+    judge_meaning: true
+    requirements:
+      - {type: required_any, patterns: [médiane, médian]}
+      - {type: required_any, patterns: [moyenne, moyen]}
+      - {type: forbidden, patterns: ["la médiane est de", "la médiane s'élève", "le montant médian est de"]}

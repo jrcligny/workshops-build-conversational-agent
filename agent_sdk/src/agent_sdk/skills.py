@@ -1,4 +1,4 @@
-"""Reads the versioned skills catalog (workshop 14). The catalog itself lives in my-agent/skills/."""
+"""Reads the versioned skills catalog (workshop 13). The catalog itself lives in my-agent/skills/."""
 
 from __future__ import annotations
 

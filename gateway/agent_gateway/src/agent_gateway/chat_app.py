@@ -51,7 +51,7 @@ class ConversationIn(BaseModel):
     role: str = "customer_service"
     organization: str = "organization-a"
     app_token: str | None = None
-    # A signed-in interface hands the agent an entry token for the user (workshop 10a).
+    # A signed-in interface hands the agent an entry token for the user (workshop 07).
     sign_in: bool = False
     limits: dict | None = None
 
@@ -91,7 +91,7 @@ def list_users():
 
 @app.get("/attachments")
 def list_attachments():
-    """Contract entry point for workshop 15. The area is empty in the shell."""
+    """Contract entry point for workshop 14. The area is empty in the shell."""
     from agent_sdk.attachments import list_attachments as _list
 
     return {"attachments": _list()}
@@ -139,7 +139,7 @@ def load_history(conversation_id: str, body: HistoryIn):
 
 @app.post("/conversations/{conversation_id}/confirmation")
 def confirm(conversation_id: str, body: ConfirmationIn):
-    """The user's confirmation gesture (workshop 10b)."""
+    """The user's confirmation gesture (workshop 07)."""
     if conversation_id not in _conversations:
         raise HTTPException(status_code=404, detail="unknown conversation")
     _confirmations[conversation_id] = bool(body.confirmed)

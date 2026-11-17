@@ -174,6 +174,34 @@ def _volume(conn, n: int = 420) -> None:
         )
 
 
+def _invoice_history(conn) -> None:
+    """Paid invoices of three suppliers over the last three months (volume dataset only)."""
+    for row in (("F-BUREAU", "Bureau Plus"), ("F-TRANSIT", "Transit Ouest")):
+        conn.execute("INSERT INTO suppliers(id, name, organization_id) VALUES (?, ?, ?)", (*row, ORGANIZATION_A))
+    first_of_month = CLOCK.date().replace(day=1)
+    months = [first_of_month]
+    for _ in range(2):
+        months.insert(0, (months[0] - timedelta(days=1)).replace(day=1))
+    amounts = {
+        "F-PAPETERIE": (410.0, 386.5, 512.25),
+        "F-BUREAU": (1200.0, 0, 980.4),
+        "F-TRANSIT": (275.9, 640.0, 318.0),
+    }
+    n = 0
+    for supplier, per_month in amounts.items():
+        for month, amount in zip(months, per_month):
+            if not amount:
+                continue
+            for part in (0.6, 0.4):
+                n += 1
+                ref = f"FAC-H{n:03d}"
+                conn.execute(
+                    """INSERT INTO invoices(id, reference, order_id, supplier_id, organization_id, status, amount, invoice_date, duplicate_of)
+                       VALUES (?, ?, NULL, ?, ?, 'paid', ?, ?, NULL)""",
+                    (ref, ref, supplier, ORGANIZATION_A, round(amount * part, 2), month.replace(day=min(1 + (4 * n) % 20, CLOCK.day if month == first_of_month else 28)).isoformat()),
+                )
+
+
 DATASETS = ("minimal", "standard", "volume", "concurrency")
 
 
@@ -190,6 +218,8 @@ def load_dataset(name: str = "standard") -> None:
             n = {"standard": 30, "volume": 420, "concurrency": 80}[name]
             # concurrency: same data; the test will run parallel conversations.
             _volume(txn, n)
+        if name == "volume":
+            _invoice_history(txn)
     # Clear the call log after seeding so that tests start clean.
     conn.execute("DELETE FROM call_log")
     conn.commit()

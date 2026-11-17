@@ -146,6 +146,28 @@ def resolve_name(entity_type: str, name: str, identity: dict) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# A source with a date_field can also be grouped by "month" (YYYY-MM of that date).
+MONTH = "month"
+
+
+def _group_keys(name: str, group_by: str | list[str]) -> list[str]:
+    keys = [group_by] if isinstance(group_by, str) else list(group_by)
+    meta = SOURCES[name]
+    allowed = set(meta["fields"]) | set(meta["relations"]) | {"customer_id", "status"}
+    if meta.get("date_field"):
+        allowed.add(MONTH)
+    unknown = [k for k in keys if k not in allowed]
+    if not keys or unknown:
+        raise ValueError(f"unrecognized group_by: {', '.join(unknown) or '(empty)'}; allowed: {', '.join(sorted(allowed))}")
+    return keys
+
+
+def _group_value(row: dict, key: str, date_field: str | None) -> str:
+    if key == MONTH:
+        return str(row.get(date_field) or "")[:7]
+    return str(row.get(key, ""))
+
+
 # Codes and field names are English (API contract). The labels of coded values are
 # French: they are what the agent shows to its French-speaking users.
 SOURCES = {
@@ -157,8 +179,11 @@ SOURCES = {
             "amount": "amount including tax",
             "promised_date": "promised delivery date",
             "customer_id": "customer identifier",
+            "order_date": "order date",
+            "late": "computed: true when the promised date has passed and the order is not delivered (filter only)",
         },
         "relations": {"customer_id": "customers.id"},
+        "date_field": "order_date",
         "coded_values": {
             "status": {
                 "delivered": "livrée",
@@ -180,8 +205,16 @@ SOURCES = {
     },
     "invoices": {
         "description": "Supplier invoices",
-        "fields": {"reference": "reference", "status": "status", "amount": "amount", "duplicate_of": "original invoice when duplicated"},
-        "relations": {"order_id": "orders.id"},
+        "fields": {
+            "reference": "reference",
+            "status": "status",
+            "amount": "amount",
+            "supplier_id": "supplier identifier",
+            "invoice_date": "invoice date",
+            "duplicate_of": "original invoice when duplicated",
+        },
+        "relations": {"order_id": "orders.id", "supplier_id": "suppliers.id"},
+        "date_field": "invoice_date",
         "coded_values": {
             "status": {"paid": "réglée", "pending": "en attente d'approbation", "approved": "approuvée"}
         },
@@ -204,7 +237,41 @@ SOURCES = {
 }
 
 
-def query_source(name: str, identity: dict, filters: dict, limit: int | None, aggregate: str | None, group_by: str | None) -> dict:
+# Fields computed by the application, not stored: they filter rows after the SQL query.
+COMPUTED_FILTERS = {"orders": {"late"}}
+
+
+def _truthy(value) -> bool:
+    return value is True or str(value).strip().lower() in {"true", "1", "yes"}
+
+
+def _page(rows: list, limit: int | None, offset: int) -> dict:
+    """Bounded portion of `rows`, declared: retrieval cap, total, position of the next portion."""
+    total_status = "minimum" if len(rows) > ORDER_RETRIEVAL_CAP else "exact"
+    rows = rows[:ORDER_RETRIEVAL_CAP]
+    total = len(rows)
+    offset = max(offset or 0, 0)
+    end = total if limit is None else min(total, offset + limit)
+    return {
+        "rows": rows[offset:end],
+        "total": total,
+        "total_status": total_status,
+        "truncated": offset > 0 or end < total,
+        "limit": limit,
+        "offset": offset,
+        "next_offset": end if end < total else None,
+    }
+
+
+def query_source(
+    name: str,
+    identity: dict,
+    filters: dict,
+    limit: int | None,
+    aggregate: str | None,
+    group_by: str | list[str] | None,
+    offset: int = 0,
+) -> dict:
     if name not in SOURCES:
         raise ValueError("unknown source")
     if aggregate == "median":
@@ -213,34 +280,45 @@ def query_source(name: str, identity: dict, filters: dict, limit: int | None, ag
             "reason": "the median is not offered",
             "available_aggregates": SOURCES[name]["aggregates"],
         }
+    computed = COMPUTED_FILTERS.get(name, set())
+    order = SOURCES[name].get("date_field")
     sql = f"SELECT * FROM {name} WHERE organization_id = ?"
     params: list[Any] = [_org(identity)]
+    post_filters = {}
     for key, value in (filters or {}).items():
+        if key in computed:
+            post_filters[key] = _truthy(value)
+            continue
         if key not in SOURCES[name]["fields"] and key not in {"organization_id", "id", "customer_id", "status"}:
             raise ValueError(f"unrecognized filter: {key}")
         sql += f" AND {key} = ?"
         params.append(value)
+    sql += f" ORDER BY {order}, id" if order else " ORDER BY id"
     rows = [dict(r) for r in connection().execute(sql, params).fetchall()]
     if name == "orders":
         rows = [r for r in rows if not is_excluded(r, identity)]
         for r in rows:
             r["late"] = is_late(r)
+    rows = [r for r in rows if all(bool(r.get(k)) == v for k, v in post_filters.items())]
     total = len(rows)
     if aggregate or group_by:
         if group_by:
-            groups: dict[str, list[float]] = {}
+            keys = _group_keys(name, group_by)
+            date_field = SOURCES[name].get("date_field")
+            groups: dict[tuple, list[float]] = {}
             for r in rows:
-                key = str(r.get(group_by, ""))
+                key = tuple(_group_value(r, k, date_field) for k in keys)
                 groups.setdefault(key, []).append(float(r.get("amount") or 0))
             result = []
-            for key, values in groups.items():
-                item = {"group": key, "count": len(values)}
+            for key, values in sorted(groups.items()) if len(keys) > 1 else groups.items():
+                group = key[0] if isinstance(group_by, str) else dict(zip(keys, key))
+                item = {"group": group, "count": len(values)}
                 if aggregate == "total":
                     item["total"] = round(sum(values), 2)
                 if aggregate == "average":
                     item["average"] = round(sum(values) / len(values), 2) if values else 0
                 result.append(item)
-            return {"rows": result, "total": len(result), "aggregate": aggregate, "group_by": group_by}
+            return {**_page(result, limit, offset), "aggregate": aggregate, "group_by": group_by}
         amounts = [float(r.get("amount") or 0) for r in rows]
         if aggregate == "count":
             value = total
@@ -251,11 +329,7 @@ def query_source(name: str, identity: dict, filters: dict, limit: int | None, ag
         else:
             raise ValueError("unknown aggregate")
         return {"value": value, "aggregate": aggregate, "total": total}
-    truncated = False
-    if limit is not None and len(rows) > limit:
-        rows = rows[:limit]
-        truncated = True
-    return {"rows": rows, "total": total, "truncated": truncated, "limit": limit}
+    return _page(rows, limit, offset)
 
 
 def prepare_draft(typ: str, payload: dict, identity: dict) -> dict:

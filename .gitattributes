@@ -1,5 +1,5 @@
-# Evaluation routes are checksummed (workshop 19); keep LF in the working tree.
-workshops/17-evaluation/routes/** text eol=lf
+# Evaluation routes are checksummed (workshop 17); keep LF in the working tree.
+workshops/15-evaluation/routes/** text eol=lf
 # Python launchers and manifests are shared by Linux and Windows.
 *.py text eol=lf
 *.toml text eol=lf

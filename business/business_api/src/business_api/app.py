@@ -57,8 +57,9 @@ class FailureIn(BaseModel):
 class QueryIn(BaseModel):
     filters: dict[str, Any] = Field(default_factory=dict)
     limit: int | None = None
+    offset: int = 0
     aggregate: str | None = None
-    group_by: str | None = None
+    group_by: str | list[str] | None = None
 
 
 class PurchaseRequestDraftIn(BaseModel):
@@ -161,7 +162,7 @@ def api_source(name: str, identity: dict = Depends(user_from_header)):
 @app.post("/sources/{name}/query")
 def api_query(name: str, body: QueryIn, identity: dict = Depends(user_from_header)):
     try:
-        return query_source(name, identity, body.filters, body.limit, body.aggregate, body.group_by)
+        return query_source(name, identity, body.filters, body.limit, body.aggregate, body.group_by, body.offset)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

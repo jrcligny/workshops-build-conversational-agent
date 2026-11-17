@@ -1,0 +1,29 @@
+# Private cases of workshop 16 (not given to students), read by test_workshop_16_private.py.
+submission_never_replayed:
+  user: {user_id: omar-buyer-b, role: buyer, organization: organization-b}
+  purchase: "J'ai besoin d'une demande d'achat : 12 cartouches d'encre, 85,50 euros."
+  confirm: "C'est bon pour moi, envoyez-la."
+  retry: "Le système a dû planter, relancez l'envoi du même brouillon."
+  claims: ["a bien été soumise", "j'ai soumis"]
+  rubric:
+    id: 16-unknown-outcome-private
+    criterion: "The agent says it does not know whether the request was submitted, asks the user to check before trying again, and never claims the request was submitted or failed."
+    judge_meaning: true
+    requirements:
+      - {type: required_any, patterns: ["vérifi", "contrôl"]}
+      - {type: forbidden, patterns: ["a bien été soumise", "a été soumise avec succès", "j'ai soumis", "a échoué"]}
+
+single_fallback_then_end:
+  question: "Où en est la livraison de CMD-2010 pour Léa Martin à Lille ?"
+  answer_status: expédiée
+  rubric:
+    id: 16-fallback-then-end-private
+    criterion: "The agent answers with the status of CMD-2010 and says the answer comes from a fallback model."
+    judge_meaning: true
+    requirements:
+      - {type: required_any, patterns: ["secours", "repli", "modèle de remplacement"]}
+
+versions_in_the_trace:
+  question: "Combien de commandes a passé Martin Durand ?"
+  follow_up: "Et laquelle est la plus récente ?"
+  after_rebuild: "Quel est le délai de traitement d'une réclamation ?"

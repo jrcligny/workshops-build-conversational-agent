@@ -4,7 +4,7 @@ Companion repository for the workshops of the book *De l'assistant à l'agent : 
 
 **Languages: code and docs in English, the agent converses in French.** Everything in this repository is in English except what the agent's user reads or types: the user turns and expected answers in the tests, the simulated model replies, the corpus texts and the display labels of business values. Details in [docs/decisions.md](docs/decisions.md#language).
 
-It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 18 of the book; chapter 11 is split into workshops 10a to 10d, and workshop numbers follow the folders, not the chapters: see the table in [workshops/README.md](workshops/README.md)). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal bootstrap (agent gateway with chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The bootstrap includes neither the conversational loop nor the *system prompt*.
+It provides the environment and the end-to-end tests to carry out the workshops (chapters 3 to 17 of the book, one workshop per chapter and none for chapter 8; the workshop number is the chapter number: see the table in [workshops/README.md](workshops/README.md)). **It does not contain the agent's code**: you build your own in `my-agent/`, starting from a minimal bootstrap (agent gateway with chat interface, model client wired to the proxy, trace writer, interface contract, empty MCP server). The bootstrap includes neither the conversational loop nor the *system prompt*.
 
 Main target: **Windows**, with Python **3.13** from [python.org](https://www.python.org/downloads/) or uv. Linux and macOS are supported too.
 
@@ -15,11 +15,11 @@ README.md            this file
 GETTING_STARTED.md   what is provided, what you write
 my-agent/            the ONLY folder students edit
   harness.py         runnable bootstrap of your agent
-  mcp_server.py      empty MCP server (wired in workshop 09)
-  sandbox/           sandbox policy (policy.yaml, workshop 10d)
-  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 14)
-  attachments/       read-only attachments area (workshop 15)
-  local-mode/        landing structure of workshop 19 (specifications/, controls/)
+  mcp_server.py      empty MCP server (wired in workshop 06)
+  sandbox/           sandbox policy (policy.yaml, workshop 07)
+  skills/            versioned skills catalog (manifest.yaml + <id>/, workshop 13)
+  attachments/       read-only attachments area (workshop 14)
+  local-mode/        landing structure of workshop 17 (specifications/, controls/)
 workshops/           one folder per workshop: README.md (guide), contrat.md (test contract), state.yaml, tests/
 clients/chat_ui/     standard Chainlit UI (client of the agent gateway), own project and dependencies
 gateway/             running infrastructure, never edited by students

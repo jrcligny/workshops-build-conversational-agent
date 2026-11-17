@@ -57,7 +57,7 @@ class ModelClient:
     def generate(
         self, messages: list[dict[str, Any]], tools: list[dict] | None = None, model: str = "default"
     ) -> dict[str, Any]:
-        """`model` is the logical name the proxy resolves: `default`, or `fallback` (workshop 18)."""
+        """`model` is the logical name the proxy resolves: `default`, or `fallback` (workshop 16)."""
         return self._post(
             "/v1/chat/completions",
             {"model": model, "messages": messages, "tools": tools or None, "stream": False},

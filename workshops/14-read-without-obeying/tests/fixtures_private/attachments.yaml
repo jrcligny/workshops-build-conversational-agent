@@ -1,0 +1,4 @@
+# Business record each attachment is attached to (route of the business API).
+# CMD-0770 is rejected: hidden from customer service, visible to buyers and accountants.
+supplier-offer-9184.txt:
+  record: orders/CMD-0770

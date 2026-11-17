@@ -37,6 +37,13 @@ documents:
     organization: organization-a
     audience: buyer
     address: /docs/organization-a/purchasing/workflow/3.0
+  - id: supplier-papeterie-du-centre
+    file: organization-a/supplier-papeterie-du-centre.txt
+    title: Fiche fournisseur — Papeterie du Centre
+    version: "1.0"
+    organization: organization-a
+    audience: buyer
+    address: /docs/organization-a/suppliers/papeterie-du-centre/1.0
   - id: invoice-statuses
     file: organization-a/invoice-statuses.txt
     title: Définition des statuts de facture

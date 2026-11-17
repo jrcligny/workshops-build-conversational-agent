@@ -1,0 +1,60 @@
+# Private cases of workshop 09 (not given to students), read by test_workshop_09_private.py.
+# No `total`: the expected totals are read from the business API (never hard-coded).
+bounded_summary_list_with_declared_total:
+  question: &late_question "Transports Morel : quelles commandes ont dépassé leur date de livraison promise ?"
+  rubric:
+    id: 09-private-partial-result-announced
+    criterion: >-
+      The agent says in French that it shows only part of the list, gives the total read from the tool
+      and offers the rest or a narrower request.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [partiel, partielle, une partie, extrait, premières, suivantes]
+
+small_list_is_not_declared_partial:
+  question: *late_question             # standard dataset
+
+large_grouping_is_bounded_and_declared:
+  question: "Combien de commandes Transports Morel a-t-il passées chaque jour ?"
+  group_by: order_date                 # one group per day: more groups than the display limit
+
+two_next_portions_without_repeating_rows:
+  question: *late_question
+  follow_ups: ["Et la page d'après ?", "Encore la suite, s'il vous plaît."]
+
+total_is_a_minimum_at_the_retrieval_cap:
+  question: "Je voudrais l'ensemble des commandes passées par Transports Morel."
+  minimum_total: 200
+  minimum_words: [au moins, plus de, minimum]
+
+count_mode:
+  question: "Donnez-moi seulement le chiffre : combien Transports Morel a-t-il de commandes en retard ?"
+
+detail_through_the_consultation_tool:
+  dataset: volume                      # the written results come from this dataset
+  conversation:                        # loaded, not played: the list was already shown
+    - user: "Transports Morel : quelles commandes ont dépassé leur date de livraison promise ?"
+      tools:
+        - name: resolve_name
+          arguments: {entity_type: customer, name: Transports Morel}
+          result:
+            matches:
+              - {id: C-VOLUMEX, name: Transports Morel, city: Rennes}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-VOLUMEX, late: true}, limit: 3}
+          result:
+            rows:
+              - {reference: CMD-V0007, status: shipped, promised_date: "2026-02-23"}
+              - {reference: CMD-V0364, status: shipped, promised_date: "2026-02-28"}
+              - {reference: CMD-V0028, status: shipped, promised_date: "2026-02-26"}
+            returned: 3
+            total: 60
+            total_status: exact
+            truncated: true
+            next_offset: 3
+      answer: >-
+        Transports Morel a 60 commandes en retard ; voici les 3 premières (liste partielle) :
+        CMD-V0007, CMD-V0364 et CMD-V0028, toutes expédiées. Voulez-vous la suite ?
+  row: 2                               # another row of the list, asked by its reference
+  detail_question: "Combien coûte la commande {reference} ?"

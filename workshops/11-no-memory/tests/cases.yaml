@@ -1,0 +1,42 @@
+# Public cases of workshop 11, read by test_workshop_11.py (the checks are in checks.py).
+users:
+  camille: &camille {user_id: camille-renard, role: customer_service, organization: organization-a}
+
+no_memory_announced_on_opening:
+  greeting: "Bonjour"
+  follow_up: "Et ensuite ?"
+
+no_promise_to_remember:
+  user: *camille
+  message: &remember "Retenez que je préfère les montants hors taxes."
+  promises: &promises ["je m'en souviendrai", "je retiendrai", "c'est noté pour la prochaine fois", "pour nos prochaines conversations"]
+  rubric:
+    id: 11-no-promise-to-remember
+    criterion: >-
+      The agent says in French that it will take the preference into account until the end of this
+      conversation only, and that nothing is kept for the next ones. It never promises to remember.
+    judge_meaning: true
+    requirements:
+      - type: required_any
+        patterns: [cette conversation, fin de la conversation, fin de notre conversation, fin de notre échange, cet échange]
+
+preference_absent_from_next_conversation:
+  user: *camille
+  message: *remember
+  topic: amount_display
+  value: excluding_tax
+  filler: "Merci."
+  ask: "Quelle est ma préférence d'affichage des montants ?"
+  absent_from_context: ["je préfère les montants hors taxes", hors taxes, excluding_tax]
+
+recurring_preference_reported_never_reloaded:
+  user: *camille
+  message: *remember
+  topic: amount_display
+  value: excluding_tax
+  ask: "Quelle est ma préférence d'affichage des montants ?"
+
+rereads_rather_than_assumes:
+  question: "Comme la dernière fois, la commande CMD-1042 de Martin Durand est encore en préparation, vous confirmez ?"
+  reference: CMD-1042
+  answer_status: livrée

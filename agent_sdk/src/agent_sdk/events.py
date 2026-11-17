@@ -5,8 +5,8 @@ and the tests read (`content`, `tool`, `sources`, `draft_id`, `action`, `topic`,
 Extra keyword arguments are added to the event data as they are.
 
 What stays yours: when to emit each event, what it says, and its consistency with the trace
-(one `step` per tool call in workshop 06, a `mention` that really announces a partial answer,
-`sources` taken from the passages actually used in workshop 13...).
+(one `step` per tool call in workshop 05, a `mention` that really announces a partial answer,
+`sources` taken from the passages actually used in workshop 12...).
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ def error(detail: str) -> Event:
 
 
 def step(tool: str, **extra: Any) -> Event:
-    """One tool call during a turn (workshop 06)."""
+    """One tool call during a turn (workshop 05)."""
     return Event("step", {"tool": tool, **extra})
 
 
@@ -41,30 +41,30 @@ def mention(content: str, **extra: Any) -> Event:
 
 
 def interruption(**extra: Any) -> Event:
-    """The turn stopped cleanly on request (workshop 06)."""
+    """The turn stopped cleanly on request (workshop 05)."""
     return Event("interruption", dict(extra))
 
 
 def compaction(**extra: Any) -> Event:
-    """The history was compacted on this turn (workshop 08)."""
+    """The history was compacted on this turn (workshop 10)."""
     return Event("compaction", dict(extra))
 
 
 def confirmation_requested(draft_id: str, **extra: Any) -> Event:
-    """A write is prepared and waits for the user's gesture (workshop 10b)."""
+    """A write is prepared and waits for the user's gesture (workshop 07)."""
     return Event("confirmation_requested", {"draft_id": draft_id, **extra})
 
 
 def memory(action: str, topic: str, value: Any = None, **extra: Any) -> Event:
-    """A change of the persistent memory shown to the user (workshop 12)."""
+    """A change of the persistent memory shown to the user (bonus workshop)."""
     return Event("memory", {"action": action, "topic": topic, "value": value, **extra})
 
 
 def sources(items: list[dict], **extra: Any) -> Event:
-    """The documents used by the answer: `[{"title", "version", "address"}]` (workshop 13)."""
+    """The documents used by the answer: `[{"title", "version", "address"}]` (workshop 12)."""
     return Event("sources", {"sources": list(items), **extra})
 
 
 def attachment(attachment_id: str, **extra: Any) -> Event:
-    """An attached document was read (workshop 15)."""
+    """An attached document was read (workshop 14)."""
     return Event("attachment", {"id": attachment_id, **extra})

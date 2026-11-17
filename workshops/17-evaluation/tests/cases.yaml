@@ -1,5 +1,0 @@
-# Public cases of workshop 17, read by test_workshop_17.py (the checks are in checks.py).
-# The route tests have no input to vary: they are not described here.
-masked_and_observable_traces:
-  question: "Quel est le statut de la commande CMD-1042 ?"
-  min_tool_calls: 1      # at least one tool call

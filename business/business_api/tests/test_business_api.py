@@ -136,6 +136,40 @@ def test_median_refused(business_client):
     assert "total" in data["available_aggregates"]
 
 
+def test_grouping_by_supplier_and_month(observation, services):
+    observation.reset("volume")
+    token = observation.token("leo-controller")["app_token"]
+    client = httpx.Client(base_url=services["business_api"], headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    data = client.post("/sources/invoices/query", json={"aggregate": "total", "group_by": ["supplier_id", "month"]}).json()
+    groups = {(r["group"]["supplier_id"], r["group"]["month"]): r["total"] for r in data["rows"]}
+    assert {s for s, _ in groups} == {"F-PAPETERIE", "F-BUREAU", "F-TRANSIT"}
+    assert len({m for _, m in groups}) >= 3
+    total = client.post("/sources/invoices/query", json={"aggregate": "total"}).json()["value"]
+    assert round(sum(groups.values()), 2) == total
+    by_status = client.post("/sources/invoices/query", json={"aggregate": "count", "group_by": "status"}).json()
+    assert all(isinstance(r["group"], str) for r in by_status["rows"])
+    refused = client.post("/sources/invoices/query", json={"aggregate": "total", "group_by": ["week"]})
+    assert refused.status_code == 400 and "month" in refused.text
+
+
+def test_generic_query_is_bounded_declared_and_paged(observation, business_client):
+    observation.reset("volume")
+    late = {"customer_id": "C-VOLUMEX", "late": True}
+    first = business_client.post("/sources/orders/query", json={"filters": late, "limit": 20}).json()
+    assert len(first["rows"]) == 20 and first["truncated"] and first["next_offset"] == 20
+    assert all(r["late"] for r in first["rows"]) and first["total_status"] == "exact"
+    second = business_client.post("/sources/orders/query", json={"filters": late, "limit": 20, "offset": 20}).json()
+    assert not {r["reference"] for r in first["rows"]} & {r["reference"] for r in second["rows"]}
+    count = business_client.post("/sources/orders/query", json={"filters": late, "aggregate": "count"}).json()
+    assert count["value"] == first["total"]
+    every = business_client.post("/sources/orders/query", json={"filters": {"customer_id": "C-VOLUMEX"}, "limit": 20}).json()
+    assert every["total"] == 200 and every["total_status"] == "minimum"
+    groups = business_client.post(
+        "/sources/orders/query", json={"filters": {"customer_id": "C-VOLUMEX"}, "group_by": "order_date", "limit": 5}
+    ).json()
+    assert len(groups["rows"]) == 5 and groups["truncated"] and groups["total"] > 5
+
+
 def test_observation_catalog(observation):
     catalog = observation.reset("standard")
     assert "CMD-1042" in catalog["cases"]

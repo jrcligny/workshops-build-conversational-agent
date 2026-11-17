@@ -19,43 +19,52 @@ TEST_PROJECT = REPO_ROOT / "tooling" / "cli"
 WORKSHOPS_DIR = REPO_ROOT / "workshops"
 SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"
 
-# Workshop id -> folder under workshops/. Ids are folder numbers, not book chapters (see appendix A of the book):
-# 07-09 are chapters 8-10, 10a-10d chapter 11, 17-19 chapters 16-18; ids 11 and 16 are unused.
+# Workshop id -> folder under workshops/. The id is the chapter number of the book (appendix A);
+# chapter 8 has no workshop. Ordered: `--non-regression` runs every workshop up to the target.
 WORKSHOPS = {
     "03": "03-system-prompt",
     "04": "04-first-tool",
-    "05": "05-read-tools",
-    "06": "06-agent-loop",
-    "07": "07-progressive-disclosure",
-    "08": "08-context-compaction",
-    "09": "09-mcp",
-    "10a": "10a-identity",
-    "10b": "10b-writes",
-    "10c": "10c-groupings",
-    "10d": "10d-sandboxing",
-    "12": "12-long-term-memory",
-    "13": "13-document-search",
-    "14": "14-skills",
-    "15": "15-read-without-obeying",
-    "17": "17-evaluation",
-    "18": "18-failures",
-    "19": "19-specification",
+    "05": "05-agent-loop",
+    "06": "06-mcp-server",
+    "07": "07-acting-rights",
+    "09": "09-progressive-disclosure",
+    "10": "10-context-compaction",
+    "11": "11-no-memory",
+    "12": "12-document-search",
+    "13": "13-skills",
+    "14": "14-read-without-obeying",
+    "15": "15-evaluation",
+    "16": "16-failures",
+    "17": "17-specification",
+}
+# Optional workshops outside the path: checked on their own, never by `--non-regression`.
+BONUS_WORKSHOPS = {
+    "bonus": "bonus-preference-memory",
+}
+# Steps of the workshops that cover several decisions of their chapter (`--etape`).
+STEPS = {
+    "05": ("outils", "boucle"),
+    "06": ("serveur", "regroupements"),
+    "07": ("identite", "ecritures", "confinement"),
 }
 WORKSHOP_IDS = list(WORKSHOPS)
+ALL_WORKSHOPS = {**WORKSHOPS, **BONUS_WORKSHOPS}
 
 
 def _check_id(workshop_id: str) -> None:
-    if workshop_id not in WORKSHOPS:
-        raise SystemExit(f"unknown workshop: {workshop_id} (expected one of {', '.join(WORKSHOP_IDS)})")
+    if workshop_id not in ALL_WORKSHOPS:
+        raise SystemExit(f"unknown workshop: {workshop_id} (expected one of {', '.join(ALL_WORKSHOPS)})")
 
 
 def up_to(workshop_id: str) -> list[str]:
     _check_id(workshop_id)
+    if workshop_id in BONUS_WORKSHOPS:
+        raise SystemExit(f"{workshop_id} is a bonus workshop, outside the path: run it without --non-regression")
     return WORKSHOP_IDS[: WORKSHOP_IDS.index(workshop_id) + 1]
 
 
 def workshop_dir(workshop_id: str) -> Path:
-    return WORKSHOPS_DIR / WORKSHOPS[workshop_id]
+    return WORKSHOPS_DIR / ALL_WORKSHOPS[workshop_id]
 
 
 def workshop_tests_dir(workshop_id: str) -> Path:
@@ -81,8 +90,12 @@ def _pytest(folders: list[Path], extra: list[str] | None = None, env_overrides: 
     return subprocess.call(args, cwd=REPO_ROOT, env={**_test_env(), **(env_overrides or {})})
 
 
-def cmd_check(workshop_id: str, non_regression: bool, private: bool = False) -> int:
+def cmd_check(workshop_id: str, non_regression: bool, private: bool = False, step: str | None = None) -> int:
     _check_id(workshop_id)
+    if step is not None and step not in STEPS.get(workshop_id, ()):
+        known = ", ".join(STEPS.get(workshop_id, ())) or "none"
+        print(f"unknown step for workshop {workshop_id}: {step} (steps: {known})", file=sys.stderr)
+        return 2
     ids = up_to(workshop_id) if non_regression else [workshop_id]
     missing = [i for i in ids if not workshop_tests_dir(i).is_dir()]
     if missing:
@@ -90,7 +103,8 @@ def cmd_check(workshop_id: str, non_regression: bool, private: bool = False) -> 
         return 2
     print(f"Checking workshops: {', '.join(ids)}")
     # Tests marked superseded_by(<id>) are skipped once the target workshop reaches <id>.
-    extra = ["-m", "workshop", *(["--private"] if private else [])]
+    # --etape deselects the other steps of the target workshop only (agent_testkit.steps).
+    extra = ["-m", "workshop", *(["--private"] if private else []), *(["--etape", step] if step else [])]
     return _pytest([workshop_tests_dir(i) for i in ids], extra, {"WORKSHOP_TARGET": workshop_id})
 
 
@@ -99,7 +113,7 @@ def _run_expect_all_fail(
 ) -> int:
     """Runs every workshop test and succeeds (exit code 0) when each one fails or errors,
     except the tests listed in `allowed` (`<test file>::<test name>`), which may pass."""
-    folders = [workshop_tests_dir(i) for i in WORKSHOP_IDS if workshop_tests_dir(i).is_dir()]
+    folders = [workshop_tests_dir(i) for i in ALL_WORKSHOPS if workshop_tests_dir(i).is_dir()]
     if not folders:
         print("no workshops/*/tests folder found", file=sys.stderr)
         return 2
@@ -295,6 +309,8 @@ def main(argv: list[str] | None = None) -> int:
     check.add_argument("workshop_id")
     check.add_argument("--non-regression", action="store_true", help="Also run the previous workshops")
     check.add_argument("--private", action="store_true", help="Also run the private tests (*_private.py), not given to students")
+    check.add_argument("--etape", default=None, help="Run only this step of the workshop (05: outils, boucle; 06: serveur, "
+                       "regroupements; 07: identite, ecritures, confinement)")
 
     sub.add_parser("check-bootstrap", aliases=["check-shell"],
                    help="Check that every workshop test fails on the bootstrap of my-agent/, except the declared ones")
@@ -310,7 +326,7 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "check":
-        return cmd_check(args.workshop_id, args.non_regression, args.private)
+        return cmd_check(args.workshop_id, args.non_regression, args.private, args.etape)
     if args.command in ("check-bootstrap", "check-shell"):
         return cmd_check_shell()
     if args.command == "check-inert":

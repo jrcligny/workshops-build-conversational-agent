@@ -12,7 +12,7 @@ pytestmark = pytest.mark.shell
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 MY_AGENT = REPO_ROOT / "my-agent"
-routes = load_checks(str(REPO_ROOT / "workshops" / "17-evaluation" / "tests" / "routes.py"), "routes.py")
+routes = load_checks(str(REPO_ROOT / "workshops" / "15-evaluation" / "tests" / "routes.py"), "routes.py")
 
 
 def test_attachments_entry_point_empty(services):

@@ -15,7 +15,7 @@ it. The judge thresholds and rubrics are calibrated at that point too: see
   result) and replaces the turns before the last `COMPACTION_KEEP_TURNS` by a
   rolling summary under five fixed headings, written by a separate model call
   with `my-agent/compaction_prompt.md`.
-- **Status:** starting point for the simulated tests of workshop 07. The
+- **Status:** starting point for the simulated tests of workshop 09. The
   fidelity of the summaries produced by the real model, and the threshold
   itself, will be calibrated in phase B.
 
@@ -45,7 +45,7 @@ environment variables (see `.env.example`):
 | Agent (chat) | `AZURE_OPENAI_CHAT_DEPLOYMENT` |
 | Judge | `AZURE_OPENAI_JUDGE_DEPLOYMENT` |
 | Embeddings | `AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT` |
-| Fallback (workshop 18) | `AZURE_OPENAI_FALLBACK_DEPLOYMENT` |
+| Fallback (workshop 16) | `AZURE_OPENAI_FALLBACK_DEPLOYMENT` |
 | Reranking (optional) | `AZURE_OPENAI_RERANKING_DEPLOYMENT` |
 
 The values stay empty during design: the proxy runs in simulated mode. The
@@ -60,13 +60,13 @@ Rule: **code and technical docs in English; workshop guides and the agent in Fre
   names, assertion messages, log and error messages of the kit, YAML keys,
   trace fields, API routes and field names, business codes (`delivered`,
   `pending`, `customer_service`...).
-- French: the workshop guides (`workshops/*/README.md`, `workshops/*/contrat.md`, `workshops/17-evaluation/routes/README.md`),
+- French: the workshop guides (`workshops/*/README.md`, `workshops/*/contrat.md`, `workshops/15-evaluation/routes/README.md`),
   written for the French-speaking reader of the book and using its terms as they are
   ("borner et déclarer", "mention", "harnais", "boucle d'agent"...). The names they quote
   (trace fields, events, tools, parameters) stay English, as in the code.
 - French: everything the agent's user reads or types. In the tests, that is
   the user turns sent to the agent, the expected phrases and keywords in its
-  answers, the simulated proxy replies, the attachment fixture of workshop 15
+  answers, the simulated proxy replies, the attachment fixture of workshop 14
   and the corpus `.txt` texts the agent quotes (with their `title` in
   `corpus/metadata.yaml`; the keys stay English).
 - Business data shown to the user: the codes stay English in the API, and
@@ -103,7 +103,7 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
   (3 out of 5 by default); it stops as soon as the outcome is known. Rubrics on an answer
   that cannot be replayed (a continuation of a conversation) are applied once. Each run starts
   with a fresh proxy quota (`DAILY_TOKEN_QUOTA`), as each test does; the evaluation routes of
-  workshop 17 run once each (`ROUTE_K` out of `ROUTE_N`, 1 out of 1 by default).
+  workshop 15 run once each (`ROUTE_K` out of `ROUTE_N`, 1 out of 1 by default).
 - **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
   answers a cautious French sentence without calling the model nor any tool, and fakes the
   file deliverables; every test must fail. It guards against tests passed by doing nothing.
@@ -136,8 +136,8 @@ for the trainers, not the students:
 - `.gitattributes` marks them `export-ignore`: the student material is produced with
   `git archive`, which leaves them out.
 
-Workshops 09, 14, 17 and 19 have tests with no input to vary (catalog, manifest, routes): those
-tests have no private variant, and workshop 19 has no private file.
+Workshops 06, 13, 15 and 17 have tests with no input to vary (catalog, manifest, routes,
+specification): those tests have no private variant, and workshop 17 has no private file.
 
 ## Simulated and live modes
 

@@ -1,0 +1,3 @@
+workshop: '10'
+title: 'Compacting the context'
+tests: tests/

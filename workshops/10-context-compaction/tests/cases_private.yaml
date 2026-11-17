@@ -1,0 +1,112 @@
+# Private cases of workshop 10 (not given to students): same checks, other inputs.
+# Another threshold and another number of kept turns (the agent must read them, not hard-code
+# 8 and 2), another customer chosen between namesakes, another order, amount and status.
+scenario:
+  threshold: 5
+  keep_turns: 1
+  conversation:
+    - user: "Un client, Hugo Petit, conteste ce qu'il a reçu."
+      tools:
+        - name: resolve_name
+          arguments: {entity_type: customer, name: "Hugo Petit"}
+          result:
+            status: ok
+            matches:
+              - {id: C-PETIT-BORDEAUX, name: "Hugo Petit", city: Bordeaux}
+              - {id: C-PETIT-STRASBOURG, name: "Hugo Petit", city: Strasbourg}
+      answer: "Deux clients portent ce nom : Hugo Petit à Bordeaux et Hugo Petit à Strasbourg. Lequel est-ce ?"
+    - user: "Celui de l'Est."
+      tools:
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-PETIT-STRASBOURG}}
+          result:
+            rows:
+              - {reference: CMD-3110, status: delivered, amount: 615.0}
+            total: 1
+      answer: "Hugo Petit (Strasbourg) a une commande : CMD-3110, livrée, d'un montant de 615,00 €."
+    - user: "Il dit ne pas avoir reçu la totalité du colis."
+      answer: "Je ne vois que le statut de la commande : je ne peux pas vérifier le contenu du colis."
+    - user: "Il demande un geste commercial."
+      answer: "Je ne peux pas accorder de geste commercial ; la demande doit passer par un responsable."
+    - user: "Regardez quand même s'il a une commande en retard."
+      tools:
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-PETIT-STRASBOURG, late: true}}
+          result:
+            rows: []
+            total: 0
+      answer: "Aucune commande en retard pour ce client."
+  continuation:
+    - user: "Il rappelle pour savoir qui contacter."
+      answer: "Un responsable du service client peut traiter sa demande."
+    - user: "Je lui transmets le contact."
+      answer: "Très bien."
+    - user: "C'est tout pour le moment."
+      answer: "Le dossier reste ouvert."
+  filler:
+    - user: "Parfait, on continue avec lui."
+      answer: "Entendu."
+    - user: "Il demande un geste commercial."
+      answer: "Je ne peux pas accorder de geste commercial ; la demande doit passer par un responsable."
+    - user: "Je le lui dirai."
+      answer: "Très bien."
+
+no_compaction_below_threshold:
+  question: "Quel client suivons-nous ?"
+
+tool_results_cleared:
+  question: "Faites-moi le point sur ce dossier."
+
+compaction_own_prompt_and_rolling_summary:
+  question: "Faites-moi le point sur ce dossier."
+  second_question: "Résumez-moi la situation du client."
+
+summary_keeps_tool_facts:
+  question: "Faites-moi le point sur ce dossier."
+  rubric:
+    id: 10-summary-keeps-tool-facts-private
+    language: fr
+    criterion: >-
+      The summary is organised under the five fixed headings and keeps the facts read by the tools:
+      the customer is Hugo Petit of Strasbourg (C-PETIT-STRASBOURG), chosen between two namesakes (not
+      the Bordeaux one); his order CMD-3110 is delivered, for an amount of 615, as read by a tool; he
+      disputes the content of the parcel and asks for a commercial gesture.
+    judge_meaning: true
+    requirements:
+      - type: required_all
+        patterns: ["Objectif de l'utilisateur", "Entités en cours", "Faits établis", "Décisions et choix confirmés", "Questions en suspens"]
+      - type: required_all
+        patterns: [CMD-3110, "615", Strasbourg]
+
+answer_from_summary_after_compaction:
+  question: "Sans relire sa commande, quel en est le montant ?"
+  amount: ["615"]
+
+compaction_reported_in_the_interface:
+  question: "Faites-moi le point sur ce dossier."
+
+state_kept_after_compaction:
+  question: "Et du coup, où en est-elle, celle-ci ?"
+  reference: CMD-3110
+  customer: {name: "Hugo Petit", city: Strasbourg}
+  status_words: [livrée, livré]
+
+choice_between_namesakes_kept:
+  request: "Je cherche le client Hugo Petit."
+  choice: "C'est celui de Strasbourg."
+  city: Strasbourg
+  question: "Dans quelle ville est le client que nous suivons ?"
+  other_city: Bordeaux
+
+lyon_namesake_chosen:
+  request: "Montrez-moi les commandes de Léa Martin."
+  choice: "La cliente de Lyon."
+  city: Lyon
+  id: C-MARTIN-LYON
+
+customer_change_without_ambiguity:
+  first: "Où en est la commande CMD-2010 de Léa Martin à Lille ?"
+  first_order: CMD-2010                # checked after the first turn
+  dropped_order: CMD-2010
+  change: "Laissons ce dossier : regardons Martin Durand, a-t-il des commandes en retard ?"
+  new_customer: "Martin Durand"

@@ -1,0 +1,3 @@
+workshop: '07'
+title: 'Acting on behalf of the buyer: identity, writes, sandboxing'
+tests: tests/
