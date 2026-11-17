@@ -7,7 +7,7 @@ threshold.
 import pytest
 
 from workshop_config import settings
-from workshop_tests.testing.cases import PRIVATE_CASES, load_cases, load_checks
+from testkit.cases import PRIVATE_CASES, load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

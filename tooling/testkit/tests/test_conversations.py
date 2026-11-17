@@ -7,11 +7,11 @@ import httpx
 import pytest
 import yaml
 
-from workshop_tests.testing.conversation import to_messages, tool_results
+from testkit.conversation import to_messages, tool_results
 
 pytestmark = pytest.mark.shell
 
-WORKSHOPS = Path(__file__).resolve().parents[2] / "workshops"
+WORKSHOPS = Path(__file__).resolve().parents[3] / "workshops"
 SAMPLE = [
     {
         "user": "Où en est la commande CMD-2010 ?",

@@ -94,7 +94,7 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 ## Judge: facts first, then meaning, repeated
 
 - **Order:** what code can check (application state, traces, logs, interface events) is
-  asserted first; a rubric then judges the meaning (`workshop_tests/evaluation/judge.py`):
+  asserted first; a rubric then judges the meaning (`tooling/evaluation/src/evaluation/judge.py`):
   a structural layer (required or forbidden patterns) always, then a semantic layer by a
   judge model when `JUDGE_MODE` is `auto` and `JUDGE_BASE_URL` is set, or always when
   `JUDGE_MODE=semantic`. A failed semantic verdict fails the test.
@@ -107,21 +107,21 @@ chapter number and reuse its terms. The expected French patterns are calibrated 
 - **Inert agent:** `workshop check-inert` runs every workshop test against an agent that
   answers a cautious French sentence without calling the model nor any tool, and fakes the
   file deliverables; every test must fail. It guards against tests passed by doing nothing.
-  This agent is the bootstrap of `my-agent/` overlaid by `workshop_tests/inert_agent/` (an
+  This agent is the bootstrap of `my-agent/` overlaid by `tooling/cli/inert_agent/` (an
   inert `harness.py` and the facade deliverables), assembled in a temporary folder; the command
   refuses to run once `my-agent/` differs from the bootstrap recorded in
-  `workshop_tests/inert_agent/bootstrap.sha256`.
+  `tooling/cli/inert_agent/bootstrap.sha256`.
 - **Connected bootstrap:** the bootstrap `my-agent/harness.py` already converses through the
   model (system prompt, history, answer, trace written with `agent_sdk.trace.Tracer`), so
   students start from a working agent. `workshop check-bootstrap` therefore tolerates the tests
-  listed in `workshop_tests/bootstrap_passes.txt` and fails on any other passing test;
+  listed in `tooling/cli/bootstrap_passes.txt` and fails on any other passing test;
   `check-inert` tolerates none.
 
 ## Superseded tests
 
 A workshop sometimes deliberately reverses an earlier one (workshop 03 has no tool, workshop
 04 adds one). Such a test is marked `@pytest.mark.superseded_by("04")`
-(`workshop_tests/testing/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
+(`tooling/testkit/src/testkit/superseded.py`): `workshop check <id>` sets `WORKSHOP_TARGET=<id>`,
 and the test is skipped, with an explicit reason, once the target reaches the marker.
 
 ## Private generalization tests
@@ -131,7 +131,7 @@ with other inputs (other customers, references, wordings, users, thresholds, att
 `tests/fixtures_private/`): an implementation tuned to the public cases fails them. They are
 for the trainers, not the students:
 
-- they are deselected unless pytest gets `--private` (`workshop_tests/testing/private.py`);
+- they are deselected unless pytest gets `--private` (`tooling/testkit/src/testkit/private.py`);
   `workshop check <id> --private` runs them, `check-inert` and `check-bootstrap` always include them;
 - `.gitattributes` marks them `export-ignore`: the student material is produced with
   `git archive`, which leaves them out.

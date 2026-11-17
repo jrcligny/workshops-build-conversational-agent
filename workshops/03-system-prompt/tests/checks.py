@@ -8,9 +8,9 @@ The turns that only set the scene are loaded as a written conversation (`chat_cl
 only the turn under test is played.
 """
 
-from workshop_tests.evaluation.judge import judge
-from workshop_tests.testing.conversation import to_messages
-from workshop_tests.testing.turns import (
+from evaluation.judge import judge
+from testkit.conversation import to_messages
+from testkit.turns import (
     apply_rubric_repeatedly,
     business_log,
     model_calls,

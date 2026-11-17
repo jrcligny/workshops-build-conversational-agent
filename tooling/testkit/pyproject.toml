@@ -1,0 +1,34 @@
+[project]
+name = "workshop-testkit"
+version = "0.1.0"
+description = "Shared pytest plugins, chat client, cases and conversations of the workshop tests"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.27",
+    "pytest>=8.3",
+    "pyyaml>=6.0",
+    "uvicorn>=0.32",
+    "workshop-config",
+    "workshop-evaluation",
+    "workshop-business-api",
+    "workshop-docs-search",
+    "workshop-agent-sdk",
+    "workshop-agent-gateway",
+    "workshop-model-gateway",
+]
+
+[tool.uv.sources]
+workshop-config = { path = "../../shared/workshop_config", editable = true }
+workshop-evaluation = { path = "../evaluation", editable = true }
+workshop-business-api = { path = "../../business/business_api", editable = true }
+workshop-docs-search = { path = "../../business/docs_search", editable = true }
+workshop-agent-sdk = { path = "../../agent_sdk", editable = true }
+workshop-agent-gateway = { path = "../../gateway/agent_gateway", editable = true }
+workshop-model-gateway = { path = "../../gateway/model_gateway", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/testkit"]

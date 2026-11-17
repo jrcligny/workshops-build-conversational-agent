@@ -21,7 +21,7 @@ import sys
 import pytest
 
 from workshop_config import REPO_ROOT, repo_path, settings
-from workshop_tests.evaluation.routes import expected_digest, routes_digest
+from testkit.cases import load_checks
 
 pytestmark = pytest.mark.workshop
 
@@ -32,6 +32,8 @@ PARTS = {
     "verification": r"v[ée]rification",
     "out of scope": r"hors[- ]p[ée]rim[èe]tre",
 }
+
+routes = load_checks(str(REPO_ROOT / "workshops" / "17-evaluation" / "tests" / "routes.py"), "routes.py")
 
 
 def _local_mode():
@@ -73,7 +75,7 @@ def test_checks_pass_with_the_control_and_catch_a_wrong_output():
     assert off.returncode == 1 and re.search(r"\d+ failed", off.stdout), (
         "with MY_AGENT_DISABLE_CONTROL=1, at least one check (the deliberately wrong output) fails:\n" + off.stdout[-2000:]
     )
-    assert routes_digest() == expected_digest(), "the evaluation routes were modified; they must stay intact"
+    assert routes.routes_digest() == routes.expected_digest(), "the evaluation routes were modified; they must stay intact"
     for p in _local_mode().rglob("*"):
         if p.is_file():
             content = p.read_text(encoding="utf-8", errors="ignore").lower().replace("\\", "/")

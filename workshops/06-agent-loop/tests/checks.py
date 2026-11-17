@@ -5,7 +5,7 @@ Trace contract read here: `cycles` (int, number of model calls in the loop), `to
 Interface events read here: `step` (data.cycle, data.tool), `mention`, `interruption`.
 """
 
-from workshop_tests.testing.turns import apply_rubric_repeatedly, events_of, repeatedly, successful_turn, tool_name, tools
+from testkit.turns import apply_rubric_repeatedly, events_of, repeatedly, successful_turn, tool_name, tools
 
 
 def several_cycles(chat_client, case: dict) -> None:

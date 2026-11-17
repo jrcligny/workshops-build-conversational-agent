@@ -40,8 +40,7 @@ import yaml
 
 from model_gateway.tokens import reset_usage
 from workshop_config import repo_path, settings
-from workshop_tests.evaluation.judge import judge
-from workshop_tests.evaluation.routes import ROUTES_DIR
+from evaluation.judge import judge
 
 EDGE_CASES = (
     "approximate-reference",
@@ -58,6 +57,7 @@ FACT_TYPES = {
     "event", "no_event", "no_drafts", "no_submission", "state_equals",
 }
 TEXT_FACTS = {"text_contains", "text_absent"}
+ROUTES_DIR = Path(__file__).resolve().parents[1] / "routes"
 REPORT_FILE = "route-report.json"
 
 

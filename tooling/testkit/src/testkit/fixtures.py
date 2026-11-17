@@ -1,7 +1,7 @@
 """Shared pytest fixtures: applications, proxy, traces, dataset.
 
-Loaded as a pytest plugin by `workshop_tests/pyproject.toml`, so that the kit tests
-(`<component>/tests/`, `workshop_tests/tests/`, `workshop_tests/integration/`) and the workshop tests (`workshops/*/tests/`) share them.
+Loaded as a pytest plugin by `tooling/cli/pyproject.toml`, so that the kit tests
+(`<component>/tests/`, `tooling/cli/integration/`) and the workshop tests (`workshops/*/tests/`) share them.
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ from model_gateway.tokens import reset_usage  # noqa: E402
 from agent_sdk import trace_store as tracer  # noqa: E402
 from agent_gateway.chat_app import app as interface_app, reset_conversations  # noqa: E402
 from workshop_config import settings  # noqa: E402
-from workshop_tests.testing.chat_client import ChatClient  # noqa: E402
-from workshop_tests.testing.servers import start_uvicorn, free_port, wait_for  # noqa: E402
+from testkit.chat_client import ChatClient  # noqa: E402
+from testkit.servers import start_uvicorn, free_port, wait_for  # noqa: E402
 
 OBSERVATION_TOKEN = "workshop-observation"
 

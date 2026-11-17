@@ -36,9 +36,9 @@ git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
 uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 ```
 
@@ -54,9 +54,9 @@ git clone https://github.com/jrcligny/workshops-build-conversational-agent.git
 cd workshops-build-conversational-agent
 uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 cp .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 ```
 
@@ -76,12 +76,12 @@ uv run --project business/docs_search python -c "import sqlite3; print(hasattr(s
 The expected values are `True` and a recent SQLite version (3.41 or newer
 recommended). Then run
 `uv sync --project business/docs_search --locked --python 3.13` again
-with an official interpreter (or select `workshop_tests` if the failure is in tests).
+with an official interpreter (or `uv sync --project tooling/cli --group tests --locked --python 3.13` if the failure is in tests).
 
 ## Check the framework
 
 `uv run --project tooling/cli workshop check-bootstrap` succeeds if, and only if, every workshop test
-**fails** on the bootstrap of `my-agent/`, except those listed in `workshop_tests/bootstrap_passes.txt`
+**fails** on the bootstrap of `my-agent/`, except those listed in `tooling/cli/bootstrap_passes.txt`
 (the bootstrap already converses through the model). This is the expected behaviour.
 
 The `.env` file must never be committed. The `AZURE_OPENAI_API_KEY` key stays
@@ -152,28 +152,29 @@ Shared source imports are resolved using the repository on `PYTHONPATH`, not by
 installing the test project's combined dependencies into the services.
 Database initialization also runs in the owning application's environment.
 
-Tooling and tests are two additional, separate projects, not a root package:
+Tooling is a separate project set, not a root package:
 
 - `tooling/cli/` owns the CLI and launcher under `src/workshop_tools/`, with
   its own `pyproject.toml`, `uv.lock` and `.venv`.
-- `workshop_tests/` owns test dependencies and pytest configuration in its
-  `pyproject.toml` (`package = false`), plus its own `uv.lock`, `.venv` and
-  `.python-version`. It depends on the local `workshop-tools` project in editable
-  mode. Its `testing/` and `evaluation/` folders provide shared fixtures and helpers.
+- The same project runs the tests: its `tests` dependency group (not installed by
+  `python start.py`) holds the services, `tooling/testkit/` (pytest plugins,
+  `ChatClient`, cases, conversations) and `tooling/evaluation/` (the judge), and its
+  `pyproject.toml` holds the pytest configuration. Dependencies go one way:
+  `cli` → `testkit` → `evaluation`.
 
-Infrastructure tests live next to the component they test (`<component>/tests/`, `workshop_tests/tests/`, `workshop_tests/integration/`), while workshop acceptance
+Infrastructure tests live next to the component they test (`<component>/tests/`, `tooling/cli/integration/`), while workshop acceptance
 tests stay next to their guides. Chainlit's MCP 1 and the agent's MCP 2 remain
-isolated; UI tests use the UI project's `dev` extra, not `workshop_tests/`.
+isolated; UI tests use the UI project's `dev` extra, not the `tests` group of `tooling/cli/`.
 
 Run the infrastructure suite from the repository root:
 
 ```powershell
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
 ```
 
 The `-c` explicitly selects the test project's configuration and fixture plugin;
 there is no root pytest configuration or fixture file. See the
-[test environment guide](../workshop_tests/README.md) for evaluation commands.
+[test environment guide](../tooling/testkit/README.md) for evaluation commands.
 
 To validate real startup and automatic shutdown of all six projects, run
 `uv run --project tooling/cli workshop serve --check --port-offset 100`.

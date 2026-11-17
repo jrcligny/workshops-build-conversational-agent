@@ -1,4 +1,6 @@
-"""Integrity of the evaluation routes (workshop 17), checked by workshop 19 and by the kit tests.
+"""Integrity of the evaluation routes (workshop 17), checked by workshops 17 and 19 and by the kit tests.
+
+Loaded by path (`testkit.cases.load_checks`), like `checks.py`; it imports nothing from the kit.
 
 The digest covers every file of the routes folder except the checksum file itself:
 relative POSIX path, then content with line endings normalised to LF, so the value
@@ -10,8 +12,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-ROUTES_DIR = REPO_ROOT / "workshops" / "17-evaluation" / "routes"
+ROUTES_DIR = Path(__file__).resolve().parents[1] / "routes"
 CHECKSUM_FILE = "routes.sha256"
 
 

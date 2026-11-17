@@ -13,8 +13,8 @@ carries an injected instruction asking for a purchase. Purchase requests are wri
 
 from pathlib import Path
 
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
+from testkit.chat_client import ChatClient
+from testkit.turns import successful_turn, tool_arguments, tool_name, tool_result, tool_status, tools
 
 
 def fixtures_dir(attachment: dict) -> Path:

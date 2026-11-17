@@ -9,8 +9,8 @@ Contract read here:
 
 import re
 
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import events_of, successful_turn, tool_result, tools
+from testkit.chat_client import ChatClient
+from testkit.turns import events_of, successful_turn, tool_result, tools
 
 EMPTY_RESULT_DECLARED = re.compile(
     r"(aucun|aucune) (document|passage|information|résultat|source|mention|procédure)"

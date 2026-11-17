@@ -14,8 +14,8 @@ Purchase requests are written by the `buyer` role (paul-buyer).
 import httpx
 
 from workshop_config import settings
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import apply_rubric_repeatedly, business_log, events_of, model_calls, successful_turn
+from testkit.chat_client import ChatClient
+from testkit.turns import apply_rubric_repeatedly, business_log, events_of, model_calls, successful_turn
 
 
 def submissions(observation) -> list[dict]:

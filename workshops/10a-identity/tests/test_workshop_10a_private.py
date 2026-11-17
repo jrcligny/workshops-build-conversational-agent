@@ -9,9 +9,9 @@ another user's entry token.
 import pytest
 
 from business_api.auth import issue_token
-from workshop_tests.testing.cases import PRIVATE_CASES, load_cases, load_checks
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import successful_turn
+from testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from testkit.chat_client import ChatClient
+from testkit.turns import successful_turn
 
 pytestmark = pytest.mark.workshop
 

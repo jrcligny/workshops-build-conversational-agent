@@ -12,7 +12,7 @@ Ces parcours sont un **critère d'acceptation** : ni vous ni l'outil de l'atelie
 
 ## Format
 
-La référence est la docstring de `workshop_tests/evaluation/route_runner.py`. En bref :
+La référence est la docstring de `workshops/17-evaluation/tests/route_runner.py`. En bref :
 
 ```yaml
 id: approximate-reference-cmd-1402
@@ -45,7 +45,7 @@ Chaque parcours est exécuté sur une conversation neuve, après rechargement du
 Seule l'équipe régénère l'empreinte, et seulement quand elle change les parcours. Depuis la racine du dépôt, avec l'environnement de test (ni l'outillage, ni l'environnement d'une application) :
 
 ```powershell
-uv run --project workshop_tests python -m workshop_tests.evaluation.routes --write
+uv run --project tooling/cli --group tests python workshops/17-evaluation/tests/routes.py --write
 ```
 
 Sans `--write`, la commande affiche l'empreinte actuelle sans rien écrire.

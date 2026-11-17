@@ -14,7 +14,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-TEST_PROJECT = REPO_ROOT / "workshop_tests"
+# This project also runs the tests: its `tests` group holds testkit, evaluation and the services.
+TEST_PROJECT = REPO_ROOT / "tooling" / "cli"
 WORKSHOPS_DIR = REPO_ROOT / "workshops"
 SHELL_REPORT = REPO_ROOT / ".pytest_shell.xml"
 
@@ -65,7 +66,7 @@ def _pytest_command() -> list[str]:
     if not uv:
         raise SystemExit("uv is required to run the test project's own environment.")
     return [
-        uv, "run", "--project", str(TEST_PROJECT), "--locked", "python", "-m", "pytest",
+        uv, "run", "--project", str(TEST_PROJECT), "--group", "tests", "--locked", "python", "-m", "pytest",
         "-c", str(TEST_PROJECT / "pyproject.toml"), "--rootdir", str(REPO_ROOT),
     ]
 
@@ -140,7 +141,7 @@ def bootstrap_passes() -> set[str]:
 
 def cmd_check_shell() -> int:
     """Succeeds (exit code 0) when every workshop test fails or errors on the bootstrap of my-agent/,
-    except those of workshop_tests/bootstrap_passes.txt (the bootstrap converses through the model)."""
+    except those of tooling/cli/bootstrap_passes.txt (the bootstrap converses through the model)."""
     return _run_expect_all_fail("Bootstrap", allowed=bootstrap_passes())
 
 
@@ -174,7 +175,7 @@ def write_bootstrap_digest(names: list[str]) -> None:
 def cmd_check_inert() -> int:
     """Succeeds when every workshop test fails against the inert agent.
 
-    The inert agent is the bootstrap of my-agent/ with the overlay of workshop_tests/inert_agent/:
+    The inert agent is the bootstrap of my-agent/ with the overlay of tooling/cli/inert_agent/:
     its harness.py answers a cautious French sentence and calls neither the model nor a tool, and
     the facade deliverables only contain the expected keywords. It is assembled
     in a temporary folder, so it only makes sense while my-agent/ is still the bootstrap.

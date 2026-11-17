@@ -138,13 +138,13 @@ From the repository root:
 ```powershell
 uv sync --project clients/chat_ui --extra dev
 uv run --project clients/chat_ui --extra dev pytest --confcutdir clients/chat_ui clients/chat_ui/tests
-uv sync --project workshop_tests --locked --python 3.13
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv sync --project tooling/cli --group tests --locked --python 3.13
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
 ```
 
 `--confcutdir` bounds UI test configuration discovery to the UI project. Shared
 fixtures (which import MCP 2) are loaded explicitly by the separate
-`workshop_tests/pyproject.toml` configuration, never by a root `conftest.py`.
+`tooling/cli/pyproject.toml` configuration, never by a root `conftest.py`.
 Do not use that test configuration for UI tests. CI runs both suites on Windows
 and Linux.
 

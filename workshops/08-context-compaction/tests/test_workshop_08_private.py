@@ -5,8 +5,8 @@ hard-code 8 and 2), another namesake choice, order, amount and status; plus the 
 
 import pytest
 
-from workshop_tests.testing.cases import PRIVATE_CASES, load_cases, load_checks
-from workshop_tests.testing.turns import successful_turn
+from testkit.cases import PRIVATE_CASES, load_cases, load_checks
+from testkit.turns import successful_turn
 
 pytestmark = pytest.mark.workshop
 

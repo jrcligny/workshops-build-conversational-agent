@@ -14,8 +14,8 @@ Contract read here (`tools[].result` of the order-list tool, jeu `volume`):
 An expected total given by a case is checked as is; a case without one reads it from the business API.
 """
 
-from workshop_tests.testing.conversation import tool_results
-from workshop_tests.testing.turns import (
+from testkit.conversation import tool_results
+from testkit.turns import (
     apply_rubric,
     business_log,
     successful_turn,

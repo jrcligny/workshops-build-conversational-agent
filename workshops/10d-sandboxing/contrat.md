@@ -8,7 +8,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
   - `policy()` renvoie `active`, `allowlist`, `limits` et `location` ; `is_policy_enforced()` doit valoir `True` (`active: true`) et `allowlist` ne doit pas être vide.
   - `is_egress_allowed(url)` renvoie `None` tant que la politique est inactive, sinon `True` si l'URL correspond à une entrée, `False` dans tous les autres cas. Une entrée est **un hôte** (`127.0.0.1`, comparé au nom d'hôte de l'URL, sans le port) ou **un préfixe d'URL** (contient `://`, comparé au début de l'URL).
   - Attendu : `is_egress_allowed("<URL de l'API métier>/orders/CMD-1042")` vaut `True` ; `is_egress_allowed("https://example.invalid/secret")` vaut `False`.
-- **Sondes d'exécution** (`workshop_tests/testing/probes.py`) : pendant un tour, un *audit hook* Python enregistre les événements `open`, `socket.getaddrinfo` et `socket.connect` **dont la pile d'appel passe par un fichier de `my-agent/`**.
+- **Sondes d'exécution** (`tooling/testkit/src/testkit/probes.py`) : pendant un tour, un *audit hook* Python enregistre les événements `open`, `socket.getaddrinfo` et `socket.connect` **dont la pile d'appel passe par un fichier de `my-agent/`**.
   - `opened_files(events, allowed)` : fichiers ouverts hors des dossiers permis. Seuls sont permis `my-agent/` et le dossier des traces (`traces_dir`) ; la liste doit être vide.
   - `contacted_hosts(events)` : hôtes résolus ou joints. `example.invalid` ne doit jamais y figurer, et chaque hôte `h` doit vérifier `is_egress_allowed(f"http://{h}/")`.
 - **Limites** : champ `limits` de `POST /conversations` (`{"duration_s": 0, "token_budget": 1}` dans le test), transmis au *harness* (`turn(..., limits=...)`).
@@ -77,7 +77,7 @@ event: end       data: {"ok": true}
 2. Lisez la dernière ligne de `traces/turns.jsonl` : `limit_reached`, `input`, `tools`.
 3. Vérifiez la politique :
    ```powershell
-   uv run --project workshop_tests python -c "from agent_sdk.sandbox import is_egress_allowed as ok; print(ok('http://127.0.0.1:8001/orders/CMD-1042'), ok('https://example.invalid/secret'))"
+   uv run --project tooling/cli --group tests python -c "from agent_sdk.sandbox import is_egress_allowed as ok; print(ok('http://127.0.0.1:8001/orders/CMD-1042'), ok('https://example.invalid/secret'))"
    ```
    Attendu : `True False`.
 4. L'interface de chat ne fixe pas de limites : pour les essayer, ouvrez la conversation par l'API de l'interface (port 8000) :
@@ -90,7 +90,7 @@ event: end       data: {"ok": true}
 
 ## Pistes techniques
 
-- Lisez `agent_sdk/src/agent_sdk/sandbox.py` et `workshop_tests/testing/probes.py` : ils disent exactement ce qui est comparé et ce qui est observé. Côté *harness*, lisez la politique avec `agent_sdk.sandbox` (`load_policy()` ou équivalent) : la lire ne l'applique pas.
+- Lisez `agent_sdk/src/agent_sdk/sandbox.py` et `tooling/testkit/src/testkit/probes.py` : ils disent exactement ce qui est comparé et ce qui est observé. Côté *harness*, lisez la politique avec `agent_sdk.sandbox` (`load_policy()` ou équivalent) : la lire ne l'applique pas.
 - Inventoriez d'abord les destinations réellement jointes par votre code (API métier, proxy du modèle, application de recherche…) : toutes doivent passer `is_egress_allowed`. Le livre le recommande avant d'activer une liste stricte.
 - La vérification porte sur la destination avant tout envoi : un refus ne doit déclencher ni résolution DNS ni connexion.
 - Les sondes ne voient que le code qui s'exécute dans le processus des tests ; un serveur d'outils lancé dans un autre processus (conteneur, `mcp_server.py` sur le port 8004) n'y est pas observé. Le confinement réel du conteneur reste votre responsabilité.

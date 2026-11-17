@@ -31,9 +31,12 @@ business/            what the agent queries
   business_api/      business API test app (FastAPI + SQLite)
   docs_search/       document search test app (SQLite FTS5 + sqlite-vec), corpus/ included
 shared/              settings (workshop_config) and text vectors shared by the services
-tooling/cli/         CLI project (workshop check, serve, check-bootstrap, check-inert) and six-service launcher
-workshop_tests/      test project: shared helpers (src/workshop_tests), judge tests (tests/),
-                     cross-component tests (integration/), inert agent, declared bootstrap passes
+tooling/
+  cli/               CLI and six-service launcher (workshop check, serve, check-bootstrap, check-inert);
+                     test runner (`tests` group, pytest configuration), cross-component tests
+                     (integration/), inert agent, declared bootstrap passes
+  testkit/           what workshops/*/tests import: pytest plugins, ChatClient, cases, conversations
+  evaluation/        semantic judge (k out of n repetition in testkit)
 ruff.toml            editor/static lint configuration only, not a Python project
 docs/                interface contract, installation, decisions, test inventory, team validation
 ```
@@ -41,7 +44,7 @@ docs/                interface contract, installation, decisions, test inventory
 Three test suites live in this repository:
 
 - `workshops/*/tests/`: the success criteria of each workshop. **They fail until the workshop is done** (red, then green).
-- `<component>/tests/` (and `workshop_tests/tests/`, `workshop_tests/integration/`): the tests of the provided infrastructure, next to the component they test; they must always pass.
+- `<component>/tests/` (and `tooling/cli/integration/`): the tests of the provided infrastructure, next to the component they test; they must always pass.
 - `clients/chat_ui/tests/`: the chat UI's tests, run with that project's own dependencies; they must always pass too.
 
 Students only touch `my-agent/`. The files the kit reads on your behalf (sandbox policy, skills catalog, attachments) live there too. The supplied UI resources live in `clients/chat_ui/`; service dependency manifests and lockfiles live alongside their applications. The remaining kit files are Python code. A kit test checks this separation.
@@ -53,10 +56,10 @@ See [docs/installation.md](docs/installation.md) for details. In short, on Windo
 ```powershell
 uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 Copy-Item .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
-uv run --project tooling/cli workshop check-bootstrap   # succeeds when every workshop test fails on the bootstrap, except workshop_tests/bootstrap_passes.txt
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
+uv run --project tooling/cli workshop check-bootstrap   # succeeds when every workshop test fails on the bootstrap, except tooling/cli/bootstrap_passes.txt
 uv run --project tooling/cli workshop check 03      # stays red until workshop 03 is done
 ```
 
@@ -65,9 +68,9 @@ On Linux or macOS (bash):
 ```bash
 uv python install 3.13
 uv sync --project tooling/cli --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 cp .env.example .env
-uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests
+uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling
 uv run --project tooling/cli workshop check-bootstrap
 uv run --project tooling/cli workshop check 03
 ```
@@ -96,7 +99,7 @@ conversation API and browser UI. Open <http://127.0.0.1:8080>.
 Each Python project keeps its own dependencies, lockfile and virtual environment;
 the launcher synchronizes each of the six application projects independently.
 There is no root Python project, lockfile or virtual environment. Commands use
-`tooling/cli/`; tests use `workshop_tests/`, separately from the six applications.
+`tooling/cli/`; tests use its `tests` dependency group, separately from the six applications.
 Ctrl+C stops all six services.
 Existing datasets are preserved unless `--reset-data` is requested.
 
@@ -114,7 +117,7 @@ The licence is not decided yet. No `LICENSE` file is published for now.
 - [Getting started](GETTING_STARTED.md)
 - [Installation](docs/installation.md)
 - [Workshop tooling](tooling/cli/README.md)
-- [Test environment](workshop_tests/README.md)
+- [Test environment](tooling/testkit/README.md)
 - [Interface contract](docs/interface-contract.md)
 - [Workshop test inventory](docs/test-inventory.md)
 - [Team validation procedure](docs/team-validation.md) (phase B, once Azure is available)

@@ -14,7 +14,7 @@ environnements d'outillage et de test, qui sont séparés :
 
 ```powershell
 uv sync --project tooling/cli --locked --python 3.13
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli workshop start 03
 uv run --project tooling/cli workshop check 03
 uv run --project tooling/cli workshop check 07 --non-regression
@@ -35,7 +35,7 @@ en non-régression dès que l'atelier vérifié atteint `<id>` : c'est le cas de
 encore d'outil » de l'atelier 03 à partir de l'atelier 04.
 
 La CLI se trouve dans `tooling/cli/src/workshop_tools/`. Ses commandes de
-vérification lancent pytest dans `workshop_tests/`, avec la configuration de ce projet. Il
+vérification lancent pytest avec le groupe de dépendances `tests` et la configuration de `tooling/cli/`. Il
 n'y a ni projet Python ni environnement partagé à la racine, et `python start.py` n'installe
 jamais les dépendances de test. Voir l'[installation](../docs/installation.md).
 

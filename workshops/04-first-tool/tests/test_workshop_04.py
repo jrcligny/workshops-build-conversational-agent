@@ -5,7 +5,7 @@ The checks (and the trace contract they read) are in `checks.py`; the cases in `
 
 import pytest
 
-from workshop_tests.testing.cases import load_cases, load_checks
+from testkit.cases import load_cases, load_checks
 
 pytestmark = pytest.mark.workshop
 

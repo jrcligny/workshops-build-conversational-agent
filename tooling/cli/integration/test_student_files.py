@@ -6,12 +6,13 @@ from pathlib import Path
 
 import httpx
 import pytest
-from workshop_tests.evaluation.routes import expected_digest, routes_digest
+from testkit.cases import load_checks
 
 pytestmark = pytest.mark.shell
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[3]
 MY_AGENT = REPO_ROOT / "my-agent"
+routes = load_checks(str(REPO_ROOT / "workshops" / "17-evaluation" / "tests" / "routes.py"), "routes.py")
 
 
 def test_attachments_entry_point_empty(services):
@@ -35,7 +36,7 @@ def test_local_mode_coding_agent_landing_empty():
 
 
 def test_evaluation_routes_checksum():
-    assert routes_digest() == expected_digest()
+    assert routes.routes_digest() == routes.expected_digest()
 
 
 def test_student_files_only_in_my_agent():

@@ -8,7 +8,7 @@ Main target: Windows, with Python 3.13 (from python.org or uv). See [docs/instal
 
 The agent you build answers in French, and the workshop guides are in French (code and technical docs stay English; see `docs/decisions.md`).
 
-Two test applications (business API and document search), a model proxy (simulated or live), a chat interface and traces live outside `my-agent/` (`business/`, `gateway/`, `agent_sdk/`, `clients/`), and you do not edit them. The CLI and launcher live in `tooling/cli/`; shared fixtures, evaluation helpers and test dependencies live in `workshop_tests/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The bootstrap also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
+Two test applications (business API and document search), a model proxy (simulated or live), a chat interface and traces live outside `my-agent/` (`business/`, `gateway/`, `agent_sdk/`, `clients/`), and you do not edit them. The CLI and launcher live in `tooling/cli/`; shared test helpers live in `tooling/testkit/` and the judge in `tooling/evaluation/`; test dependencies are the `tests` group of `tooling/cli/`. End-to-end tests stay next to each guide in `workshops/<id>-<topic>/tests/`. The bootstrap also provides, in `my-agent/`, an empty MCP server and the empty places you will fill in: the sandbox policy (`sandbox/policy.yaml`), the skills catalog (`skills/`), the attachments area (`attachments/`) and the local development mode (`local-mode/`).
 
 ## What you write
 
@@ -34,13 +34,13 @@ and tool calls without implementing any workshop for you. Each Python project
 keeps its own dependencies and environment.
 
 For checks, first run `uv sync --project tooling/cli --locked --python 3.13`
-and `uv sync --project workshop_tests --locked --python 3.13` from the repository
+and `uv sync --project tooling/cli --group tests --locked --python 3.13` from the repository
 root. There is no root Python project or shared environment.
 
 - `uv run --project tooling/cli workshop start 07` shows the guide, without copying any solution.
 - `uv run --project tooling/cli workshop check 07` runs `workshops/07-progressive-disclosure/tests/` in the test project's environment.
 - `uv run --project tooling/cli workshop check 07 --non-regression` runs the tests of workshops 03 to 07.
-- `uv run --project tooling/cli workshop check-bootstrap` checks that every workshop test fails on the bootstrap of `my-agent/` (it converses through the model, without tool), except those listed in `workshop_tests/bootstrap_passes.txt`.
+- `uv run --project tooling/cli workshop check-bootstrap` checks that every workshop test fails on the bootstrap of `my-agent/` (it converses through the model, without tool), except those listed in `tooling/cli/bootstrap_passes.txt`.
 - `uv run --project tooling/cli workshop check-inert` checks that every workshop test fails against an inert agent (one that answers without calling the model nor any tool).
 - In `--non-regression`, a test marked `superseded_by("<id>")` is skipped once the checked workshop reaches `<id>` (for example the "no tool yet" test of workshop 03 from workshop 04 on).
-- `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests` runs the infrastructure tests, which must pass.
+- `uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling` runs the infrastructure tests, which must pass.

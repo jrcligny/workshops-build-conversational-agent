@@ -74,15 +74,15 @@ Un script peut aussi porter un appel d'outil (`"tool"`, au format d'un `tool_cal
 Lancez vous-même les deux exécutions depuis la racine du dépôt, avec l'environnement de test :
 
 ```powershell
-$env:MY_AGENT_DISABLE_CONTROL = "0"; uv run --project workshop_tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
-$env:MY_AGENT_DISABLE_CONTROL = "1"; uv run --project workshop_tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
+$env:MY_AGENT_DISABLE_CONTROL = "0"; uv run --project tooling/cli --group tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
+$env:MY_AGENT_DISABLE_CONTROL = "1"; uv run --project tooling/cli --group tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
 ```
 
 Pour observer le contrôle dans une conversation, lancez `uv run --project tooling/cli workshop serve`, ouvrez http://127.0.0.1:8080 et lisez la dernière ligne de `traces/turns.jsonl`. Puis lancez `workshop check 19`.
 
 ## Pistes techniques
 
-- Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `workshop_tests/testing/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
+- Avec `-o addopts=`, les fixtures partagées (`services`, `observation`, `chat_client`…) de `tooling/testkit/src/testkit/fixtures.py` ne sont pas chargées d'office : déclarez ce plugin dans un `conftest.py` de `controls/` si vous voulez les réutiliser.
 - `gateway/model_gateway/src/model_gateway/app.py` (`/_test/scripts`, `/_test/token`) et `gateway/model_gateway/src/model_gateway/simulated.py` (`if_contains`, `content`, `tool`) décrivent les scripts. Les fixtures partagées effacent les scripts entre deux tests.
 - Choisissez un contrôle dont la violation a une conséquence pour l'utilisateur ou l'application et qui s'observe par le code : événement, état, trace, journal.
 - Relisez ligne à ligne ce qui touche à l'identité, aux droits, à la confirmation, à la soumission et au retrait des outils d'écriture, surtout si un *coding agent* l'a produit ; vérifiez qu'aucun test existant n'a été supprimé ni affaibli.

@@ -8,14 +8,14 @@ No Azure deployment is needed. Everything runs in simulated mode (scripted chat,
 
 From the repository root, prepare both environments with
 `uv sync --project tooling/cli --locked --python 3.13` and
-`uv sync --project workshop_tests --locked --python 3.13`. The tooling CLI
+`uv sync --project tooling/cli --group tests --locked --python 3.13`. The tooling CLI
 delegates checks to the test project's environment and pytest configuration;
 `python start.py` starts services only and never installs test dependencies.
 
-1. Bootstrap and inert agent: `uv run --project tooling/cli workshop check-bootstrap` and `workshop check-inert` must succeed (every workshop test fails; only the bootstrap may pass the tests listed in `workshop_tests/bootstrap_passes.txt`).
+1. Bootstrap and inert agent: `uv run --project tooling/cli workshop check-bootstrap` and `workshop check-inert` must succeed (every workshop test fails; only the bootstrap may pass the tests listed in `tooling/cli/bootstrap_passes.txt`).
 2. For a batch N, with a temporary harness that is **not shipped**: the tests of 03 to N−1 pass in simulated mode; those of N stay red; once N is done, 03 to N pass (`uv run --project tooling/cli workshop check N --non-regression`).
 3. Negative controls, one defect at a time (documentation pasted into the prompt, business call as early as workshop 03, compaction that loses an id, and so on).
-4. The infrastructure tests pass: `uv run --project workshop_tests pytest -c workshop_tests/pyproject.toml agent_sdk business gateway tooling workshop_tests`.
+4. The infrastructure tests pass: `uv run --project tooling/cli --group tests pytest -c tooling/cli/pyproject.toml agent_sdk business gateway tooling`.
 
 The CI replays points 1 and 4 on every commit.
 

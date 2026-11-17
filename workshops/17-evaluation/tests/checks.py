@@ -8,8 +8,8 @@ The route tests (official and student routes, route report) have no private vari
 in `test_workshop_17.py`.
 """
 
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import flat, successful_turn, tools
+from testkit.chat_client import ChatClient
+from testkit.turns import flat, successful_turn, tools
 
 
 def client(services, user: dict) -> ChatClient:

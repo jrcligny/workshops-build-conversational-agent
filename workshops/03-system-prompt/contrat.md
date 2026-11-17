@@ -35,7 +35,7 @@ reprend comme s'il l'avait produite :
 
 Le câblage est fourni par `my-agent/harness.py` et passe dès le départ :
 `test_contract_and_short_prompt`, `test_no_tool_yet` et `test_history_replayed_on_second_turn`
-(publics et privés), déclarés dans `workshop_tests/bootstrap_passes.txt`. Ne le cassez pas.
+(publics et privés), déclarés dans `tooling/cli/bootstrap_passes.txt`. Ne le cassez pas.
 Les deux tests de refus échouent sur l'amorce : ils sont l'objectif de l'atelier.
 
 ### Le prompt énonce la règle
@@ -114,7 +114,7 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 - L'interface n'affiche un échange que si le tour a produit du texte : émettez toujours au
   moins un `text` avant `end`.
 - Les assertions détaillées sont dans [tests/](tests/) ; les aides de test dans
-  `workshop_tests/testing/turns.py`.
+  `tooling/testkit/src/testkit/turns.py`.
 
 ## Vérifier
 

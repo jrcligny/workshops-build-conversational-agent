@@ -6,7 +6,7 @@ computed by the program is returned either as `status: approximate` with `order`
 `status: not_found` with `suggestions`; excluded orders are never returned.
 """
 
-from workshop_tests.testing.turns import history, model_calls, successful_turn, tool_arguments, tool_result, tool_status, tools
+from testkit.turns import history, model_calls, successful_turn, tool_arguments, tool_result, tool_status, tools
 
 
 def only_call(trace) -> dict:

@@ -1,1 +1,0 @@
-"""Shared workshop testing infrastructure and evaluation helpers."""

@@ -15,7 +15,7 @@ The chat interface is `gateway/agent_gateway/src/agent_gateway/chat_app.py`.
 | Multi-turn | The same conversation id is reused. The *harness* replays the whole context of the conversation (`agent_sdk.context`: user and assistant messages, tool calls and their results) in the model input; the `history` parameter is only the transcript shown by the interface (texts). A conversation may also start from a written history (`POST /conversations/{id}/history`, tests; with `"append": true`, the written history follows the turns already played): the agent continues it as its own, and refuses without running any call the model makes to a tool it does not offer (`agent_sdk.context.unoffered_call_results`). |
 | Service addresses | `BUSINESS_API_URL`, `DOCS_SEARCH_URL`, `PROXY_URL`, `INTERFACE_URL` are set in the environment by `workshop serve` and by the test fixtures (`workshop check`); `MCP_URL` too, by `workshop serve` and by the tests of workshops 09 and 10a, which start the MCP server of `my-agent/`. Read them at call time: the ports differ between the two. |
 
-The tests use the internal client (`workshop_tests/testing/chat_client.py`), not a browser.
+The tests use the internal client (`tooling/testkit/src/testkit/chat_client.py`), not a browser.
 The standard Chainlit UI in `clients/chat_ui/` consumes the same HTTP/SSE
 contract from its own Python environment. From the repository root, run
 `uv run --project tooling/cli workshop serve` to start
@@ -62,7 +62,7 @@ The bootstrap provides `agent_sdk/src/agent_sdk/trace.py`: a `Tracer` with one m
 
 ## Harness to implement
 
-In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `agent_sdk/src/agent_sdk/contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the context of the conversation (`agent_sdk.context`) and the message, relays the answer, records the turn and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `workshop_tests/bootstrap_passes.txt`.
+In `my-agent/harness.py`, a `Harness` class exposes `turn(conversation_id, message, user, history, attachments=None, interrupt_requested=False, confirmation=False, limits=None)` and yields `Event` objects (see `agent_sdk/src/agent_sdk/contract.py`). The shipped bootstrap calls the model through the proxy (`PROXY_URL`) with the system prompt of `my-agent/system_prompt.md`, the context of the conversation (`agent_sdk.context`) and the message, relays the answer, records the turn and writes the trace; it calls no tool. Every workshop test fails on it except those listed in `tooling/cli/bootstrap_passes.txt`.
 
 ## Other locations of the bootstrap
 
@@ -106,6 +106,6 @@ synonym), `approximate`, `not_found`, `error` and `denied`.
 | 13 | `tools[].result.passages[]`, `no_passage` | `sources` (`sources[]`: `title`, `version`, `address`) | |
 | 14 | `skills_loaded[]` (`id`, `version`, `cycle`), `offered_tools` (one list per model call) | | `my-agent/skills/` manifest: `id`, `title`, `version`, `path`; approvals by `nina-accountant` |
 | 15 | `offered_tools` | no `confirmation_requested` | attachment read by id (`sample-quote.txt`) |
-| 17 | `model.usage`, `model.duration_ms`, `model.calls`, `tools[].duration_ms` | | routes YAML (`workshop_tests/evaluation/route_runner.py`), `my-agent/routes/`, `my-agent/route-report.json` |
+| 17 | `model.usage`, `model.duration_ms`, `model.calls`, `tools[].duration_ms` | | routes YAML (`workshops/17-evaluation/tests/route_runner.py`), `my-agent/routes/`, `my-agent/route-report.json` |
 | 18 | `fallback` (`from`, `to`, `reason`), `unknown_outcome.draft_id`, `versions` (`instructions`, `tools`, `skills`, `index`) | | single submission attempt; one fallback call |
 | 19 | | | `my-agent/local-mode/specifications/*.md`, `controls/test_*.py`, `MY_AGENT_DISABLE_CONTROL=1` |

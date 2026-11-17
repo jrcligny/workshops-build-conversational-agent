@@ -17,7 +17,7 @@ carrying the calls (`tool_calls`, ids `call_<turn>_<index>`) followed by one `to
 result (content as JSON); then the assistant's answer. Tool names are neutral (`get_order`,
 `search_customers`, `list_orders`): the agent replays them as they are and never runs a tool
 it does not offer. Results are taken from `business_api.seed_data`
-(`workshop_tests/tests/test_conversations.py` checks them against the business API).
+(`tooling/testkit/tests/test_conversations.py` checks them against the business API).
 """
 
 from __future__ import annotations

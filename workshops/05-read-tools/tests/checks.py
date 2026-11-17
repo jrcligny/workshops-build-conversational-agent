@@ -4,7 +4,7 @@ Trace contract read here: `tools[]` (`name`, `arguments`, `result.status`). The 
 is an argument of the tool call: `filter: "late"`, the value used by the business API.
 """
 
-from workshop_tests.testing.turns import successful_turn, tool_arguments, tool_result, tool_status, tools
+from testkit.turns import successful_turn, tool_arguments, tool_result, tool_status, tools
 
 
 def namesakes_several_candidates(chat_client, case: dict) -> None:

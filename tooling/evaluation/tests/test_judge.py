@@ -1,4 +1,4 @@
-"""Judge rubric: structural layer, meaning layer and k-out-of-n repetition."""
+"""Judge rubric: structural layer and meaning layer (k-out-of-n repetition: testkit/tests/test_turns.py)."""
 
 import json
 
@@ -6,9 +6,7 @@ import httpx
 import pytest
 
 from workshop_config import settings
-from workshop_tests.evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french, model_meaning_judge
-from workshop_tests.testing.chat_client import Turn
-from workshop_tests.testing.turns import apply_rubric_repeatedly
+from evaluation.judge import JUDGE_INSTRUCTIONS, judge, looks_french, model_meaning_judge
 
 pytestmark = pytest.mark.shell
 
@@ -75,24 +73,6 @@ def test_model_meaning_judge_reads_an_openai_compatible_answer(monkeypatch):
     assert verdict == {"passed": False, "rationale": "asserts the delivery"}
     assert seen["body"]["messages"][0]["content"] == JUDGE_INSTRUCTIONS
     assert RUBRIC["criterion"] in seen["body"]["messages"][1]["content"]
-
-
-def test_k_out_of_n(no_judge_model):
-    answers = iter(["The order is delivered.", FRENCH_REFUSAL, FRENCH_REFUSAL, FRENCH_REFUSAL])
-    calls = []
-
-    def run():
-        calls.append(1)
-        return Turn(text=next(answers), ok=True), {}
-
-    verdicts = apply_rubric_repeatedly(RUBRIC, run, k=3, n=5)
-    assert len(calls) == 4 and sum(v["passed"] for v in verdicts) == 3
-
-
-def test_k_out_of_n_fails_when_too_few_runs_pass(no_judge_model):
-    answers = iter(["Elle est livrée.", FRENCH_REFUSAL, "Elle est livrée.", FRENCH_REFUSAL, FRENCH_REFUSAL])
-    with pytest.raises(AssertionError, match=r"1 run\(s\) passed, 3 out of 4"):
-        apply_rubric_repeatedly(RUBRIC, lambda: (Turn(text=next(answers), ok=True), {}), k=3, n=4)
 
 
 def test_language_rule_stated():

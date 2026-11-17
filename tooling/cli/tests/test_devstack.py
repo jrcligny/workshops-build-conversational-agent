@@ -194,7 +194,7 @@ def test_workshop_checks_delegate_to_the_test_project(monkeypatch):
     monkeypatch.setattr(cli.subprocess, "call", run)
     assert cli.cmd_check("03", False) == 0
     command = run.call_args.args[0]
-    assert command[:5] == ["uv", "run", "--project", str(cli.TEST_PROJECT), "--locked"]
+    assert command[:7] == ["uv", "run", "--project", str(cli.TEST_PROJECT), "--group", "tests", "--locked"]
     assert str(cli.TEST_PROJECT / "pyproject.toml") in command
     assert str(cli.workshop_tests_dir("03")) in command
     assert "VIRTUAL_ENV" not in run.call_args.kwargs["env"]

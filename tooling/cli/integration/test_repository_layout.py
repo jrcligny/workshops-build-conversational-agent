@@ -10,7 +10,7 @@ pytestmark = pytest.mark.shell
 def test_bootstrap_is_the_one_recorded_for_check_inert():
     from workshop_tools.cli import bootstrap_changes
 
-    assert bootstrap_changes() == [], "my-agent/ bootstrap changed: regenerate workshop_tests/inert_agent/bootstrap.sha256"
+    assert bootstrap_changes() == [], "my-agent/ bootstrap changed: regenerate tooling/cli/inert_agent/bootstrap.sha256"
 
 
 def test_every_workshop_folder_exists():

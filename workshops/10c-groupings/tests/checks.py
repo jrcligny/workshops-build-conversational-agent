@@ -6,7 +6,7 @@ computed by the application; for a refused aggregate, `result.refused` and
 `result.available_aggregates` returned by the application.
 """
 
-from workshop_tests.testing.turns import apply_rubric_repeatedly, successful_turn, tool_arguments, tool_name, tool_result, tools
+from testkit.turns import apply_rubric_repeatedly, successful_turn, tool_arguments, tool_name, tool_result, tools
 
 
 def expected_value(business_client, customer_name: str, aggregate: str, filters: dict) -> float:

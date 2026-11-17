@@ -6,8 +6,8 @@ with `on_behalf_of` and `assigned_to`), and `tools[].result.status` ("denied" on
 preparation). Purchase requests are written by the `buyer` role.
 """
 
-from workshop_tests.testing.chat_client import ChatClient
-from workshop_tests.testing.turns import apply_rubric_repeatedly, events_of, successful_turn, tool_status, tools
+from testkit.chat_client import ChatClient
+from testkit.turns import apply_rubric_repeatedly, events_of, successful_turn, tool_status, tools
 
 
 def open_client(services, user: dict) -> ChatClient:

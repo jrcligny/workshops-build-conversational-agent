@@ -26,9 +26,9 @@ import json
 import re
 
 from workshop_config import repo_path, settings
-from workshop_tests.evaluation.judge import judge
-from workshop_tests.testing.conversation import to_messages, tool_results
-from workshop_tests.testing.turns import (
+from evaluation.judge import judge
+from testkit.conversation import to_messages, tool_results
+from testkit.turns import (
     business_log,
     events_of,
     history,

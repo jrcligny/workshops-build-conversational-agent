@@ -3,7 +3,7 @@
 The trace checks (and the contract they read) are in `checks.py`; their cases in `cases.yaml`.
 
 Routes: official routes in `workshops/17-evaluation/routes/cases/`, the student's own in
-`my-agent/routes/` (same YAML format, see `workshop_tests/evaluation/route_runner.py`);
+`my-agent/routes/` (same YAML format, see `route_runner.py`, next to this file);
 the runner writes `my-agent/route-report.json`. The test checks the report, not keywords.
 """
 
@@ -11,14 +11,14 @@ import json
 
 import pytest
 
-from workshop_tests.evaluation import route_runner
-from workshop_tests.evaluation.routes import expected_digest, routes_digest
-from workshop_tests.testing.cases import load_cases, load_checks
-from workshop_tests.testing.chat_client import ChatClient
+from testkit.cases import load_cases, load_checks
+from testkit.chat_client import ChatClient
 
 pytestmark = pytest.mark.workshop
 
 checks = load_checks(__file__)
+route_runner = load_checks(__file__, "route_runner.py")
+routes = load_checks(__file__, "routes.py")
 CASES = load_cases(__file__)
 
 
@@ -29,7 +29,7 @@ def test_masked_and_observable_traces(chat_client, traces):
 # Public only: the route tests have no input to vary, hence no case and no private variant.
 def test_student_routes_cover_every_edge_case():
     assert route_runner.load_routes(route_runner.official_dir(), "official"), "official routes are published"
-    assert routes_digest() == expected_digest(), "the official routes are not modified"
+    assert routes.routes_digest() == routes.expected_digest(), "the official routes are not modified"
     routes = route_runner.load_routes(route_runner.student_dir(), "student")
     assert routes, "my-agent/routes/ holds your own routes"
     invalid = {r["file"]: route_runner.validate(r) for r in routes if route_runner.validate(r)}

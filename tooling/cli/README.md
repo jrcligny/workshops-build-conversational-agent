@@ -17,11 +17,11 @@ project and invokes `workshop serve`, never installing test dependencies. The
 launcher synchronizes each of the six application projects independently with
 its own lockfile and environment. Ctrl+C stops only the services it started.
 
-Workshop checks delegate to the separate [test environment](../../workshop_tests/README.md).
-Prepare it before checking:
+Workshop checks run pytest with this project's `tests` dependency group (see the
+[test environment](../testkit/README.md)). Prepare it before checking:
 
 ```powershell
-uv sync --project workshop_tests --locked --python 3.13
+uv sync --project tooling/cli --group tests --locked --python 3.13
 uv run --project tooling/cli workshop check 03
 uv run --project tooling/cli workshop check 07 --non-regression
 uv run --project tooling/cli workshop check-bootstrap

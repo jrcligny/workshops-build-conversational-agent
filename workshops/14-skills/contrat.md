@@ -68,7 +68,7 @@ Extrait de trace attendu pour nina-accountant (noms d'outils donnés à titre d'
 
 1. Vérifiez le catalogue :
    ```powershell
-   uv run --project workshop_tests python -c "from agent_sdk.skills import load_manifest, skill_folders; print(load_manifest()); print(skill_folders())"
+   uv run --project tooling/cli --group tests python -c "from agent_sdk.skills import load_manifest, skill_folders; print(load_manifest()); print(skill_folders())"
    ```
 2. `uv run --project tooling/cli workshop serve`, puis http://127.0.0.1:8080 : posez les questions sous les trois identités.
 3. Lisez la dernière ligne de `traces/turns.jsonl` : `skills_loaded`, `offered_tools`, `tools[].cycle`.

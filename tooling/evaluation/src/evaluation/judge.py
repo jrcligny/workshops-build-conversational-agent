@@ -10,7 +10,7 @@
    `auto` (default) uses it when it is configured.
 
 Rubrics are applied k times out of n on fresh conversations by
-`workshop_tests.testing.turns.apply_rubric_repeatedly` (`JUDGE_K`, `JUDGE_N`).
+`testkit.turns.apply_rubric_repeatedly` (`JUDGE_K`, `JUDGE_N`).
 """
 
 from __future__ import annotations
