@@ -4,7 +4,7 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'objectif de l
 
 ## Conversations écrites, un seul tour joué
 
-Les tests ne jouent pas les tours anciens : ils **chargent une conversation déjà écrite** (`tests/cases.yaml`, `scenario.conversation`) dans le contexte de votre agent, avec `POST /conversations/{id}/history`, puis jouent en direct le seul tour vérifié. Cette conversation contient de vrais échanges métier : messages de l'utilisateur, appels d'outils avec leurs arguments et leurs résultats, réponses de l'agent. Les noms d'outils y sont neutres (`search_customers`, `list_orders`, `get_order`) : votre agent rejoue ces messages tels quels, même si ces outils ne sont pas ceux qu'il propose, et n'appelle que ses propres outils.
+Les tests ne jouent pas les tours anciens : ils **chargent une conversation déjà écrite** (`tests/cases.yaml`, `scenario.conversation`) dans le contexte de votre agent, avec `POST /conversations/{id}/history`, puis jouent en direct le seul tour vérifié. Cette conversation contient de vrais échanges métier : messages de l'utilisateur, appels d'outils avec leurs arguments et leurs résultats, réponses de l'agent. Les noms d'outils y sont neutres (`resolve_name`, `query` — l'outil d'interrogation générique de l'atelier 06 —, `get_order`) : votre agent rejoue ces messages tels quels, même si ces outils ne sont pas ceux qu'il propose, et n'appelle que ses propres outils.
 
 Les faits clés (la cliente choisie entre deux homonymes, sa commande, son statut, son montant) ne figurent **que** dans des résultats d'outils et des réponses de l'agent, jamais dans un message de l'utilisateur conservé tel quel.
 
@@ -77,7 +77,7 @@ Utilisateur : camille-renard (`customer_service`, `organization-a`), jeu de donn
   "compaction": {
     "threshold": 8,
     "kept_turns": 2,
-    "cleared_tool_results": [{"tool_call_id": "call_1_0", "name": "search_customers", "turn": 1}],
+    "cleared_tool_results": [{"tool_call_id": "call_1_0", "name": "resolve_name", "turn": 1}],
     "summarized_turns": 6,
     "system_prompt": "Tu résumes une conversation de service client…",
     "previous_summary": "",

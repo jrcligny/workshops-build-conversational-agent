@@ -8,20 +8,20 @@ scenario:
   conversation:         # exactly `threshold` turns
     - user: "Je traite la réclamation d'une cliente, Léa Martin : elle trouve sa commande en cours trop chère."
       tools:
-        - name: search_customers
-          arguments: {name: "Léa Martin"}
+        - name: resolve_name
+          arguments: {entity_type: customer, name: "Léa Martin"}
           result:
             status: ok
-            customers:
+            matches:
               - {id: C-MARTIN-LILLE, name: "Léa Martin", city: Lille}
               - {id: C-MARTIN-LYON, name: "Léa Martin", city: Lyon}
       answer: "Deux clientes portent ce nom : Léa Martin à Lille et Léa Martin à Lyon. De laquelle s'agit-il ?"
     - user: "Celle du Nord."
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-MARTIN-LILLE}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-MARTIN-LILLE}}
           result:
-            orders:
+            rows:
               - {reference: CMD-2010, status: shipped, amount: 450.0}
             total: 1
       answer: "Léa Martin (Lille) a une seule commande : CMD-2010, expédiée."
@@ -39,10 +39,10 @@ scenario:
       answer: "C'est noté : elle souhaite un rappel en fin de semaine. Je ne peux pas programmer ce rappel moi-même."
     - user: "A-t-elle d'autres commandes en attente ?"
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-MARTIN-LILLE}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-MARTIN-LILLE}}
           result:
-            orders:
+            rows:
               - {reference: CMD-2010, status: shipped, amount: 450.0}
             total: 1
       answer: "Non, c'est sa seule commande."
@@ -50,10 +50,10 @@ scenario:
       answer: "Très bien. Souhaitez-vous autre chose sur ce dossier ?"
     - user: "Vérifiez quand même qu'elle n'a aucune commande en retard."
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-MARTIN-LILLE, filter: late}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-MARTIN-LILLE, late: true}}
           result:
-            orders: []
+            rows: []
             total: 0
       answer: "Aucune commande en retard pour cette cliente."
   continuation:         # threshold - keep_turns - 1 turns, appended after the turn that compacted

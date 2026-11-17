@@ -7,20 +7,20 @@ scenario:
   conversation:
     - user: "Un client, Hugo Petit, conteste ce qu'il a reçu."
       tools:
-        - name: search_customers
-          arguments: {name: "Hugo Petit"}
+        - name: resolve_name
+          arguments: {entity_type: customer, name: "Hugo Petit"}
           result:
             status: ok
-            customers:
+            matches:
               - {id: C-PETIT-BORDEAUX, name: "Hugo Petit", city: Bordeaux}
               - {id: C-PETIT-STRASBOURG, name: "Hugo Petit", city: Strasbourg}
       answer: "Deux clients portent ce nom : Hugo Petit à Bordeaux et Hugo Petit à Strasbourg. Lequel est-ce ?"
     - user: "Celui de l'Est."
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-PETIT-STRASBOURG}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-PETIT-STRASBOURG}}
           result:
-            orders:
+            rows:
               - {reference: CMD-3110, status: delivered, amount: 615.0}
             total: 1
       answer: "Hugo Petit (Strasbourg) a une commande : CMD-3110, livrée, d'un montant de 615,00 €."
@@ -30,10 +30,10 @@ scenario:
       answer: "Je ne peux pas accorder de geste commercial ; la demande doit passer par un responsable."
     - user: "Regardez quand même s'il a une commande en retard."
       tools:
-        - name: list_orders
-          arguments: {customer_id: C-PETIT-STRASBOURG, filter: late}
+        - name: query
+          arguments: {source: orders, filters: {customer_id: C-PETIT-STRASBOURG, late: true}}
           result:
-            orders: []
+            rows: []
             total: 0
       answer: "Aucune commande en retard pour ce client."
   continuation:
