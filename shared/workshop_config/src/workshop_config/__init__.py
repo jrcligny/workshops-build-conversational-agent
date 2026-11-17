@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     business_api_db: str = "business_api.db"
     docs_search_db: str = "docs_search.db"
     traces_dir: str = "traces"
+    # One JSON file per model call received by the proxy (full input and answer, no secret),
+    # read by the « Appels au modèle » view (`/calls` of the proxy). Empty: nothing is saved.
+    llm_calls_dir: str = ".workshop/llm-calls"
     # Everything a student edits lives in my-agent/. Relative paths resolve against the repository root.
     my_agent_dir: str = "my-agent"
     sandbox_policy_file: str = "my-agent/sandbox/policy.yaml"

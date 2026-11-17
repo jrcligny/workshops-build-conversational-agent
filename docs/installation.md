@@ -128,6 +128,26 @@ to shift **all six** ports by 10 when defaults are occupied. The UI then opens
 on port 8090, connected to the conversation API on 8010. Logs are written to
 `.workshop/logs/`, one file per service.
 
+### See what the model receives: the « Appels au modèle » view
+
+Every chat completion that reaches the model proxy is saved as one JSON file under
+`.workshop/llm-calls/<conversation_id>/call-0001.json` (setting `LLM_CALLS_DIR`;
+empty to save nothing), whatever the mode (simulated, replay, live). Each file holds
+the full input (model, messages, system prompt, tools, parameters) and the answer
+(content, tool calls, stop reason, token usage), or the error. Request headers and the
+course token are never written, and tokens found in the payload (JWT, `Bearer ...`,
+fields named like a secret, configured secrets) are masked.
+
+The gateway tags each model call with its conversation and turn (`ModelClient` sends
+the `X-Workshop-Conversation` and `X-Workshop-Turn` headers), with nothing to change in
+`my-agent/`. Calls without them (judge, direct HTTP calls) go to `_hors-conversation/`.
+
+Open <http://127.0.0.1:8003/calls> (the proxy port, shifted by `--port-offset`; the
+launcher prints the URL). The view lists the conversations, then shows each turn and
+each model call: what was sent, what came back, and how it differs from the previous
+call with the same system prompt (messages added, messages removed by a compaction,
+tools added or removed by progressive disclosure). It refreshes every 3 seconds.
+
 To explicitly reset the business dataset and rebuild the index, add
 `--reset-data`. **This discards local
 business changes.** It is never done automatically on an existing dataset.

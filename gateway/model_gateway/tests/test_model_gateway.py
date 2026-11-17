@@ -93,3 +93,52 @@ def test_live_mode_without_settings_is_explicit(monkeypatch):
         live.chat([{"role": "user", "content": "bonjour"}])
     assert exc.value.status_code == 503
     assert "AZURE_OPENAI_API_KEY" in exc.value.detail
+
+def test_model_call_saved_with_its_turn_and_without_secret(services, reset_state):
+    from model_gateway import calls
+    from model_gateway.tokens import issue_student_token
+
+    token = issue_student_token("calls-student")
+    secret = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.c2lnbmF0dXJl"
+    tools = [{"type": "function", "function": {"name": "get_order", "parameters": {"type": "object"}}}]
+    messages = [
+        {"role": "system", "content": "Tu es un agent."},
+        {"role": "user", "content": f"Bonjour, mon jeton est {secret}", "app_token": "abc"},
+    ]
+    r = httpx.post(
+        f"{services['proxy']}/v1/chat/completions",
+        headers={"Authorization": f"Bearer {token}", calls.CONVERSATION_HEADER: "conv-a", calls.TURN_HEADER: "2"},
+        json={"model": "default", "messages": messages, "tools": tools, "temperature": 0.2},
+        timeout=5,
+    )
+    assert r.status_code == 200
+    saved = calls.folder() / "conv-a" / "call-0001.json"
+    raw = saved.read_text(encoding="utf-8")
+    assert token not in raw and secret not in raw and '"abc"' not in raw
+    entry = calls.calls("conv-a")[0]
+    assert (entry["conversation_id"], entry["turn"], entry["call"], entry["status"]) == ("conv-a", 2, 1, 200)
+    assert entry["request"]["tools"] == tools and entry["request"]["temperature"] == 0.2
+    assert entry["request"]["messages"][0] == messages[0]
+    assert entry["response"]["content"] == r.json()["choices"][0]["message"]["content"]
+    assert entry["response"]["usage"] == r.json()["usage"]
+
+    listed = httpx.get(f"{services['proxy']}/calls/conversations", timeout=5).json()["conversations"]
+    assert any(c["id"] == "conv-a" and c["calls"] == 1 for c in listed)
+    assert httpx.get(f"{services['proxy']}/calls/conversations/conv-a?since=1", timeout=5).json()["calls"] == []
+    assert httpx.get(f"{services['proxy']}/calls/conversations/..%2Fx", timeout=5).status_code == 404
+    assert "Appels au modèle" in httpx.get(f"{services['proxy']}/calls", timeout=5).text
+
+
+def test_refused_model_call_saved_outside_any_conversation(services, reset_state):
+    from model_gateway import calls
+
+    httpx.post(f"{services['proxy']}/_test/failures", json={"type": "primary_model"}, timeout=5)
+    r = httpx.post(
+        f"{services['proxy']}/v1/chat/completions",
+        headers={**STUDENT, calls.CONVERSATION_HEADER: "../escape"},
+        json={"messages": [{"role": "user", "content": "bonjour"}]},
+        timeout=5,
+    )
+    assert r.status_code == 503
+    entry = calls.calls(calls.NO_CONVERSATION)[-1]
+    assert entry["status"] == 503 and entry["response"] is None and entry["turn"] is None

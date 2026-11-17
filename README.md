@@ -95,7 +95,11 @@ uv run --project tooling/cli workshop serve
 ```
 
 This starts the business API, document search, model proxy, MCP server,
-conversation API and browser UI. Open <http://127.0.0.1:8080>.
+conversation API and browser UI. Open <http://127.0.0.1:8080>. To see exactly what
+the model received at each call of each turn (messages, system prompt, tools, answer,
+tokens, and what changed since the previous call), open the « Appels au modèle » view
+at <http://127.0.0.1:8003/calls>; the calls are saved in `.workshop/llm-calls/`
+(see [installation](docs/installation.md)).
 Each Python project keeps its own dependencies, lockfile and virtual environment;
 the launcher synchronizes each of the six application projects independently.
 There is no root Python project, lockfile or virtual environment. Commands use

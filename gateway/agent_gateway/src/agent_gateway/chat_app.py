@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from agent_sdk.context import clear_contexts, context, seed
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
+from agent_sdk.model_client import turn_scope
 from agent_gateway.loader import load_harness
 
 app = FastAPI(title="Workshop chat interface", version="0.1.0")
@@ -20,6 +21,8 @@ _conversations: dict[str, dict] = {}
 _histories: dict[str, list[Message]] = defaultdict(list)
 _confirmations: dict[str, bool] = {}
 _interruptions: set[str] = set()
+# Turn number of each conversation, sent to the proxy with the model calls of the turn.
+_turn_numbers: dict[str, int] = {}
 _harness = None
 _urls: dict[str, str] = {}
 
@@ -41,6 +44,7 @@ def reset_conversations() -> None:
     _histories.clear()
     _confirmations.clear()
     _interruptions.clear()
+    _turn_numbers.clear()
     clear_contexts()
     global _harness
     _harness = None
@@ -173,21 +177,24 @@ def send_message(conversation_id: str, body: MessageIn):
     # A confirmation gesture applies to the next turn only: a later draft needs a new gesture.
     confirmation = _confirmations.pop(conversation_id, False)
     limits = meta.get("limits")
+    turn_number = _turn_numbers.get(conversation_id, len(history) // 2) + 1
+    _turn_numbers[conversation_id] = turn_number
 
     def stream():
         try:
-            events = list(
-                harness().turn(
-                    conversation_id,
-                    body.text,
-                    user,
-                    history,
-                    attachments=body.attachments,
-                    interrupt_requested=interrupt_requested,
-                    confirmation=confirmation,
-                    limits=limits,
+            with turn_scope(conversation_id, turn_number):
+                events = list(
+                    harness().turn(
+                        conversation_id,
+                        body.text,
+                        user,
+                        history,
+                        attachments=body.attachments,
+                        interrupt_requested=interrupt_requested,
+                        confirmation=confirmation,
+                        limits=limits,
+                    )
                 )
-            )
         except HarnessNotImplemented as exc:
             yield _sse(Event(type="error", data={"detail": str(exc)}))
             yield _sse(Event(type="end", data={"ok": False, "detail": str(exc)}))
