@@ -333,7 +333,8 @@ class Harness:
                     yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
                     if name == agent_preferences.REMEMBER:
                         result, entry = agent_preferences.remember(
-                            user, str(arguments.get("topic", "")), str(arguments.get("value", "")), message
+                            user, str(arguments.get("topic", "")), str(arguments.get("value", "")),
+                            message, str(arguments.get("user_words", "")),
                         )
                         if entry:
                             memory_trace["written"].append(entry)
