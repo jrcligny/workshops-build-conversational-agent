@@ -317,6 +317,9 @@ class Harness:
             except ModelUnavailable:
                 stop = "model_unavailable"
                 break
+            finally:
+                for call in model_calls:
+                    call.setdefault("cycle", cycle)
             requested = reply.get("tool_calls") or []
             if not requested:
                 text = reply.get("content") or ""
@@ -447,6 +450,8 @@ class Harness:
             offered_tools.append([])
             try:
                 reply = self._call(messages, None, model_calls, fallback)
+                for call in model_calls:
+                    call.setdefault("cycle", cycle)
             except ModelUnavailable:
                 reply = {"content": "je n'ai pas pu produire la synthèse : modèle principal et modèle de secours indisponibles."}
             text = reply.get("content") or ""

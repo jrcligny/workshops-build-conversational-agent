@@ -339,7 +339,7 @@ def find_by_name(name: str, ctx: Context, entity_type: str = "customer", city: s
     if found_type != entity_type:
         result["note_type"] = f"no {entity_type} with this name; found as {found_type}"
     if len(matches) > 1:
-        result["note"] = "several matches (namesakes): list them all and ask the user which one; never pick one"
+        result["note"] = "several matches (namesakes): never pick one yourself. If the user already designated one (e.g. by city) or asked about all of them, use those ids (in parallel when several); otherwise list them all and ask which one"
     return result
 
 
@@ -363,13 +363,12 @@ def query(
     group_by: list[str] | str | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    mode: str | None = None,
     filter: str | None = None,
 ) -> dict:
     """Generic read query on a data source (orders, customers, invoices, suppliers, purchase_requests).
 
     filters: object {field: value} with equality semantics; coded values accept the code or the business label.
-    On orders, {"late": true} keeps only late deliveries (selected by the application, never by you).
+    filter: 'late' (orders only) keeps only late deliveries, selected by the application, never by you.
     aggregate: 'count', 'total' or 'average' (amount), computed by the application. A number of rows is always
     aggregate='count', never a list counted afterwards.
     group_by: list of fields (e.g. ["supplier_id", "month"]); 'month' groups by the month of the source's date.
@@ -391,10 +390,6 @@ def query(
             return {"status": "error", "error": f"unknown filter {filter!r}; allowed values: late (orders only)",
                     "fix": "filter is 'late' on orders, or omitted"}
         late_only = True
-    if mode not in (None, "", "list", "count"):
-        return {"status": "error", "error": f"unknown mode {mode!r}", "fix": "mode is 'list' (default) or 'count'"}
-    if mode == "count" and not group_by:
-        aggregate = "count"
     if late_only:
         api_filters[LATE] = True
     keys = [group_by] if isinstance(group_by, str) else [str(k) for k in group_by or [] if k]
@@ -447,7 +442,7 @@ def query(
         )
         return result
     if keys:
-        rows = data.get("rows", [])
+        rows = _named_groups(api, data.get("rows", []), keys, meta)
         result.update({"group_by": keys, "aggregate": aggregate,
                        "computed_by": "business application (query tool), not by the model"})
     else:
@@ -476,6 +471,51 @@ def query(
             + "."
         )
     return result
+
+
+def _named_groups(api: BusinessAPI, rows: list[dict], keys: list[str], meta: dict) -> list[dict]:
+    """Adds `<key>_name` to the groups whose key is a relation (supplier_id -> suppliers.id), so that the answer
+    names suppliers or customers instead of quoting their identifiers."""
+    relations = {k: str(v).split(".")[0] for k, v in (meta.get("relations") or {}).items() if k in keys}
+    if not relations:
+        return rows
+    values = {k: set() for k in relations}
+    for row in rows:
+        group = row.get("group")
+        for key in relations:
+            value = group.get(key) if isinstance(group, dict) else (group if len(keys) == 1 else None)
+            if value:
+                values[key].add(str(value))
+    names = {key: _names_of(api, relations[key], ids) for key, ids in values.items() if ids}
+    named = []
+    for row in rows:
+        row = dict(row)
+        group = row.get("group")
+        for key, found in names.items():
+            if isinstance(group, dict) and group.get(key) in found:
+                row["group"] = {**row["group"], f"{key}_name": found[group[key]]}
+            elif not isinstance(group, dict) and str(group) in found:
+                row[f"{key}_name"] = found[str(group)]
+        named.append(row)
+    return named
+
+
+def _names_of(api: BusinessAPI, source: str, ids: set[str], pages: int = 10) -> dict[str, str]:
+    """Names of the records of `source` whose id is in `ids`, read page by page from the application."""
+    found: dict[str, str] = {}
+    offset = 0
+    for _ in range(pages):
+        code, data = api.request("POST", f"/sources/{source}/query",
+                                 json={"filters": {}, "limit": MAX_ROWS, "offset": offset})
+        if code != 200 or not isinstance(data, dict):
+            break
+        for row in data.get("rows", []):
+            if str(row.get("id")) in ids and row.get("name"):
+                found[str(row["id"])] = row["name"]
+        offset = data.get("next_offset")
+        if ids <= set(found) or offset is None:
+            break
+    return found
 
 
 # Detail fields left out of a listed order: they come from get_order, one order at a time.
