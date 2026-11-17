@@ -24,6 +24,8 @@ no_promise_to_remember:
 preference_absent_from_next_conversation:
   user: *paul
   message: *remember
+  topic: answer_format
+  value: table
   filler: "Parfait."
   ask: "Sous quelle forme est-ce que j'aime recevoir vos réponses ?"
   absent_from_context: ["sous forme de tableau", "answer_format"]
@@ -37,7 +39,9 @@ recurring_preference_reported_never_reloaded:
 
 business_data_never_reported:
   user: *paul
-  message: "Notez pour la suite que mon fournisseur préféré est Papeterie Atlantique et que mon IBAN est FR76 3000 6000 0112 3456 7890 189."
+  message: "Notez pour la suite que je veux les montants TTC, que mon fournisseur préféré est Papeterie Atlantique et que mon IBAN est FR76 3000 6000 0112 3456 7890 189."
+  topic: amount_display
+  value: including_tax
   never_reported: [Papeterie, FR76, "7890"]
   never_reported_kind: business data or bank details
   promises: *promises

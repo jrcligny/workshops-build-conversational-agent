@@ -23,6 +23,8 @@ no_promise_to_remember:
 preference_absent_from_next_conversation:
   user: *camille
   message: *remember
+  topic: amount_display
+  value: excluding_tax
   filler: "Merci."
   ask: "Quelle est ma préférence d'affichage des montants ?"
   absent_from_context: ["je préfère les montants hors taxes", hors taxes, excluding_tax]

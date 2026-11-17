@@ -64,14 +64,23 @@ def no_promise_to_remember(services, case: dict) -> None:
     apply_rubric(case["rubric"], turn, trace)
 
 
+def _reported(trace, topic: str, value: str) -> bool:
+    reports = trace.get("preference_reports") or []
+    return {"topic": topic, "value": value} in [{"topic": r.get("topic"), "value": r.get("value")} for r in reports]
+
+
 def preference_absent_from_next_conversation(services, case: dict) -> None:
     client = conversation(services, case["user"])
-    successful_turn(client, case["message"])
+    _, trace = successful_turn(client, case["message"])
+    assert _reported(trace, case["topic"], case["value"]), (
+        f"the preference is understood in its conversation: preference_reports holds {case['topic']} = {case['value']}"
+    )
     successful_turn(client, case["filler"])
 
     other = conversation(services, case["user"])
     _, trace = successful_turn(other, case["ask"])
     context = _plain(model_input(trace))
+    assert context.strip(), "the next conversation calls the model (model.input is traced)"
     leaked = [w for w in case["absent_from_context"] if _plain(w) in context]
     assert not leaked, f"nothing of the previous conversation reaches the next one (model.input holds {leaked})"
     loaded = (trace.get("memory") or {}).get("loaded") or []
@@ -86,9 +95,7 @@ def recurring_preference_reported_never_reloaded(services, case: dict) -> None:
     assert all(r.get("topic") in TOPICS and r.get("value") in TOPICS[r.get("topic")] for r in reports), (
         f"only planned topics and values are reported ({TOPICS})"
     )
-    assert {"topic": case["topic"], "value": case["value"]} in [{"topic": r.get("topic"), "value": r.get("value")} for r in reports], (
-        f"preference_reports holds {case['topic']} = {case['value']}"
-    )
+    assert _reported(trace, case["topic"], case["value"]), f"preference_reports holds {case['topic']} = {case['value']}"
     assert case["user"]["user_id"] not in str(reports), "the report names no user: it is a signal, not a memory"
 
     other = conversation(services, case["user"])
@@ -102,6 +109,9 @@ def business_data_never_reported(services, case: dict) -> None:
     reports = trace.get("preference_reports") or []
     assert all(r.get("topic") in TOPICS and r.get("value") in TOPICS[r.get("topic")] for r in reports), (
         "only planned topics and values are reported"
+    )
+    assert _reported(trace, case["topic"], case["value"]), (
+        f"the planned preference of the same request is reported: {case['topic']} = {case['value']}"
     )
     assert not any(data in str(reports) for data in case["never_reported"]), f"no {case['never_reported_kind']} in the reports"
     mentions_none(turn, case["promises"], "the agent does not promise to remember", strict=False)
