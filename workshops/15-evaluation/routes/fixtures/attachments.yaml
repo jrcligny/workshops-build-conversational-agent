@@ -1,0 +1,3 @@
+# Business record each attachment is attached to (route of the business API): paul-buyer can read it.
+sample-quote.txt:
+  record: orders/CMD-2010
