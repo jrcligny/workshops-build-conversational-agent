@@ -1,4 +1,4 @@
-"""Context control (07, 08): size of a model input, and compaction of the stored context.
+"""Context control (09, 10): size of a model input, and compaction of the stored context.
 
 The context of a conversation is `agent_sdk.context`: every message the model has seen. Once it
 holds `compaction_message_threshold` turns at the start of a turn, the turn compacts it:

@@ -1,4 +1,4 @@
-"""Versioned skills, loaded on demand by the harness (workshop 14).
+"""Versioned skills, loaded on demand by the harness (workshop 13).
 
 The catalog is my-agent/skills/manifest.yaml (read through the kit's `load_manifest`). Only its skills
 load; any other id is refused. A loaded skill brings its instructions into the model input on every

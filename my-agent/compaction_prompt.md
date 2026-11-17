@@ -1,5 +1,5 @@
 <!--
-Compaction prompt of the agent (workshop 08). agent_context.py loads this file when the turn compacts
+Compaction prompt of the agent (workshop 10). agent_context.py loads this file when the turn compacts
 and removes these HTML comments; the rest is the system message of the separate model call that writes
 the summary, and appears in the trace as compaction.system_prompt.
 -->

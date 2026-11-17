@@ -360,7 +360,7 @@ def query(
     ctx: Context,
     filters: dict[str, Any] | str | None = None,
     aggregate: str | None = None,
-    group_by: str | None = None,
+    group_by: list[str] | str | None = None,
     limit: int | None = None,
     offset: int | None = None,
     mode: str | None = None,
@@ -369,14 +369,13 @@ def query(
     """Generic read query on a data source (orders, customers, invoices, suppliers, purchase_requests).
 
     filters: object {field: value} with equality semantics; coded values accept the code or the business label.
-    On orders, {"late": true} keeps only late deliveries (applied here, never filter a list yourself).
-    aggregate: 'count', 'total' or 'average' (amount); group_by: a field. Without aggregate, at most 20 rows
-    are returned together with the total; a number of rows (orders of a customer included) is
-    aggregate='count', counted exactly by the application; mode='count' is for late orders (filter 'late').
-    Orders of one customer (filters {customer_id[, late]}) come back as a summarized portion: `orders`,
-    `returned`, `total`, `total_status` ('exact' or 'minimum' at the application's retrieval cap), `truncated`
-    and `next_offset`; pass offset=next_offset for the following portion.
-    filter: 'late' (orders only) keeps only late deliveries, selected by the application, never by you.
+    On orders, {"late": true} keeps only late deliveries (selected by the application, never by you).
+    aggregate: 'count', 'total' or 'average' (amount), computed by the application. A number of rows is always
+    aggregate='count', never a list counted afterwards.
+    group_by: list of fields (e.g. ["supplier_id", "month"]); 'month' groups by the month of the source's date.
+    Without aggregate, a bounded portion of at most 20 summarized rows comes back with `returned`, `total`,
+    `total_status` ('exact', or 'minimum' when the application's retrieval cap is reached), `truncated`,
+    `offset` and `next_offset`; pass offset=next_offset for the following portion, only when asked.
     The detail of one order (amount, delivery) comes from get_order.
     Every coded value comes back with its business label (field_label).
     """
@@ -394,14 +393,11 @@ def query(
         late_only = True
     if mode not in (None, "", "list", "count"):
         return {"status": "error", "error": f"unknown mode {mode!r}", "fix": "mode is 'list' (default) or 'count'"}
-    if mode == "count" and not late_only and not group_by:
-        # A plain number is counted by the application itself: exact, not bounded by the retrieval cap.
+    if mode == "count" and not group_by:
         aggregate = "count"
-    if source == "orders" and set(api_filters) == {"customer_id"} and not group_by and (
-        aggregate is None or (mode == "count" and aggregate == "count" and late_only)
-    ):
-        return _customer_orders(api, meta, str(api_filters["customer_id"]), late_only,
-                                "count" if mode == "count" else "list", limit, offset)
+    if late_only:
+        api_filters[LATE] = True
+    keys = [group_by] if isinstance(group_by, str) else [str(k) for k in group_by or [] if k]
     aggregates = meta.get("aggregates") or []
     if aggregate and aggregate not in aggregates:
         # The application states the refusal itself (with the aggregates it offers) when it knows the request.
@@ -419,29 +415,24 @@ def query(
             "fix": "use one of the available aggregates",
             "available_aggregates": aggregates,
         }
-    cap = min(int(limit or MAX_ROWS), MAX_ROWS)
+    cap = max(1, min(int(limit or MAX_ROWS), MAX_ROWS))
     body: dict[str, Any] = {"filters": api_filters}
-    if late_only:
-        # The late flag is computed: fetch the rows, filter them here, then aggregate or cap.
-        code, data = api.request("POST", f"/sources/{source}/query", json=body)
-        if code != 200:
-            return {"status": "error", "error": f"business API answered {code}", "detail": data}
-        rows = [r for r in data.get("rows", []) if r.get("late")]
-        data = _local_aggregate(rows, aggregate, group_by) if (aggregate or group_by) else {"rows": rows, "total": len(rows)}
-    else:
-        if aggregate:
-            body["aggregate"] = aggregate
-        if group_by:
-            body["group_by"] = group_by
-        if not (aggregate or group_by):
-            body["limit"] = cap
-        code, data = api.request("POST", f"/sources/{source}/query", json=body)
-        if code != 200:
-            detail = data.get("detail") if isinstance(data, dict) else data
-            return {"status": "error", "error": f"query refused ({code}): {detail}", "fields": sorted(meta.get("fields") or {})}
+    if aggregate:
+        body["aggregate"] = aggregate
+    if keys:
+        body["group_by"] = keys
+    if keys or not aggregate:
+        body["limit"] = cap
+        body["offset"] = max(int(offset or 0), 0)
+    code, data = api.request("POST", f"/sources/{source}/query", json=body)
+    if code != 200:
+        detail = data.get("detail") if isinstance(data, dict) else data
+        return {"status": "error", "error": f"query refused ({code}): {detail}",
+                "fields": sorted(meta.get("fields") or {}) + ([LATE] if source == "orders" else [])}
     if isinstance(data, dict) and data.get("refused"):
-        return {"status": "error", "refused": True, "error": data.get("reason"), "available_aggregates": data.get("available_aggregates")}
-    result: dict[str, Any] = {"status": "ok", "source": source, "filters": {**api_filters, **({LATE: True} if late_only else {})}}
+        return {"status": "error", "refused": True, "error": data.get("reason"),
+                "available_aggregates": data.get("available_aggregates")}
+    result: dict[str, Any] = {"status": "ok", "source": source, "filters": api_filters}
     customer_id = api_filters.get("customer_id")
     if source == "orders" and customer_id:
         result["customer"] = _customer(api, customer_id)
@@ -455,113 +446,46 @@ def query(
             }
         )
         return result
-    if group_by:
-        groups = data.get("rows", [])
-        result.update(
-            {
-                "group_by": group_by,
-                "aggregate": aggregate,
-                "groups_total": len(groups),
-                "groups": groups[:MAX_ROWS],
-                "groups_truncated": len(groups) > MAX_ROWS,
-                "computed_by": "business application (query tool), not by the model",
-            }
-        )
-        return result
-    rows = data.get("rows", [])
-    total = data.get("total")
-    shown = rows[:cap]
-    cap_reached = len(rows) > cap or bool(data.get("truncated")) or len(shown) >= cap
-    total_is_minimum = total is None and cap_reached
+    if keys:
+        rows = data.get("rows", [])
+        result.update({"group_by": keys, "aggregate": aggregate,
+                       "computed_by": "business application (query tool), not by the model"})
+    else:
+        rows = [_summary(_labelled(r, meta), source) for r in data.get("rows", [])]
     result.update(
         {
-            "total": total if total is not None else len(shown),
-            "total_is_minimum": total_is_minimum,
-            "returned": len(shown),
-            "cap": cap,
-            "cap_reached": cap_reached,
-            "rows": [_labelled(r, meta) for r in shown],
-        }
-    )
-    if cap_reached and (total is None or total > len(shown)):
-        result["truncated"] = True
-        result["note"] = (
-            f"partial list: only {len(shown)} rows shown (cap {cap}); "
-            + (f"at least {len(shown)} rows exist (minimum)" if total_is_minimum else f"exact total {total}")
-            + ". Say the answer is partial and give the total; use aggregate='count' for the number only."
-        )
-    return result
-
-
-SUMMARY_FIELDS = ("reference", "status", "status_label", "order_date", "late")
-
-
-def _customer_orders(
-    api: BusinessAPI, meta: dict, customer_id: str, late_only: bool, mode: str, limit: int | None, offset: int | None
-) -> dict:
-    """One bounded, summarized portion of a customer's orders (or only their number in count mode)."""
-    cap = max(1, min(int(limit or MAX_ROWS), MAX_ROWS))
-    params: dict[str, Any] = {"limit": 0 if mode == "count" else cap, "offset": max(int(offset or 0), 0)}
-    if late_only:
-        params["filter"] = LATE
-    code, data = api.request("GET", f"/customers/{customer_id}/orders", params=params)
-    if code != 200:
-        return {"status": "error", "error": f"business API answered {code}", "customer_id": customer_id}
-    result: dict[str, Any] = {
-        "status": "ok",
-        "source": "orders",
-        "filters": {"customer_id": customer_id, **({LATE: True} if late_only else {})},
-        "customer": _customer(api, customer_id),
-        "total": data.get("total"),
-        "total_status": data.get("total_status"),
-    }
-    if mode == "count":
-        result["count"] = data.get("total")
-        result["value"] = data.get("total")
-        if data.get("total_status") == "minimum":
-            result["note"] = f"at least {data.get('total')} orders (application retrieval cap): say 'au moins'"
-        return result
-    orders = [{k: v for k, v in _labelled(r, meta).items() if k in SUMMARY_FIELDS} for r in data.get("orders", [])]
-    result.update(
-        {
-            "orders": orders,
-            "returned": len(orders),
+            "rows": rows,
+            "returned": len(rows),
+            "total": data.get("total"),
+            "total_status": data.get("total_status") or "exact",
+            "truncated": bool(data.get("truncated")),
             "offset": data.get("offset", 0),
             "next_offset": data.get("next_offset"),
-            "truncated": bool(data.get("truncated")),
         }
     )
     if result["truncated"]:
-        minimum = data.get("total_status") == "minimum"
+        minimum = result["total_status"] == "minimum"
+        what = "groups" if keys else "rows"
         result["note"] = (
-            f"partial list: only an extract of {len(orders)} orders is shown; total "
-            + (f"is a MINIMUM: at least {data.get('total')} orders (application retrieval cap)" if minimum
-               else f"{data.get('total')} (exact)")
-            + (f". Write 'au moins {data.get('total')} commandes' in the answer, as is, without another call to count them"
-               if minimum else "")
+            f"partial result: only an extract of {len(rows)} {what} is shown; total "
+            + (f"is a MINIMUM: at least {result['total']} {what} (application retrieval cap): write "
+               f"'au moins {result['total']}'" if minimum else f"{result['total']} (exact)")
             + ". Say the answer is partial and give the total"
-            + (f"; next portion with offset={data.get('next_offset')}, only when the user asks for it"
-               if data.get("next_offset") is not None else "")
-            + ". Amounts and delivery details come from get_order."
+            + (f"; next portion with offset={result['next_offset']}, only when the user asks for it"
+               if result["next_offset"] is not None else "")
+            + "."
         )
     return result
 
 
-def _local_aggregate(rows: list[dict], aggregate: str | None, group_by: str | None) -> dict:
-    def value(items: list[dict]) -> float | int:
-        amounts = [float(r.get("amount") or 0) for r in items]
-        if aggregate == "total":
-            return round(sum(amounts), 2)
-        if aggregate == "average":
-            return round(sum(amounts) / len(amounts), 2) if amounts else 0
-        return len(items)
+# Detail fields left out of a listed order: they come from get_order, one order at a time.
+ORDER_DETAIL_FIELDS = {"amount", "delivery_city", "delivery_date", "customer_id", "organization_id", "deleted"}
+HIDDEN_FIELDS = {"organization_id", "deleted"}
 
-    if group_by:
-        groups: dict[str, list[dict]] = {}
-        for r in rows:
-            groups.setdefault(str(r.get(group_by, "")), []).append(r)
-        return {"rows": [{"group": k, "count": len(v), aggregate or "count": value(v)} for k, v in groups.items()]}
-    return {"value": value(rows), "aggregate": aggregate, "total": len(rows)}
+
+def _summary(row: dict, source: str) -> dict:
+    hidden = ORDER_DETAIL_FIELDS if source == "orders" else HIDDEN_FIELDS
+    return {k: v for k, v in row.items() if k not in hidden}
 
 
 # ------------------------------------------------------------------------------------------------ writes
@@ -573,7 +497,7 @@ WRITE_PERMISSIONS = {
 }
 DRAFT_TYPES = {"purchase_request": "prepare_purchase_request", "invoice_approval": "prepare_invoice_approval"}
 # Submission is the harness's job after the user's gesture: never offered to the model.
-HARNESS_ONLY_TOOLS = {"submit_draft"}
+HARNESS_ONLY_TOOLS = {"submit_draft", "check_record"}
 
 
 def allowed_tools(role: str | None) -> set[str]:
@@ -672,6 +596,23 @@ def submit_draft(draft_id: str, ctx: Context) -> dict:
     return {"status": "submitted", "draft_id": draft_id, "result": body}
 
 
+RECORD_ROUTE = re.compile(r"(orders|invoices|customers|suppliers|purchase-requests)/[A-Za-z0-9][A-Za-z0-9_-]*")
+
+
+def check_record(record: str, ctx: Context) -> dict:
+    """Can the user consult this business record (e.g. orders/CMD-2010)? Called by the harness only.
+
+    Read with the user's own (exchanged) token: the application applies their organization and role.
+    """
+    record = (record or "").strip().strip("/")
+    if not RECORD_ROUTE.fullmatch(record):
+        return {"status": "denied", "record": record, "error": "not a business record route"}
+    code, _ = _api(ctx).request("GET", f"/{record}")
+    if code == 200:
+        return {"status": "ok", "record": record}
+    return {"status": "not_found" if code == 404 else "denied", "record": record, "code": code}
+
+
 def search_documents(ctx: Context, query: str) -> dict:
     """Searches the internal documentation (procedures, definitions) for passages answering a question.
 
@@ -749,7 +690,7 @@ def create_server() -> MCPServer:
     )
     for tool in (
         get_order, find_by_name, describe_source, query, search_documents, fetch_url,
-        prepare_purchase_request, prepare_invoice_approval, submit_draft,
+        prepare_purchase_request, prepare_invoice_approval, submit_draft, check_record,
     ):
         server.tool()(_guarded(tool))
     return server

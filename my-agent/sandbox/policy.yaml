@@ -1,4 +1,4 @@
-# Sandbox policy of the tool server (workshop 10d). Read by agent_sdk.sandbox (setting `sandbox_policy_file`)
+# Sandbox policy of the tool server (workshop 07). Read by agent_sdk.sandbox (setting `sandbox_policy_file`)
 # and enforced by my-agent/agent_sandbox.py (degraded mode: filter in the HTTP client, no container).
 active: true
 # Hosts the tool server may reach: the business API only (local run and in-process test host).

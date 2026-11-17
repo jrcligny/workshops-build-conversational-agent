@@ -1,4 +1,4 @@
-# Versioned skills catalog (workshop 14). Read by agent_sdk.skills (setting `skills_dir`) and by
+# Versioned skills catalog (workshop 13). Read by agent_sdk.skills (setting `skills_dir`) and by
 # my-agent/agent_skills.py. Only the skills listed here can be loaded; a write tool is offered to the
 # model only once the skill that unlocks it is loaded, and only if the user's role allows it.
 version: "1"

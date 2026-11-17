@@ -1,4 +1,4 @@
-"""Sandbox policy of the tool server (workshop 10d), degraded mode without a container.
+"""Sandbox policy of the tool server (workshop 07), degraded mode without a container.
 
 The policy lives in sandbox/policy.yaml (read through the kit's `policy()`). Egress is filtered in the
 HTTP client of the tool server: only http(s) destinations whose host is on the allowlist are reached,

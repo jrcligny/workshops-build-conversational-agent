@@ -26,7 +26,7 @@ class WorkingMemory:
     def rebuild(self, conversation_id: str, messages: list[dict[str, Any]], lookup) -> None:
         """A loaded conversation comes without state: replay its tool results, turn by turn, to rebuild it.
 
-        Written histories may name tools this agent does not offer (search_customers, list_orders): their
+        Written histories may name neutral tools (resolve_name, query, search_customers, list_orders): their
         results are read the same way as those of find_by_name and query."""
         calls: dict[str, tuple[str, dict]] = {}
         for message in messages:
@@ -106,7 +106,8 @@ class WorkingMemory:
             if customer_id and customer_id in known and conversation_id in self._choice_pending:
                 # Control: a namesake is recorded as current customer only after the user's choice.
                 return
-            if isinstance(result.get("orders"), list):
+            orders = result.get("rows") if not result.get("group_by") else None
+            if isinstance(orders, list) and "total" in result:
                 state["last_listing"] = {
                     "filters": result.get("filters"),
                     "returned_until": (result.get("offset") or 0) + (result.get("returned") or 0),
@@ -123,7 +124,7 @@ class WorkingMemory:
                     or lookup(customer_id)
                 )
                 self._set_customer(state, customer or {"id": customer_id, "name": customer_id})
-                orders = result.get("orders") or []
+                orders = orders or []
                 if len(orders) == 1 and result.get("total") == 1 and orders[0].get("reference"):
                     # The customer's only order is the one the conversation is about.
                     state["current_order"] = {
@@ -156,17 +157,23 @@ class WorkingMemory:
 
 
 def _normalized(name: str, arguments: dict, result: dict) -> tuple[str, dict, dict]:
-    """Maps the results of neutral tool names onto this agent's own tools."""
-    if name == "search_customers":
-        customers = result.get("customers") or result.get("matches") or []
-        return "find_by_name", arguments, {"status": "ok", "entity_type": "customer", "matches": customers}
-    if name == "list_orders":
-        customer_id = arguments.get("customer_id") or (arguments.get("filters") or {}).get("customer_id")
-        orders = result.get("orders") or []
+    """Maps the results of neutral tool names (written histories) onto this agent's own tools."""
+    if name in ("resolve_name", "search_customers"):
+        entity_type = arguments.get("entity_type") or "customer"
+        matches = result.get("matches") or result.get("customers") or []
+        status = result.get("status") or ("ok" if matches else "not_found")
+        return "find_by_name", arguments, {"status": status, "entity_type": entity_type, "matches": matches}
+    if name in ("query", "list_orders") and "rows" in result or name == "list_orders":
+        filters = dict(arguments.get("filters") or {})
+        if arguments.get("customer_id"):
+            filters["customer_id"] = arguments["customer_id"]
+        rows = result.get("rows") if "rows" in result else result.get("orders") or []
+        source = arguments.get("source") or "orders"
+        offset = result.get("offset") or arguments.get("offset") or 0
         return "query", arguments, {
-            "status": "ok", "source": "orders", "filters": {"customer_id": customer_id}, "orders": orders,
-            "offset": 0, "returned": len(orders), "next_offset": None, "total": result.get("total", len(orders)),
-            "total_status": "exact",
+            **result, "status": result.get("status") or "ok", "source": source, "filters": filters, "rows": rows,
+            "offset": offset, "returned": result.get("returned", len(rows)), "next_offset": result.get("next_offset"),
+            "total": result.get("total", len(rows)), "total_status": result.get("total_status", "exact"),
         }
     if name == "get_order" and result.get("status") == "ok":
         return name, arguments, {**result, "status": "found"}

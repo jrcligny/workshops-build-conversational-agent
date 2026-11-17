@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import agent_attachments  # noqa: E402
 import agent_context  # noqa: E402
+import agent_controls  # noqa: E402
 import agent_mcp  # noqa: E402
 import agent_memory  # noqa: E402
 import agent_observability  # noqa: E402
@@ -47,7 +48,7 @@ CYCLE_LIMIT_INSTRUCTION = (
 PER_TOOL_LIMITS = {"get_order": 1}
 READ_RETRIES = 1
 # Bump when system_prompt.md changes meaningfully; the trace also records its hash.
-INSTRUCTIONS_VERSION = "instructions-18"
+INSTRUCTIONS_VERSION = "instructions-v2-01"
 PRIMARY_MODEL = "default"
 FALLBACK_MODEL = "fallback"
 FALLBACK_NOTICE = "Le modèle principal est indisponible : cette réponse vient du modèle de secours (bascule unique)."
@@ -125,7 +126,7 @@ class Harness:
         return f"{len(documents)}+{_digest(chr(10).join(documents))}"
 
     def _summarize(self, request: list[dict[str, Any]]) -> tuple[str, dict | None]:
-        """The compaction summary: a separate call, without tools, with the compaction prompt (08)."""
+        """The compaction summary: a separate call, without tools, with the compaction prompt (10)."""
         for model in (PRIMARY_MODEL, FALLBACK_MODEL):
             started = time.perf_counter()
             try:
@@ -199,9 +200,8 @@ class Harness:
         replayed = ctx.messages
         summary = ctx.summary
         self.memory.begin_turn(conversation_id)
-        remembered = agent_preferences.load(user)
-        memory_trace: dict[str, list] = {"loaded": remembered, "written": [], "deleted": []}
-        memory_events: list[dict] = []
+        opening = not ctx.messages
+        preference_reports: list[dict] = []
         state_before = self.memory.get(conversation_id)
         state_text = self.memory.render(conversation_id)
         allowed_writes = mcp_server.allowed_tools(user.role)
@@ -210,8 +210,9 @@ class Harness:
         gated = agent_skills.gated_tools()
         mcp_specs = agent_mcp.tool_specs(token)
         attachment_ids = self.attachments.attach(conversation_id, user.organization, user.id, attachments)
-        # Untrusted content entered this turn: no write tool until the end of the turn.
-        writes_removed = bool(attachments)
+        # Once untrusted content (attachment, documentation passage) has been read, no write tool until the end
+        # of the turn; before the read, the offer is unchanged.
+        writes_removed = False
         attachments_read: list[str] = []
 
         def offered() -> list[dict]:
@@ -256,7 +257,7 @@ class Harness:
             *([{"role": "system", "content": f"{SUMMARY_HEADING}\n{summary}"},
                {"role": "system", "content": SUMMARY_NOTE}] if summary else []),
             {"role": "system", "content": _permissions_note(user.role, allowed_writes)},
-            {"role": "system", "content": agent_preferences.note(remembered)},
+            {"role": "system", "content": agent_preferences.NOTE},
             *([{"role": "system", "content": state_text}] if state_text else []),
             *([{"role": "system", "content": agent_skills.render(loaded_skills)}] if loaded_skills else []),
             *([{"role": "system", "content": agent_attachments.attachments_note(attachment_ids)}] if attachment_ids else []),
@@ -272,7 +273,7 @@ class Harness:
 
         tool_calls_done: list[dict] = []
         model_calls: list[dict] = []
-        # What the model could call, one list per model call, in order (workshops 14 and 15).
+        # What the model could call, one list per model call, in order (workshops 13 and 14).
         offered_tools: list[list[str]] = []
         mentions: list[str] = []
         stop: str | None = None
@@ -351,22 +352,14 @@ class Harness:
                     result = {"status": "error", "error": "identical call already made in this turn: use its result"}
                 elif used >= PER_TOOL_LIMITS.get(name, MAX_TOOL_CALLS):
                     result = {"status": "error", "error": f"{name} already used for this message: answer now"}
-                elif name in (agent_preferences.REMEMBER, agent_preferences.FORGET):
+                elif name == agent_preferences.REPORT:
                     yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
-                    if name == agent_preferences.REMEMBER:
-                        result, entry = agent_preferences.remember(
-                            user, str(arguments.get("topic", "")), str(arguments.get("value", "")),
-                            message, str(arguments.get("user_words", "")),
-                        )
-                        if entry:
-                            memory_trace["written"].append(entry)
-                            memory_events.append({"action": "written", "topic": entry["topic"], "value": entry["value"]})
-                    else:
-                        result, deleted = agent_preferences.forget(user, arguments.get("topic"))
-                        memory_trace["deleted"].extend(deleted)
-                        memory_events.extend(
-                            {"action": "deleted", "topic": e["topic"], "value": e["value"]} for e in deleted
-                        )
+                    result, reported = agent_preferences.report(
+                        str(arguments.get("topic", "")), str(arguments.get("value", "")),
+                        message, str(arguments.get("user_words", "")),
+                    )
+                    if reported and reported not in preference_reports:
+                        preference_reports.append(reported)
                     record_tool(
                         {"name": name, "arguments": arguments, "result": result, "cycle": cycle, "via": "harness",
                          "transport": "harness"}
@@ -374,7 +367,8 @@ class Harness:
                 elif name == agent_attachments.READ_ATTACHMENT:
                     yield Event(type="step", data={"cycle": cycle, "tool": name, "label": _step_label(name, arguments)})
                     result = self.attachments.read(
-                        conversation_id, user.organization, user.id, str(arguments.get("attachment_id", ""))
+                        conversation_id, user.organization, user.id, str(arguments.get("attachment_id", "")),
+                        lambda record: agent_mcp.call(token, "check_record", {"record": record}),
                     )
                     if result["status"] == "ok":
                         attachments_read.append(result["attachment_id"])
@@ -427,6 +421,13 @@ class Harness:
                          **({"attempts": attempts} if attempts > 1 else {})}
                     )
                     self.memory.update(conversation_id, name, arguments, result, lookup)
+                    if name in UNTRUSTED_READS and result.get(UNTRUSTED_READS[name]) and not writes_removed:
+                        # Third-party text entered the context: the next cycles get no write tool.
+                        writes_removed = True
+                        result = {**result, "write_tools": "removed until the end of the turn (untrusted content read)"}
+                        tool_calls_done[-1]["result"] = result
+                        tool_specs = offered()
+                        tools = {spec["function"]["name"] for spec in tool_specs}
                 messages.append(
                     {"role": "tool", "tool_call_id": call.get("id"), "name": name,
                      "content": json.dumps(result, ensure_ascii=False)}
@@ -524,6 +525,9 @@ class Harness:
                 text = "(Modèle principal indisponible : réponse produite par le modèle de secours.) " + text
         text, cited = _cited_passages(text)
         sources = _sources(tool_calls_done, cited)
+        unverified = agent_controls.unverified_references(text, tool_calls_done, replayed, summary)
+        if unverified:
+            mentions.append(agent_controls.unverified_mention(unverified))
 
         last = model_calls[-1] if model_calls else {"id": None, "usage": {}, "stop_reason": None}
         tracer.write(
@@ -542,7 +546,6 @@ class Harness:
                 ],
                 "input": {
                     "system_prompt": system_prompt,
-                    "memory": agent_preferences.note(remembered),
                     "skills": agent_skills.render(loaded_skills) if loaded_skills else None,
                     "state": state_before,
                     "history": replayed,
@@ -557,7 +560,7 @@ class Harness:
                     "calls": model_calls,
                 },
                 "versions": self._versions(mcp_specs, token, system_prompt),
-                "memory": memory_trace,
+                "preference_reports": preference_reports,
                 **({"fallback": {"from": PRIMARY_MODEL, "to": FALLBACK_MODEL, "reason": fallback["primary_error"],
                                  **({"failed": fallback["failed"]} if fallback.get("failed") else {})}}
                    if fallback["used"] else {}),
@@ -587,6 +590,7 @@ class Harness:
                     "writes_removed": writes_removed,
                 },
                 "sources": sources,
+                "unverified_references": unverified,
                 **({"submission": submission} if submission else {}),
                 **({"compaction": compacted} if compacted else {}),
             })
@@ -599,13 +603,11 @@ class Harness:
             )
         if compacted:
             mentions.insert(0, "Le début de la conversation a été résumé pour garder le contexte sous contrôle.")
-        if not history:
-            # What the long-term memory keeps, and that it can be forgotten: said once, when the conversation opens.
+        if opening:
+            # Nothing is kept between conversations: said once, when the conversation opens.
             mentions.insert(0, agent_preferences.OPENING_NOTICE)
         for mention in mentions:
             yield Event(type="mention", data={"content": mention})
-        for change in memory_events:
-            yield Event(type="memory", data=change)
         for chunk in _split(text):
             yield Event(type="text", data={"content": chunk})
         if sources:
@@ -621,6 +623,10 @@ _WRITE_LABELS = {
     "prepare_purchase_request": "préparer une demande d'achat",
     "prepare_invoice_approval": "préparer l'approbation d'une facture",
 }
+
+
+# Tools whose result brings third-party text (the key holds it): documentation passages, fetched pages.
+UNTRUSTED_READS = {"search_documents": "passages", "fetch_url": "content"}
 
 
 SUMMARY_NOTE = (
