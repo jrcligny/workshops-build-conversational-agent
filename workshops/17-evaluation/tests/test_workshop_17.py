@@ -30,14 +30,14 @@ def test_masked_and_observable_traces(chat_client, traces):
 def test_student_routes_cover_every_edge_case():
     assert route_runner.load_routes(route_runner.official_dir(), "official"), "official routes are published"
     assert routes.routes_digest() == routes.expected_digest(), "the official routes are not modified"
-    routes = route_runner.load_routes(route_runner.student_dir(), "student")
-    assert routes, "my-agent/routes/ holds your own routes"
-    invalid = {r["file"]: route_runner.validate(r) for r in routes if route_runner.validate(r)}
+    student_routes = route_runner.load_routes(route_runner.student_dir(), "student")
+    assert student_routes, "my-agent/routes/ holds your own routes"
+    invalid = {r["file"]: route_runner.validate(r) for r in student_routes if route_runner.validate(r)}
     assert not invalid, f"invalid routes: {invalid}"
-    missing = set(route_runner.EDGE_CASES) - {r["edge_case"] for r in routes}
+    missing = set(route_runner.EDGE_CASES) - {r["edge_case"] for r in student_routes}
     assert not missing, f"edge cases without a route of yours: {sorted(missing)}"
-    ids = {r["id"] for r in routes}
-    assert any(r.get("counterfactual_of") in ids for r in routes), (
+    ids = {r["id"] for r in student_routes}
+    assert any(r.get("counterfactual_of") in ids for r in student_routes), (
         "at least one route is a counterfactual (counterfactual_of: <id of another of your routes>)"
     )
 
