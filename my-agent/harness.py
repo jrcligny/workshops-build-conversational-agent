@@ -24,6 +24,8 @@ import agent_skills  # noqa: E402
 import mcp_server  # noqa: E402
 
 from agent_sdk import trace_store as tracer  # noqa: E402
+from agent_sdk.context import SUMMARY_HEADING, unoffered_call_results  # noqa: E402
+from agent_sdk.context import context as conversation_context  # noqa: E402
 from agent_sdk.contract import Event, Message, TestUser  # noqa: E402
 from agent_sdk.model_client import ModelClient, ModelUnavailable, _split, model_unavailable  # noqa: E402
 
@@ -92,7 +94,6 @@ def model_client() -> ModelClient:
 class Harness:
     def __init__(self) -> None:
         self.model = model_client()
-        self.compactor = agent_context.Compactor(self._summarize)
         self.memory = agent_memory.WorkingMemory()
         self.drafts: dict[str, dict] = {}
         self.skills: dict[str, dict[str, dict]] = {}
@@ -123,12 +124,23 @@ class Harness:
         )
         return f"{len(documents)}+{_digest(chr(10).join(documents))}"
 
-    def _summarize(self, request: list[dict[str, Any]]) -> str:
-        try:
-            response = self.model.generate(request, None)
-        except Exception:  # noqa: BLE001
-            return ""  # no summary rather than a failed turn; compaction is retried on the next turn
-        return ((response.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+    def _summarize(self, request: list[dict[str, Any]]) -> tuple[str, dict | None]:
+        """The compaction summary: a separate call, without tools, with the compaction prompt (08)."""
+        for model in (PRIMARY_MODEL, FALLBACK_MODEL):
+            started = time.perf_counter()
+            try:
+                response = self.model.generate(request, None, model=model)
+            except Exception:  # noqa: BLE001
+                continue
+            choice = (response.get("choices") or [{}])[0]
+            return (choice.get("message") or {}).get("content") or "", {
+                "model": response.get("model"),
+                "requested_model": model,
+                "usage": dict(response.get("usage") or {}),
+                "duration_ms": int((time.perf_counter() - started) * 1000),
+                "stop_reason": choice.get("finish_reason"),
+            }
+        return "", None  # no summary rather than a failed turn; compaction is retried on the next turn
 
     def _call(
         self, messages: list[dict[str, Any]], tools: list[dict] | None, calls: list[dict], fallback: dict
@@ -171,20 +183,27 @@ class Harness:
         limits: dict | None = None,
     ) -> Iterator[Event]:
         system_prompt = load_system_prompt()
-        replayed, compacted = self.compactor.apply(
-            conversation_id, [{"role": m.role, "content": m.content} for m in history]
-        )
+        # The tools live behind the MCP server; the user's token travels with every call and the tool server
+        # exchanges it for an application token on behalf of the user.
+        token = agent_mcp.user_token(user)
+        # The model's context is the conversation context (every message, tool calls and results included);
+        # `history` is only the transcript shown by the interface.
+        ctx = conversation_context(conversation_id)
+        self.memory.bind(conversation_id, ctx.state)
+        if not ctx.state and ctx.messages:
+            # A loaded conversation comes without working state: rebuild it before compacting.
+            self.memory.rebuild(conversation_id, ctx.messages, lambda customer_id: _lookup(token, customer_id))
+        compacted = agent_context.compact(ctx, self._summarize)
         if compacted:
-            yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "summary"})
+            yield Event(type="compaction", data={k: v for k, v in compacted.items() if k != "system_prompt"})
+        replayed = ctx.messages
+        summary = ctx.summary
         self.memory.begin_turn(conversation_id)
         remembered = agent_preferences.load(user)
         memory_trace: dict[str, list] = {"loaded": remembered, "written": [], "deleted": []}
         memory_events: list[dict] = []
         state_before = self.memory.get(conversation_id)
         state_text = self.memory.render(conversation_id)
-        # The tools live behind the MCP server; the user's token travels with every call and the tool server
-        # exchanges it for an application token on behalf of the user.
-        token = agent_mcp.user_token(user)
         allowed_writes = mcp_server.allowed_tools(user.role)
         loaded_skills = self.skills.setdefault(conversation_id, {})
         skills_before = [f"{s['id']}@{s['version']}" for s in loaded_skills.values()]
@@ -234,20 +253,22 @@ class Harness:
             self.drafts.pop(conversation_id, None)
         messages: list[dict[str, Any]] = [
             {"role": "system", "content": system_prompt},
+            *([{"role": "system", "content": f"{SUMMARY_HEADING}\n{summary}"},
+               {"role": "system", "content": SUMMARY_NOTE}] if summary else []),
             {"role": "system", "content": _permissions_note(user.role, allowed_writes)},
             {"role": "system", "content": agent_preferences.note(remembered)},
             *([{"role": "system", "content": state_text}] if state_text else []),
             *([{"role": "system", "content": agent_skills.render(loaded_skills)}] if loaded_skills else []),
             *([{"role": "system", "content": agent_attachments.attachments_note(attachment_ids)}] if attachment_ids else []),
             *([{"role": "system", "content": _draft_note(pending, submission)}] if pending else []),
-            *replayed,
+            *json.loads(json.dumps(replayed)),
             {"role": "user", "content": message},
         ]
+        turn_start = len(messages) - 1
         yield from yielded
 
         def lookup(customer_id: str) -> dict | None:
-            rows = agent_mcp.call(token, "query", {"source": "customers", "filters": {"id": customer_id}}).get("rows")
-            return rows[0] if rows else None
+            return _lookup(token, customer_id)
 
         tool_calls_done: list[dict] = []
         model_calls: list[dict] = []
@@ -324,7 +345,8 @@ class Harness:
                 if len(tool_calls_done) >= MAX_TOOL_CALLS:
                     result = {"status": "error", "error": "tool budget exhausted for this message: answer now"}
                 elif name not in tools:
-                    result = {"status": "error", "error": f"unknown tool {name}"}
+                    # A loaded history may name tools this agent does not offer: refused, never run.
+                    result = json.loads(unoffered_call_results({"tool_calls": [call]}, sorted(tools))[0]["content"])
                 elif repeated:
                     result = {"status": "error", "error": "identical call already made in this turn: use its result"}
                 elif used >= PER_TOOL_LIMITS.get(name, MAX_TOOL_CALLS):
@@ -406,7 +428,8 @@ class Harness:
                     )
                     self.memory.update(conversation_id, name, arguments, result, lookup)
                 messages.append(
-                    {"role": "tool", "tool_call_id": call.get("id"), "content": json.dumps(result, ensure_ascii=False)}
+                    {"role": "tool", "tool_call_id": call.get("id"), "name": name,
+                     "content": json.dumps(result, ensure_ascii=False)}
                 )
 
         if stop == "interrupted":
@@ -523,6 +546,7 @@ class Harness:
                     "skills": agent_skills.render(loaded_skills) if loaded_skills else None,
                     "state": state_before,
                     "history": replayed,
+                    **({"summary": summary} if summary else {}),
                     "message": message,
                 },
                 "model": {
@@ -567,6 +591,12 @@ class Harness:
                 **({"compaction": compacted} if compacted else {}),
             })
         )
+        if stop != "model_unavailable":
+            # The whole turn joins the context: user message, tool calls and results, final answer.
+            ctx.record(
+                [m for m in messages[turn_start:] if m.get("role") in ("user", "assistant", "tool")]
+                + [{"role": "assistant", "content": text}]
+            )
         if compacted:
             mentions.insert(0, "Le début de la conversation a été résumé pour garder le contexte sous contrôle.")
         if not history:
@@ -591,6 +621,18 @@ _WRITE_LABELS = {
     "prepare_purchase_request": "préparer une demande d'achat",
     "prepare_invoice_approval": "préparer l'approbation d'une facture",
 }
+
+
+SUMMARY_NOTE = (
+    "Ce résumé remplace le début de la conversation : ses faits ont été lus par tes outils dans cette conversation "
+    "et sont des sources valables. Si l'utilisateur demande de ne pas relire, ou si le résumé contient déjà la "
+    "valeur demandée sans qu'on te demande de l'actualiser, réponds d'après lui, sans appeler d'outil."
+)
+
+
+def _lookup(token: str, customer_id: str) -> dict | None:
+    rows = agent_mcp.call(token, "query", {"source": "customers", "filters": {"id": customer_id}}).get("rows")
+    return rows[0] if rows else None
 
 
 def _digest(text: str) -> str:
