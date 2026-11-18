@@ -1,6 +1,6 @@
 # Sandbox (empty base)
 
-Location of the tool-server sandbox (workshop 07): network allowlist, no
+Location of the tool-server sandbox (workshop 10d): network allowlist, no
 file access, duration and budget limits.
 
 In this bootstrap:
@@ -12,5 +12,5 @@ In this bootstrap:
 - **no policy is enforced**.
 
 You will fill in the policy and, if needed, the Compose profile of the
-container in workshop 07. A degraded mode without a container (a filter in
+container in workshop 10d. A degraded mode without a container (a filter in
 the HTTP client) remains possible; it is less safe and must be documented as such.

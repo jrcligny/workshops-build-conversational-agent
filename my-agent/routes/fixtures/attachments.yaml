@@ -1,3 +1,0 @@
-# Business record each attachment is attached to (workshop 14): read only if the user can consult it.
-quote-injection.txt:
-  record: orders/CMD-2010
