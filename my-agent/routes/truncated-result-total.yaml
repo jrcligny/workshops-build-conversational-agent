@@ -1,0 +1,16 @@
+id: truncated-late-orders-total
+edge_case: truncated-result-total
+dataset: volume
+user: {id: camille-renard, role: customer_service, organization: organization-a}
+turns:
+  - message: "Quelles sont les commandes en retard de Transports Morel ?"
+facts:
+  - {type: tool_status, argument_contains: late, status_in: [ok]}
+  - {type: event, event: mention}
+  - {type: text_contains, value: "60"}
+rubric:
+  id: truncated-total
+  criterion: "L'agent dit que la liste n'est qu'un extrait et donne le total réel (60) lu dans l'application, pas le nombre de lignes montrées."
+  requirements:
+    - {type: required_any, patterns: ["partiel", "partielle", "extrait", "premières", "une partie"]}
+  judge_meaning: true

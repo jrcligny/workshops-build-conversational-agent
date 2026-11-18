@@ -1,6 +1,6 @@
 # Skills catalog (empty base)
 
-Versioned storage for workshop 14. You edit this folder; the kit reads it
+Versioned storage for workshop 13. You edit this folder; the kit reads it
 through `agent_sdk/src/agent_sdk/skills.py` (setting `skills_dir`,
 default `my-agent/skills`). Expected format:
 
