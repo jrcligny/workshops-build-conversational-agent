@@ -7,8 +7,8 @@ import os
 import sys
 import time
 
-from workshop_config import repo_path, settings
 from agent_sdk.contract import HarnessNotImplemented
+from workshop_config import repo_path, settings
 
 # Set by `workshop serve`: status of the MCP runner (`workshop_tools.mcp_runner`), which reloads
 # my-agent/mcp_server.py on change. Absent in the tests, which serve the module themselves.

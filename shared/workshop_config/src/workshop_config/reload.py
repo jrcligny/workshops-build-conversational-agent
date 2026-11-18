@@ -30,7 +30,9 @@ def source_signature(folder: Path) -> Signature:
                     stat = path.stat()
                 except OSError:
                     continue
-                entries.append((path.relative_to(folder).as_posix(), stat.st_mtime_ns, stat.st_size))
+                entries.append(
+                    (path.relative_to(folder).as_posix(), stat.st_mtime_ns, stat.st_size)
+                )
     return tuple(sorted(entries))
 
 
@@ -66,7 +68,11 @@ def purge_modules(folder: Path, changed: Iterable[str] = ()) -> list[str]:
             Path(importlib.util.cache_from_source(str(folder / name))).unlink(missing_ok=True)
         except (OSError, ValueError, NotImplementedError):
             pass
-    names = [name for name, module in list(sys.modules.items()) if _inside(getattr(module, "__file__", None), folder)]
+    names = [
+        name
+        for name, module in list(sys.modules.items())
+        if _inside(getattr(module, "__file__", None), folder)
+    ]
     for name in names:
         sys.modules.pop(name, None)
     importlib.invalidate_caches()

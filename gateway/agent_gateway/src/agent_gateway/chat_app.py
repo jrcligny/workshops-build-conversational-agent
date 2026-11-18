@@ -13,7 +13,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from workshop_config import repo_path, settings
-from workshop_config.reload import Signature, changed_files, describe_error, digest, purge_modules, source_signature
+from workshop_config.reload import (
+    Signature,
+    changed_files,
+    describe_error,
+    digest,
+    purge_modules,
+    source_signature,
+)
 
 from agent_sdk.context import clear_contexts, context, seed
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser

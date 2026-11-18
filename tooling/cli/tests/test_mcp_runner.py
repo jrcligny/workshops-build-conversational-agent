@@ -35,13 +35,17 @@ def test_reload_and_error_keep_serving(tmp_path):
 
     async def scenario():
         dispatcher = mcp_runner.Dispatcher()
-        client = httpx.AsyncClient(transport=httpx.ASGITransport(app=dispatcher), base_url="http://mcp")
+        client = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=dispatcher), base_url="http://mcp"
+        )
 
         async def reload(text):
             before = source_signature(folder)
             server.write_text(text, encoding="utf-8")
             after = source_signature(folder)
-            return await mcp_runner.swap(dispatcher, folder, after, ["mcp_server.py"] if before else [])
+            return await mcp_runner.swap(
+                dispatcher, folder, after, ["mcp_server.py"] if before else []
+            )
 
         assert await reload(SERVER.format(version="one-v1"))
         assert (await client.get("/mcp")).text == "one-v1"

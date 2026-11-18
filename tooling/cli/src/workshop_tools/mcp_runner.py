@@ -46,7 +46,11 @@ class Lifespan:
         self.supported = True
 
     async def _run(self) -> None:
-        scope = {"type": "lifespan", "asgi": {"version": "3.0", "spec_version": "2.0"}, "state": self.state}
+        scope = {
+            "type": "lifespan",
+            "asgi": {"version": "3.0", "spec_version": "2.0"},
+            "state": self.state,
+        }
         try:
             await self.app(scope, self._receive.get, self._sent.put)
         except BaseException as exc:  # noqa: BLE001 - an application without lifespan support
@@ -108,11 +112,16 @@ class Dispatcher:
 
 async def _json(send, code: int, body: dict) -> None:
     payload = json.dumps(body).encode("utf-8")
-    await send({
-        "type": "http.response.start",
-        "status": code,
-        "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(payload)).encode())],
-    })
+    await send(
+        {
+            "type": "http.response.start",
+            "status": code,
+            "headers": [
+                (b"content-type", b"application/json"),
+                (b"content-length", str(len(payload)).encode()),
+            ],
+        }
+    )
     await send({"type": "http.response.body", "body": payload})
 
 
@@ -190,7 +199,9 @@ async def main() -> int:
     if not await swap(dispatcher, folder, signature, []):
         log("Fix my-agent/mcp_server.py, then start the workshop again.")
         return 1
-    server = uvicorn.Server(uvicorn.Config(dispatcher, host=host, port=port, lifespan="off", log_level="info"))
+    server = uvicorn.Server(
+        uvicorn.Config(dispatcher, host=host, port=port, lifespan="off", log_level="info")
+    )
     watcher = asyncio.create_task(watch(dispatcher, folder, signature))
     log(f"Serving my-agent/mcp_server.py on http://{host}:{port}, reloaded when my-agent/ changes.")
     try:

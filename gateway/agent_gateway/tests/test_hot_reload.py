@@ -3,10 +3,9 @@
 import sys
 
 import pytest
-from workshop_config import settings
-
 from agent_gateway import chat_app
 from agent_gateway.loader import MyAgentLoadError
+from workshop_config import settings
 
 HARNESS = """
 import sys
