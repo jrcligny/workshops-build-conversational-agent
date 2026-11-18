@@ -107,6 +107,36 @@ If the default ports are occupied, use `uv run --project tooling/cli workshop se
 (chat on port 8090), or `python start.py --port-offset 10`. The launcher
 does not reuse or stop pre-existing services. See the [UI guide](clients/chat_ui/README.md).
 
+### Hot reload of `my-agent/`
+
+Edit `my-agent/` while the stack runs: no restart is needed.
+
+- **Python files** (`harness.py`, the `agent_*.py` modules it imports, `mcp_server.py`): at the next
+  message, the interface sees the change, imports the modules of `my-agent/` again and builds a new
+  `Harness`. The MCP server (`workshop_tools.mcp_runner`, port 8004) checks `my-agent/` twice a
+  second, loads `application()` of `mcp_server.py` again and serves the new version on the same
+  port. The interface waits until the MCP server serves the same version before running the turn.
+  The logs say so: `my-agent reloaded (changed: …)` in `interface.log`,
+  `MCP server reloaded (changed: …)` in `mcp.log`.
+- **Files read at each turn** (`system_prompt.md`, `compaction_prompt.md`, `skills/`,
+  `sandbox/policy.yaml`): read again at the next turn, as before. A `SKILL.md` already loaded
+  in a conversation, or an attachment already read, keeps its content in that conversation.
+- **An error** (syntax error, failing import, `application()` that raises): the message gets an
+  error that names the file, the line and the error, for example
+  `my-agent could not be loaded: my-agent/harness.py, line 12: SyntaxError: invalid syntax`,
+  and the traceback is in `.workshop/logs/interface.log` or `mcp.log`. Fix the file and send the
+  message again. Meanwhile, the MCP server keeps serving its last working version. Only at startup
+  does a broken `mcp_server.py` stop the stack, as before.
+- **What a reload keeps**: the conversations, their context and their working state
+  (`agent_sdk.context`). It starts a new `Harness`: what the old instance kept in its attributes is
+  lost (pending drafts of workshop 07, skills loaded in a conversation, attachments read).
+- **What needs a restart**: `.env` and the code outside `my-agent/` (`agent_sdk/`, `gateway/`,
+  `business/`, ...).
+
+Changes are detected by polling the files (date and size), which works the same on Windows,
+macOS, Linux and WSL, including on a Windows drive opened from WSL. The tests (`workshop check`)
+load `my-agent/` themselves, without this mechanism.
+
 ## Licence
 
 The licence is not decided yet. No `LICENSE` file is published for now.

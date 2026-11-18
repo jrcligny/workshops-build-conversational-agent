@@ -209,6 +209,10 @@ uv run --project my-agent python my-agent/mcp_server.py
 Run each command in a separate terminal from the repository root. In bash,
 replace the first line with `export PYTHONPATH="$PWD"`. Prefer the complete-stack
 launcher: it also initializes missing databases and sets service URLs.
+Started this way, the interface still reloads `my-agent/` when it changes, but
+`mcp_server.py` is not: restart its command after editing it. The launcher runs it
+through `python -m workshop_tools.mcp_runner` instead, which reloads it (see the
+[README](../README.md#hot-reload-of-my-agent)).
 
 Reset the dataset (PowerShell; in bash or zsh, replace the trailing backtick
 with a backslash):

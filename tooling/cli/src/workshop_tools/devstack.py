@@ -28,6 +28,8 @@ PROJECTS = {
 }
 HOST = "127.0.0.1"
 LOGS = REPO_ROOT / ".workshop" / "logs"
+# Read by agent_gateway.loader: the interface waits until the MCP runner serves the my-agent/ it loaded.
+MCP_STATUS_ENV = "WORKSHOP_MCP_STATUS_URL"
 
 
 @dataclass(frozen=True)
@@ -91,8 +93,15 @@ def services(port_offset: int = 0) -> list[Service]:
         service_env["VIRTUAL_ENV"] = str(project / ".venv")
         health_path = "/health"
         if name == "mcp":
-            command = (str(python), str(REPO_ROOT / "my-agent" / "mcp_server.py"))
-            health_path = None  # The empty MCP server has no health endpoint.
+            # Serves my-agent/mcp_server.py and serves it again whenever my-agent/ changes.
+            command = (str(python), "-m", "workshop_tools.mcp_runner")
+            health_path = None  # The student's MCP server has no health endpoint.
+        elif name == "interface":
+            service_env[MCP_STATUS_ENV] = f"http://{HOST}:{ports['mcp']}/_workshop/status"
+            command = (
+                str(python), "-m", "uvicorn", modules[name],
+                "--host", HOST, "--port", str(port),
+            )
         elif name == "chat_ui":
             command = (
                 str(python), "-m", "chainlit", "run", "src/chat_ui/app.py",
