@@ -107,6 +107,35 @@ If the default ports are occupied, use `uv run --project tooling/cli workshop se
 (chat on port 8090), or `python start.py --port-offset 10`. The launcher
 does not reuse or stop pre-existing services. See the [UI guide](clients/chat_ui/README.md).
 
+## Troubleshooting
+
+### `ModuleNotFoundError: No module named 'workshop_tools'` (macOS, iCloud Drive)
+
+Symptom: `python start.py`, `uv run --project tooling/cli workshop ...` or the
+infrastructure tests fail with `No module named 'workshop_tools'` (or
+`agent_testkit`, `agent_sdk`…), often intermittently. The repository is usually in a
+folder synchronized by iCloud Drive (`~/Library/Mobile Documents/com~apple~CloudDocs/…`,
+or `~/Desktop` / `~/Documents` when "Desktop & Documents Folders" is enabled).
+
+Cause: uv installs the kit's packages in editable mode through `.pth` files in each
+`.venv`. macOS can mark these files as hidden (`UF_HIDDEN`), and Python 3.12+
+silently skips hidden `.pth` files. Spaces, tildes or accents in the path are not
+the cause: without the hidden flag, both commands work from such a path.
+
+What the kit does: `python start.py`, `workshop serve`, `workshop check` and the
+pytest command put the kit's sources on the Python path themselves, so they no longer
+depend on these files. `start.py` also clears the hidden flag and prints a warning
+when the folder is synchronized by iCloud Drive. A manual
+`uv run --project tooling/cli workshop ...` still goes through the `workshop`
+script, which relies on the `.pth` file.
+
+Fix: move the repository outside iCloud Drive (for example `~/workshops`), delete
+the `.venv` folders that were copied, then run `python start.py` again. As a
+temporary workaround, `chflags -R nohidden tooling/cli/.venv`, or
+`uv run --project tooling/cli python -m workshop_tools ...` instead of `workshop ...`.
+iCloud also syncs the large `.venv` folders and may evict their files, which is
+another reason to keep the repository outside of it.
+
 ## Licence
 
 The licence is not decided yet. No `LICENSE` file is published for now.
