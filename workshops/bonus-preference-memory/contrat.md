@@ -20,7 +20,7 @@ Sections du chapitre 11 exercées par cet atelier (écart assumé avec le fil ro
 - **Relecture** : après « Comme la dernière fois, la commande CMD-1042 de Martin Durand est encore en préparation, vous confirmez ? », le journal de l'API métier contient `/orders/CMD-1042` (code 200), la trace au moins un appel d'outil, et la réponse « livrée ».
 - **Utilisateurs** : `camille-renard` (organization-a) écrit ; `paul-buyer` (même organisation) et `ines-service-b` (organization-b) ne doivent rien recevoir. Les tests appellent `reset_conversations()` entre deux conversations : le *harness* est rechargé, seule la mémoire sur disque demeure.
 
-Restent libres : le format des fichiers, la façon de reconnaître une demande de mémorisation (outil offert au modèle ou analyse par le programme), la tournure des réponses.
+Restent libres : le format des fichiers, la façon de reconnaître une demande de mémorisation (outil offert au modèle ou analyse par le programme), la tournure des réponses. Les deux voies sont acceptées par les tests ; en mode simulé, seule l'analyse par le programme peut passer, car le modèle simulé n'appelle aucun outil. Si vous analysez le message vous-même, couvrez au moins les tournures du tableau ci-dessous (« Retenez que… », « Finalement, retenez plutôt… », « Oubliez tout… ») et prenez garde à « Que retenez-vous… ? » : la question contient « retenez » mais demande une consultation, pas une écriture.
 
 ## Exemples techniques
 
@@ -59,7 +59,7 @@ Extrait de trace d'une conversation suivante :
 - Indexer la mémoire par organisation seulement, ou laisser le modèle décider quoi relire : la préférence de Camille atteint Paul.
 - Enregistrer le texte libre du message (« la commande CMD-1042 est en préparation ») : la donnée métier se fige et devient fausse dès que l'application change.
 - « Oublier » en ne retirant l'entrée que du contexte : le fichier la contient encore.
-- Écrire en mémoire un contenu lu dans un résultat d'outil ou un document : un tiers pourrait y glisser une consigne qui resurgira plus tard (chapitre 15).
+- Écrire en mémoire un contenu lu dans un résultat d'outil ou un document : un tiers pourrait y glisser une consigne qui resurgira plus tard (chapitre 14).
 - Répondre « je m'en souviendrai » à une demande refusée : la promesse ne correspond à rien d'enregistré.
 
 ### Essayer soi-même
@@ -80,9 +80,12 @@ Extrait de trace d'une conversation suivante :
 
 ## Vérifier
 
-Le mode live est la voie de référence de tous les ateliers : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : trace `memory`, événements, fichiers sous `MEMORY_DIR`, entrée du modèle, journal de l'API métier. La non-régression rejoue les ateliers 03 à 12 ; chaque test part d'une mémoire vide.
+Le mode live est la voie de référence de tous les ateliers : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : trace `memory`, événements, fichiers sous `MEMORY_DIR`, entrée du modèle, journal de l'API métier. Chaque test part d'une mémoire vide.
+
+`workshop check bonus` ne lance que les tests du bonus : l'atelier est hors parcours, et `--non-regression` est refusé pour lui. Une fois la mémoire en place, les tests de l'atelier 11 (aucune mémoire) deviennent rouges, ainsi que toute `--non-regression` qui l'inclut (à partir de l'atelier 11) : c'est attendu. Faites le bonus sur une branche à part si vous voulez garder le parcours vert.
 
 ```powershell
-uv run --project tooling/cli workshop start 12
 uv run --project tooling/cli workshop check bonus
 ```
+
+Le bonus se place après l'atelier 11. Atelier suivant du parcours : `uv run --project tooling/cli workshop start 12`.

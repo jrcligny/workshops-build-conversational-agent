@@ -27,7 +27,7 @@ L'agent annonce qu'un résultat est partiel et propose la suite ou une demande p
 - Au-delà du plafond de récupération, le total est annoncé comme un minimum (« au moins… »).
 - « Montrez-moi les suivantes » donne de nouvelles lignes, sans répéter celles déjà reçues.
 - Pour un simple décompte, l'agent obtient le nombre sans faire venir les lignes.
-- Le détail d'une commande de la liste est lu avec l'outil de consultation.
+- Le détail d'une commande de la liste est relu dans l'application avec l'outil de consultation, au moment où on le demande.
 - La réponse dit clairement que la liste est partielle.
 - La taille du contexte est connue pour chaque cycle.
 
@@ -50,7 +50,7 @@ Sur le gros jeu de données, Transports Morel a 60 commandes en retard et plus d
 - Compter soi-même les lignes affichées et annoncer ce nombre comme le total.
 - Présenter comme exact un total arrêté au plafond.
 - Tronquer en silence : le modèle ne peut pas expliquer une coupure qu'on ne lui signale pas.
-- Recréer un outil « lister les commandes » à côté de l'outil d'interrogation : c'est lui qu'on borne.
+- Recréer un outil « lister les commandes » à côté de l'outil d'interrogation : c'est lui qu'on borne, en gardant ses paramètres (`source`, `filters`, `aggregate`, `group_by`), que les tests lisent.
 
 ## Pistes
 

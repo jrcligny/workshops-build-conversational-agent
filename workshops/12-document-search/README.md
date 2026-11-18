@@ -1,6 +1,6 @@
 # Atelier 12 — Répondre à partir de la documentation
 
-Chapitre 13 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 12 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
@@ -38,9 +38,9 @@ Plusieurs règles encadrent cet outil. Le **filtrage** par organisation et par p
 
 ## Pistes
 
-- La recherche reçoit l'identité de l'utilisateur mise en place à l'atelier 07 ; c'est elle qui détermine ce qu'il a le droit de voir.
-- La recherche renvoie presque toujours quelque chose : décidez comment l'agent constate qu'aucun passage n'est pertinent.
-- Construisez les sources à partir des passages du tour, sans doublons.
+- La recherche reçoit l'identité de l'utilisateur mise en place à l'atelier 07 (le jeton *application* obtenu par échange, le même que pour l'API métier) ; c'est elle qui détermine ce qu'il a le droit de voir.
+- Une recherche sans seuil renvoie presque toujours quelque chose : décidez comment l'agent constate qu'aucun passage n'est pertinent. Garder le seuil par défaut du service (0,3) suffit pour les tests.
+- Construisez les sources à partir des passages du tour, sans doublons (par adresse).
 - Une question mixte appelle deux outils : la recherche pour la procédure, la lecture de commande pour le statut.
 - Restent libres : le nom de l'outil, ses paramètres et la formulation des réponses.
 

@@ -95,10 +95,14 @@ fait en trois étapes, qui partagent ce scénario et ce dossier.
 ## Pistes
 
 - Distinguez le jeton d'entrée (remis par l'interface) du jeton d'application (accepté par
-  l'application). Chaque maillon vérifie le jeton, pas seulement le premier.
+  l'application). L'application propose un service d'échange simulé (`POST /auth/exchange`,
+  enveloppé par `agent_sdk.http_client.exchange_entry_token`) : le serveur MCP reçoit le
+  jeton d'entrée dans l'en-tête `Authorization` et l'échange lui-même. Chaque maillon
+  vérifie le jeton, pas seulement le premier.
 - Si vous gardez des résultats en cache, la clé contient l'utilisateur et son organisation.
 - Séparez les trois temps de l'écriture : chacun a son outil ou son geste, et seul le dernier
-  écrit pour de bon. Protégez-vous contre la double soumission.
+  écrit pour de bon. Le geste ne vaut que pour le tour qui le suit. Protégez-vous contre la
+  double soumission.
 - Inventoriez les destinations que votre agent joint réellement avant d'activer une liste
   stricte, et vérifiez la destination **avant** tout envoi.
 - L'identité circule entre le *harness* et le serveur d'outils, hors de ce que voit le

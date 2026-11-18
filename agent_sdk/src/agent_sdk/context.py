@@ -15,7 +15,7 @@ The system prompt is not stored: you send it at each turn.
     ...                                   # model calls, tool calls of the turn
     ctx.record(turn_messages)             # at the end of the turn: user, assistant, tool..., final answer
 
-`ctx.state` keeps the working memory of the conversation (08: current customer, current order,
+`ctx.state` keeps the working memory of the conversation (10: current customer, current order,
 candidates), outside the messages: it crosses the compaction unchanged. A written history comes
 without it (`seed` empties it): when the context holds messages but no state, rebuild the state
 from those messages (tool results included) before compacting.
@@ -103,7 +103,9 @@ def seed(
     state: dict[str, Any] | None = None,
 ) -> Context:
     """Starts a conversation from a written history (tests, demonstrations). Not for the agent.
-    The working state is emptied unless given: the agent rebuilds it from the messages."""
+    The working state is emptied unless given: the agent rebuilds it from the messages. The
+    gateway's `append` mode (`POST /conversations/{id}/history` with `"append": true`) passes the
+    current summary and state, which are then kept."""
     ctx = context(conversation_id)
     ctx.replace(messages, summary)
     ctx.state = copy.deepcopy(state or {})

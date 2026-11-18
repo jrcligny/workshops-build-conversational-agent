@@ -5,8 +5,9 @@ Ce document détaille ce que vérifient les tests de l'atelier ; l'énoncé se t
 ## Ce que lisent les tests
 
 - **Outil de recherche** : dans `tools[]`, un appel de recherche est reconnu à son **résultat**, qui reprend celui du service : `passages[]` (chaque passage porte `document_id`, `title`, `version`, `address`, `audience`…) et `no_passage`. Conservez ces clés telles quelles.
-- **Service** : `business/docs_search/src/docs_search/app.py`, `POST /search` avec `{"query", "k": 5, "threshold": 0.3}` et l'en-tête `Authorization: Bearer <jeton>` ; il filtre par organisation et par public (`audience` : le rôle, ou `all`) d'après le jeton, et renvoie `{"passages": [...], "no_passage": ..., "query": ...}` ; chaque passage porte un `score` absolu entre 0 et 1 (part des mots de la question présents dans le passage, et similarité). URL : réglage `DOCS_SEARCH_URL` (port 8002 avec `workshop serve`).
-- **Événement SSE `sources`** : `{"sources": [{"title", "version", "address"}]}`. Chaque `address` doit figurer parmi les passages renvoyés pendant le tour ; titre et version sont obligatoires.
+- **Service** : `business/docs_search/src/docs_search/app.py`, `POST /search` avec `{"query", "k": 5, "threshold": 0.3}` et l'en-tête `Authorization: Bearer <jeton>`, où le jeton est le jeton *application* de l'utilisateur (`exchange_entry_token(user.app_token)`, atelier 07), celui que vous transmettez déjà à l'API métier ; il filtre par organisation et par public (`audience` : le rôle, ou `all`) d'après le jeton, et renvoie `{"passages": [...], "no_passage": ..., "query": ...}` ; chaque passage porte un `score` absolu entre 0 et 1 (part des mots de la question présents dans le passage, et similarité). URL : réglage `DOCS_SEARCH_URL` (port 8002 avec `workshop serve`).
+- **Seuil** : garder `threshold: 0.3` (la valeur par défaut du service) suffit pour tous les tests ; le changer est libre.
+- **Événement SSE `sources`** : `{"sources": [{"title", "version", "address"}]}`. Chaque `address` doit figurer parmi les passages renvoyés pendant le tour ; titre et version sont obligatoires. Plusieurs passages d'un même document partagent son adresse : dédoublonnez par `address`.
 - **Corpus** (`corpus/metadata.yaml`) : procédure des livraisons incomplètes v2.1 en vigueur (`/docs/organization-a/incomplete-deliveries/2.1`, public `customer_service`), v1.0 retirée ; statuts de facture `invoice-statuses` v2.0, réservé au rôle `accountant`.
 - **Vérifications** :
   - « Que dit la procédure quand une livraison arrive incomplète ? » : au moins une recherche ; les sources contiennent l'adresse de la v2.1.
@@ -64,7 +65,7 @@ event: sources   data: {"sources": [{"title": "…", "version": "2.1", "address"
 ## Pistes techniques
 
 - Lisez `business/docs_search/src/docs_search/app.py` et `search.py` : recherche hybride (texte intégral et similarité), découpage par titres, seuil `threshold`. `docs_search(jeton).post("/search", json={...})` de `agent_sdk/src/agent_sdk/http_client.py` porte l'appel (`DOCS_SEARCH_URL`).
-- Le jeton à transmettre est celui de l'identité de l'utilisateur mis en place à l'atelier 07 ; le service en déduit organisation et public.
+- Le jeton à transmettre est le jeton *application* de l'utilisateur, obtenu à l'atelier 07 par échange du jeton d'entrée (`agent_sdk.http_client.exchange_entry_token`) ; le service en déduit organisation et public.
 - Avec le seuil par défaut (0,3), la question « xyzzy-42 » ne renvoie aucun passage (`no_passage`) ; avec `threshold: 0`, mesurez les scores des passages hors sujet face à ceux de la vraie réponse avant de choisir le seuil de votre outil.
 - Les sources se déduisent des passages du tour ; dédoublonnez par adresse. `sources([...])` de `agent_sdk/src/agent_sdk/events.py` construit l'événement.
 - Une question mixte appelle deux outils : la recherche pour la procédure, la lecture de commande pour le statut.
@@ -74,7 +75,8 @@ event: sources   data: {"sources": [{"title": "…", "version": "2.1", "address"
 Le mode live est la voie de référence : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout se vérifie ici par le code : résultats des outils dans la trace, événement `sources`, fragments du texte ; aucune rubrique de juge n'intervient. La non-régression rejoue les ateliers 03 à 12.
 
 ```powershell
-uv run --project tooling/cli workshop start 13
 uv run --project tooling/cli workshop check 12
 uv run --project tooling/cli workshop check 12 --non-regression   # ateliers 03 à 12
 ```
+
+Atelier suivant : `uv run --project tooling/cli workshop start 13` (affiche son guide).

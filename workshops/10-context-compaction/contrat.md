@@ -8,13 +8,27 @@ Les tests ne jouent pas les tours anciens : ils **chargent une conversation déj
 
 Les faits clés (la cliente choisie entre deux homonymes, sa commande, son statut, son montant) ne figurent **que** dans des résultats d'outils et des réponses de l'agent, jamais dans un message de l'utilisateur conservé tel quel.
 
-Une conversation chargée arrive **sans état** (`ctx.state` est vide) : votre agent reconstruit sa mémoire de travail à partir des messages du contexte, avant de compacter.
+Une conversation chargée arrive **sans état** (`ctx.state` est vide) : votre agent reconstruit sa mémoire de travail à partir des messages du contexte, avant de compacter. Les résultats des outils neutres y ont cette forme (format de `tests/cases.yaml`, transformé en messages de chat par `ChatClient.load`) :
+
+```yaml
+- name: resolve_name
+  arguments: {entity_type: customer, name: "Léa Martin"}
+  result: {status: ok, matches: [{id: C-MARTIN-LILLE, name: "Léa Martin", city: Lille}, {id: C-MARTIN-LYON, name: "Léa Martin", city: Lyon}]}
+- name: query
+  arguments: {source: orders, filters: {customer_id: C-MARTIN-LILLE}}
+  result: {rows: [{reference: CMD-2010, status: shipped, amount: 450.0}], total: 1}
+- name: get_order
+  arguments: {reference: CMD-2010}
+  result: {status: ok, order: {reference: CMD-2010, customer_id: C-MARTIN-LILLE, status: shipped, amount: 450.0, delivery_city: Lille}}
+```
+
+Le choix entre homonymes (« Celle du Nord. ») n'y figure que dans un message de l'utilisateur et dans les appels qui suivent (`customer_id` des arguments de `query`, puis de `get_order`) : c'est de là que se déduit la cliente en cours.
 
 ## Réglages lus à l'exécution
 
-- `COMPACTION_MESSAGE_THRESHOLD` (`settings.compaction_message_threshold`, 8 par défaut) : nombre de **tours** stockés dans le contexte au début du tour à partir duquel le tour compacte. Un tour = un message de l'utilisateur, les appels d'outils et leurs résultats, la réponse.
-- `COMPACTION_KEEP_TURNS` (`settings.compaction_keep_turns`, 2 par défaut) : nombre de derniers tours gardés tels quels.
-- Les tests changent ces valeurs (public : 8 et 2 ; privé : d'autres valeurs). Lisez-les à chaque tour, sans les recopier dans une constante.
+- `settings.compaction_message_threshold` (8 par défaut) : nombre de **tours** stockés dans le contexte au début du tour à partir duquel le tour compacte. Un tour = un message de l'utilisateur, les appels d'outils et leurs résultats, la réponse.
+- `settings.compaction_keep_turns` (2 par défaut) : nombre de derniers tours gardés tels quels.
+- `settings` est l'objet `workshop_config.settings` (`from workshop_config import settings`). Les tests changent ces valeurs **sur cet objet** (`monkeypatch.setattr(settings, …)` ; public : 8 et 2 ; privé : d'autres valeurs), pas dans l'environnement. Lisez `settings.compaction_message_threshold` et `settings.compaction_keep_turns` **à chaque tour**, sans les recopier dans une constante ni les lire dans `os.environ` : un agent qui le fait passe les tests publics (valeurs par défaut), puis échoue aux tests privés. Les variables d'environnement `COMPACTION_MESSAGE_THRESHOLD` et `COMPACTION_KEEP_TURNS` (`.env`) ne servent qu'à régler ces valeurs au démarrage, pour `workshop serve`.
 
 ## Ce que lisent les tests
 
@@ -29,7 +43,7 @@ Avec `threshold` tours chargés, le tour compacte, en deux étapes, et la trace 
 | Champ | Contenu exigé |
 | --- | --- |
 | `threshold` | le seuil réglé |
-| `kept_turns` | `COMPACTION_KEEP_TURNS` |
+| `kept_turns` | `settings.compaction_keep_turns` |
 | `cleared_tool_results` | étape a : une entrée `{tool_call_id, name, turn}` par résultat d'outil ancien remplacé par un marqueur ; **tous** les résultats de la conversation chargée y figurent |
 | `summarized_turns` | étape b : `threshold - kept_turns`, les tours remplacés par le résumé |
 | `system_prompt` | le prompt de compaction envoyé : `my-agent/compaction_prompt.md` sans ses commentaires HTML, différent du prompt système de l'agent |
@@ -66,6 +80,7 @@ Au tour qui compacte, la question « Sans relire la commande, rappelez-moi son m
 - Au tour qui compacte, `input.state` contient la cliente et la commande en cours, reconstruites depuis la conversation chargée ; « Et celle-là, où en est-elle ? » porte sur CMD-2010 (référence dans les arguments d'un outil, ou statut dans la réponse).
 - Le choix entre homonymes, fait sur deux tours joués, survit à une compaction : après le remplissage écrit (`filler`), le tour compacte, `state.current_customer.city` est toujours Lille, et la réponse parle de Lille, jamais de Lyon.
 - Au changement de client, `current_customer` est remplacé et l'ancienne commande disparaît de `current_order`.
+- Après « Quel est le statut de la commande CMD-1042 de Martin Durand ? », `state.current_customer.name` doit valoir « Martin Durand ». Or `GET /orders/{reference}` ne renvoie que le `customer_id` de la commande (`C-DURAND-1`), sans le nom du client : quand vous lisez une commande, résolvez aussi son client (`GET /customers/{customer_id}`, qui renvoie `id`, `name` et `city`, ou `GET /resolution?type=customer&name=…`) avant de remplir `current_customer`.
 - Libre : les autres champs de l'état, sa forme dans le message envoyé au modèle, le texte du marqueur, la façon de rédiger le résumé à l'intérieur des rubriques.
 
 Utilisateur : camille-renard (`customer_service`, `organization-a`), jeu de données `standard`.
@@ -100,22 +115,23 @@ Utilisateur : camille-renard (`customer_service`, `organization-a`), jeu de donn
 
 ## Ce qui demande le mode live
 
-Le simulateur du proxy ne rédige pas de vrai résumé : le jugement du résumé, la réponse depuis le résumé, la mémoire de travail et les homonymes ne se vérifient qu'en mode live (voir [Vérifier](#vérifier)). L'effacement, le prompt dédié, le seuil et l'interface se vérifient aussi en mode simulé.
+Le simulateur du proxy ne rédige pas de vrai résumé et n'appelle aucun outil : le jugement du résumé, la réponse depuis le résumé, la mémoire de travail et les homonymes ne se **réussissent** qu'en mode live (voir [Vérifier](#vérifier)). L'effacement, le prompt dédié, le seuil et l'interface se vérifient aussi en mode simulé. Pour mettre au point l'état (`state`, `input.state`) sans le live, vous pouvez imposer au modèle simulé ses réponses et ses `tool_calls` par `POST /_test/scripts` du proxy (voir `gateway/model_gateway/src/model_gateway/simulated.py`) : ces assertions sont déterministes dès qu'un outil est appelé.
 
 ## Essayer soi-même
 
 1. Lancez `uv run --project tooling/cli workshop serve`, puis ouvrez http://127.0.0.1:8080.
 2. Pour charger une conversation écrite, envoyez-la à `POST http://127.0.0.1:8000/conversations/{id}/history` (corps `{"messages": [...], "append": false}`, des messages de chat complets ; `ChatClient.load` les produit depuis le format de `scenario.conversation`), puis jouez un tour.
 3. Ouvrez `traces/turns.jsonl` : sur la dernière ligne, lisez `compaction`, puis `input.history` et `input.state`.
-4. Lancez `workshop check 10`.
+4. Lancez `uv run --project tooling/cli workshop check 10`. Les tests démarrent eux-mêmes le serveur MCP de `my-agent/` et fixent `MCP_URL` : lisez-le au moment de l'appel.
 
 ## Pistes techniques
 
-- Les réglages sont dans `shared/workshop_config/src/workshop_config/__init__.py` (`compaction_message_threshold`, `compaction_keep_turns`).
+- Les réglages sont dans `shared/workshop_config/src/workshop_config/__init__.py` (`compaction_message_threshold`, `compaction_keep_turns`) : lisez `workshop_config.settings` à chaque tour (voir [Réglages lus à l'exécution](#réglages-lus-à-lexécution)).
 - Le contexte de la conversation est `agent_sdk.context` : `ctx.messages` (messages complets), `ctx.summary` (le résumé courant, placé par `for_model` après le prompt système), `ctx.state` (la mémoire de travail, hors des messages) et `replace(...)`.
 - `Tracer.compaction_call(client, messages)` fait l'appel au modèle du résumé sans outils ; `Tracer.compaction(...)` écrit la trace et renvoie l'événement à émettre. `mention(...)` de `agent_sdk.events` construit un message d'information.
 - Le contrat de la trace est décrit dans `docs/interface-contract.md` et `agent_sdk/src/agent_sdk/contract.py`.
 - Les données sont dans `business/business_api/src/business_api/seed_data.py`.
+- Le choix entre homonymes arrive en langue naturelle (« Celle du Nord. », « Celle de Lille », « C'est celui de Strasbourg »…), sans appel d'outil, et `state.current_customer` doit être à jour dans la trace de ce tour. Une expression régulière sur le message ne suffit pas : faites trancher le modèle, par exemple avec un outil local `set_current_customer(id)` proposé tant que `state.candidates` est rempli, ou une sortie structurée, et mettez l'état à jour dans le programme à partir de ce choix (l'`id` doit être l'un des candidats).
 
 ## Vérifier
 
@@ -126,7 +142,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se véri
 La non-régression rejoue les ateliers 03 à 10. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")`. Aucun test de cet atelier n'est marqué.
 
 ```powershell
-uv run --project tooling/cli workshop start 08
+uv run --project tooling/cli workshop start 10
 uv run --project tooling/cli workshop check 10
 uv run --project tooling/cli workshop check 10 --non-regression   # ateliers 03 à 10
 ```

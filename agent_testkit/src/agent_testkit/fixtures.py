@@ -27,7 +27,7 @@ from agent_sdk import trace_store as tracer  # noqa: E402
 from agent_gateway.chat_app import app as interface_app, reset_conversations  # noqa: E402
 from workshop_config import settings  # noqa: E402
 from agent_testkit.chat_client import ChatClient  # noqa: E402
-from agent_testkit.servers import start_uvicorn, free_port, wait_for  # noqa: E402
+from agent_testkit.servers import start_uvicorn, free_port, wait_for, wait_for_port  # noqa: E402
 
 OBSERVATION_TOKEN = "workshop-observation"
 
@@ -78,6 +78,45 @@ def services(session_dir):
             os.environ[name] = value
     for server in servers.values():
         server.should_exit = True
+
+
+@pytest.fixture(scope="session")
+def mcp_server(services):
+    """Serves `my-agent/mcp_server.py` (`application()`, `MCP_PATH`) and exports `MCP_URL`.
+
+    Same server as `workshop serve`: every workshop test reaches it through `MCP_URL`, from
+    workshop 06 on (before 06 the bootstrap server exposes no tool and the harness ignores it).
+    Yields None, without `MCP_URL`, when the file is missing or cannot start.
+    """
+    from agent_gateway.loader import load_mcp_server
+
+    try:
+        module = load_mcp_server()
+        app = module.application()
+        path = module.MCP_PATH
+    except Exception as exc:  # noqa: BLE001 - a broken student file must not hide the other tests
+        print(f"\nmy-agent/mcp_server.py not served: {type(exc).__name__}: {exc}")
+        yield None
+        return
+    port = free_port()
+    server = start_uvicorn(app, port)
+    wait_for_port("127.0.0.1", port)
+    url = f"http://127.0.0.1:{port}{path}"
+    previous = os.environ.get("MCP_URL")
+    os.environ["MCP_URL"] = url
+    yield url
+    if previous is None:
+        os.environ.pop("MCP_URL", None)
+    else:
+        os.environ["MCP_URL"] = previous
+    server.should_exit = True
+
+
+@pytest.fixture(autouse=True)
+def _workshop_mcp_server(request):
+    """Every workshop test (`workshops/*/tests/`) runs with the MCP server of `my-agent/` started."""
+    if "workshops" in request.node.path.parts:
+        request.getfixturevalue("mcp_server")
 
 
 @pytest.fixture

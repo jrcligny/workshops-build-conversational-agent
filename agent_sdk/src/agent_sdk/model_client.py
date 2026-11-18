@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any, Iterator
 
-import httpx
-
 
 class ModelUnavailable(RuntimeError):
     """The model could not answer (5xx, 429, timeout, unreachable): worth a fallback.
@@ -43,11 +41,14 @@ class ModelClient:
         return {"Authorization": f"Bearer {self.token}"}
 
     def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+        from agent_sdk.http_client import shared_http_client
+
         try:
-            with httpx.Client(timeout=self.timeout) as client:
-                response = client.post(f"{self.base_url}{path}", headers=self._headers(), json=payload)
-                response.raise_for_status()
-                return response.json()
+            response = shared_http_client().post(
+                f"{self.base_url}{path}", headers=self._headers(), json=payload, timeout=self.timeout
+            )
+            response.raise_for_status()
+            return response.json()
         except Exception as exc:  # noqa: BLE001
             outage = model_unavailable(exc)
             if outage is not None and outage is not exc:

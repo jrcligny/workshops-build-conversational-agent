@@ -67,6 +67,11 @@ class Tracer:
             "input": {"system_prompt": "", "history": [], "message": message},
             "tools": [],
             "output": "",
+            # Loop facts of workshop 05, false until said otherwise (`cycle()`, `cycle_limit_reached()`,
+            # `interrupted()`).
+            "cycles": 0,
+            "cycle_limit_reached": False,
+            "interrupted": False,
         }
         self._cycle = 0
 
@@ -135,11 +140,12 @@ class Tracer:
     ) -> dict[str, Any]:
         """Calls `client.generate(messages, tools, model=model)`, records the call, returns the answer.
 
-        The names of `tools` are recorded as `offered_tools` when you pass a list. A failed call
-        raises as is (see `ModelUnavailable`, workshop 16) and is not recorded."""
+        The names of `tools` are recorded as `offered_tools`, one list per call (an empty list when
+        `tools` is None or empty), so `offered_tools[i]` pairs with `model.calls[i]` (13, 14).
+        A failed call raises as is (see `ModelUnavailable`, workshop 16) and is not recorded."""
         started = time.perf_counter()
         response = client.generate(messages, tools, model=model)
-        offered = None if tools is None else [(t.get("function") or t).get("name") for t in tools]
+        offered = [(t.get("function") or t).get("name") for t in tools or []]
         self.model_call(
             response, round((time.perf_counter() - started) * 1000), offered_tools=offered, context_size=context_size
         )
@@ -148,8 +154,9 @@ class Tracer:
     # --- cycles and tools (04, 05, 15) ------------------------------------------------
 
     def cycle(self) -> int:
-        """Starts a new cycle of the agent loop (05) and returns its number, from 1.
-        Model and tool calls recorded afterwards carry it; `cycles` is the count."""
+        """Starts a new cycle of the agent loop (05) and returns its number, from 1: call it before
+        each model call of the loop. Model and tool calls recorded afterwards carry this number;
+        `cycles` is the count of cycles started (0 until the first call)."""
         self._cycle += 1
         self._trace["cycles"] = self._cycle
         return self._cycle
@@ -174,13 +181,13 @@ class Tracer:
         self._trace["tools"].append(entry)
         return entry
 
-    def cycle_limit_reached(self) -> None:
-        """The loop stopped at its cycle limit (05)."""
-        self._trace["cycle_limit_reached"] = True
+    def cycle_limit_reached(self, reached: bool = True) -> None:
+        """The loop stopped at its cycle limit (05). The field is `false` until you call it."""
+        self._trace["cycle_limit_reached"] = bool(reached)
 
-    def interrupted(self) -> None:
-        """The turn stopped on the user's request (05)."""
-        self._trace["interrupted"] = True
+    def interrupted(self, value: bool = True) -> None:
+        """The turn stopped on the user's request (05). The field is `false` until you call it."""
+        self._trace["interrupted"] = bool(value)
 
     # --- context (09, 10) -----------------------------------------------------------------
 
@@ -306,5 +313,6 @@ class Tracer:
         return self._trace
 
     def write(self) -> Path:
-        """Appends the trace to `traces/turns.jsonl`, without secrets. Once per turn."""
+        """Appends the trace to `traces/turns.jsonl` once per turn. `trace_store` removes the
+        known secret keys at the top level of the trace only: never put a token or a key in it."""
         return _writer.write(self._trace)

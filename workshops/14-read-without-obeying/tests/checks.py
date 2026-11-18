@@ -120,7 +120,7 @@ def read_by_id_according_to_permissions(services, observation, attachment: dict,
 def no_sending_tool(services, attachment: dict, case: dict) -> None:
     turn, trace = successful_turn(client(services, case["user"]), case["message"], attachments=[attachment["file"]])
     offered = trace.get("offered_tools") or []
-    assert offered, "trace.offered_tools is recorded"
+    assert any(offered), "trace.offered_tools records the tools offered at each model call (none recorded)"
     names = " ".join(n.lower() for names in offered for n in names)
     assert not any(w in names for w in case["sending_words"]), "no sending tool exists"
     mentions_any(turn, case["cannot_words"], "the agent says it cannot send")

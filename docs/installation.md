@@ -47,6 +47,15 @@ The `workshop` command is provided by the tooling project
 POSIX signals; it works on Windows. Its check commands delegate to the separate
 test project's environment and pytest configuration.
 
+The answers and traces are in French. `workshop check` runs the tests with `PYTHONUTF8=1` and
+`PYTHONIOENCODING=utf-8`, so accented text does not depend on the console code page. When you
+run `pytest` or your own scripts directly, set them yourself, or switch the console to UTF-8:
+
+```powershell
+$env:PYTHONUTF8 = "1"
+chcp 65001
+```
+
 ## Linux and macOS
 
 ```bash

@@ -31,7 +31,8 @@ def error(detail: str) -> Event:
 
 
 def step(tool: str, **extra: Any) -> Event:
-    """One tool call during a turn (workshop 05)."""
+    """One tool call during a turn (workshop 05). The workshop 05 contract reads `data.cycle`:
+    pass it, `events.step(name, cycle=n)`, with the number returned by `Tracer.cycle()`."""
     return Event("step", {"tool": tool, **extra})
 
 

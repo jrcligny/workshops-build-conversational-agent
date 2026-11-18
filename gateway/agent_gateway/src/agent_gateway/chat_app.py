@@ -148,7 +148,7 @@ def confirm(conversation_id: str, body: ConfirmationIn):
 
 @app.post("/conversations/{conversation_id}/interruption")
 def interrupt(conversation_id: str):
-    """Interruption request for the current turn (workshop 06)."""
+    """Interruption request for the current turn (workshop 05)."""
     if conversation_id not in _conversations:
         raise HTTPException(status_code=404, detail="unknown conversation")
     _interruptions.add(conversation_id)

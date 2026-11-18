@@ -8,12 +8,13 @@ Les tests sont dans [tests/](tests/).
 
 ### Étape `identite`
 
-**Les jetons** (service de jetons simulé, `business/business_api/src/business_api/auth.py`).
+**Les jetons** (service de jetons simulé de l'API métier : `business/business_api/src/business_api/auth.py` et la route `POST /auth/exchange` de `business/business_api/src/business_api/app.py`).
 
 - L'interface remet au *harness* le champ `app_token` de `POST /conversations`, transmis dans l'utilisateur de la conversation (`TestUser.app_token`). C'est un jeton d'**entrée** : `typ` vaut `"entry"`.
 - L'application n'accepte que des jetons `typ` = `"application"`. Avec un autre type, elle répond 401.
-- Il n'existe pas de route d'échange : l'échange est simulé. On vérifie le jeton d'entrée (signature HS256 avec le secret `TOKEN_SECRET`, type `entry`), puis on émet un jeton `application` pour le même `sub`, `role` et `organization`.
-- Imposé : ne jamais relayer le jeton d'entrée tel quel à l'application, et ne jamais fabriquer un jeton à partir du `user_id` déclaré quand `app_token` est absent ou invalide.
+- L'échange passe par `POST /auth/exchange`, corps `{"entry_token": "<jeton d'entrée>"}`, sans autre identité. Réponse : `{"app_token", "token_type": "application", "user_id", "role", "organization"}` pour le même utilisateur ; 401 pour tout ce qui n'est pas un jeton d'entrée valide (absent, mal formé, signé par une autre clé, expiré, ou déjà `application`). Enveloppe du SDK : `agent_sdk.http_client.exchange_entry_token(jeton_d_entree) -> str` (le jeton applicatif), qui lève `ServiceError` (`status_code` 401) en cas de refus. Cet appel n'apparaît pas dans le journal de l'application lu par les tests.
+- Le *harness* transmet le jeton d'entrée au serveur MCP dans l'en-tête `Authorization: Bearer <jeton d'entrée>` (`list_tools(jeton)`, `call_tool(..., jeton)`). Le serveur MCP le lit dans les en-têtes de la requête HTTP, l'échange lui-même, puis appelle l'application avec le jeton applicatif obtenu.
+- Imposé : ne jamais relayer le jeton d'entrée tel quel à l'application, et ne jamais fabriquer un jeton à partir du `user_id` déclaré quand `app_token` est absent ou invalide. Sans jeton valide, l'outil renvoie `"status": "denied"` (ou `"error"`) sans rien lire.
 
 **Le journal de l'application** (routes commençant par `/orders`, `/sources`, `/customers` ou `/invoices`) : `user_id`, `role`, `code`.
 
@@ -24,7 +25,7 @@ Les tests sont dans [tests/](tests/).
 
 **Les caches.** camille-renard (organisation A) lit CMD-1042 (« livrée »), puis ines-service-b (organisation B) pose la même question avec son propre jeton d'entrée. Les appels du second tour sont faits au nom d'ines-service-b (jamais réutilisés depuis le premier), et sa réponse ne contient pas « livrée ».
 
-**Le serveur MCP** (`my-agent/mcp_server.py`, lancé par le test comme à l'atelier 06 : `application()`, `MCP_PATH`).
+**Le serveur MCP** (`my-agent/mcp_server.py` : `application()`, `MCP_PATH`). Comme pour tous les ateliers depuis 06, la fixture `mcp_server` d'`agent_testkit` le démarre pour toute la session de tests et fixe `MCP_URL` ; `test_mcp_server_requires_the_entry_token` en lance en plus un sur un port libre (`checks.serve_mcp_server`), qui fixe aussi `MCP_URL` jusqu'à la fin du module. Vous n'avez rien à lancer pour `workshop check`.
 
 - Il lit le jeton d'entrée dans l'en-tête HTTP `Authorization: Bearer <jeton d'entrée>`.
 - Le test liste les outils sans en-tête, puis appelle l'outil générique (celui dont le schéma contient `source` et `filters`) avec `{"source": "orders", "filters": {"id": "CMD-1042"}}`.
@@ -45,7 +46,7 @@ Les tests sont dans [tests/](tests/).
 
 - **Politique** : `my-agent/sandbox/policy.yaml` (réglage `sandbox_policy_file`), lue par `agent_sdk/src/agent_sdk/sandbox.py`. Le test de la destination refusée la vérifie d'abord, puis joue le tour.
   - `is_policy_enforced()` doit valoir `True` (`active: true`) et `allowlist` ne doit pas être vide.
-  - `is_egress_allowed(url)` renvoie `None` tant que la politique est inactive, sinon `True` si l'URL correspond à une entrée, `False` dans tous les autres cas. Une entrée est **un hôte** (comparé au nom d'hôte de l'URL, sans le port) ou **un préfixe d'URL** (contient `://`).
+  - `is_egress_allowed(url)` renvoie `None` tant que la politique est inactive, sinon `True` si l'URL correspond à une entrée, `False` dans tous les autres cas. Une entrée est **un hôte** (comparé au nom d'hôte de l'URL, sans le port : `127.0.0.1`) ou **un préfixe d'URL** (contient `://`). Évitez un préfixe avec port : les tests démarrent les services sur des ports libres.
   - Attendu : `is_egress_allowed("<URL de l'API métier>/orders/CMD-1042")` vaut `True` ; `is_egress_allowed("https://example.invalid/secret")` vaut `False`.
 - **Sondes d'exécution** (`agent_testkit/src/agent_testkit/probes.py`) : pendant un tour, un *audit hook* Python enregistre les événements `open`, `socket.getaddrinfo` et `socket.connect` **dont la pile d'appel passe par un fichier de `my-agent/`**.
   - `contacted_hosts(events)` : `example.invalid` ne doit jamais y figurer.
@@ -114,7 +115,7 @@ Tour arrêté à la limite : `{"limit_reached": "duration"}`, un événement `me
 - L'agent soumet dès que l'utilisateur écrit « je confirme », ou garde le brouillon dans le *harness*.
 - `active: true` sans rien appliquer : si votre code résout `example.invalid`, la sonde le voit.
 - Un préfixe avec port dans l'*allowlist* (`http://127.0.0.1:8001/`) : les tests démarrent les services sur des ports libres.
-- Relire `.env` ou un module importé paresseusement **pendant** le tour d'écriture : l'ouverture apparaît dans `opened_files`.
+- Relire `.env` ou un module importé paresseusement **pendant** le tour d'écriture : l'ouverture apparaît dans `opened_files`. Le démarrage du serveur MCP par la fixture a lieu avant les tours ; un import fait au premier appel d'un outil, lui, est vu par la sonde.
 - Laisser le tour continuer après la limite, ou la signaler seulement dans le texte.
 
 ## Essayer soi-même
@@ -125,25 +126,44 @@ Tour arrêté à la limite : `{"limit_reached": "duration"}`, un événement `me
 
 ## Pistes techniques
 
-- `business/business_api/src/business_api/auth.py` : `issue_token`, `decode_token`, `user_from_header`, `ROLES`. La route `POST /observation/test-token` renvoie pour un utilisateur un `entry_token` et un `app_token` ; les tests s'en servent.
-- `list_tools(jeton)` et `call_tool(..., jeton)` de `agent_sdk/src/agent_sdk/mcp_client.py` envoient le jeton en `Authorization: Bearer` ; sa vérification et son échange restent à vous. Le filtre `id` n'est pas listé dans les champs de `GET /sources/orders`, mais l'application l'accepte.
-- Routes d'écriture : `POST /purchase-requests/drafts` (`subject`, `amount`, `supplier_id`), `GET /drafts/{id}`, `POST /drafts/{id}/submit` (renvoie `request_id`, `on_behalf_of`, `assigned_to`). La soumission n'est pas idempotente.
-- `gateway/agent_gateway/src/agent_gateway/chat_app.py` : `app_token`, `POST /conversations/{id}/confirmation` et le paramètre `confirmation`, qui reste vrai pour les tours suivants : décidez à quel brouillon il s'applique. `confirmation_requested(draft_id)` de `agent_sdk/src/agent_sdk/events.py` construit l'événement.
+- `business/business_api/src/business_api/auth.py` (`decode_token`, `user_from_header`, `ROLES`) montre ce que l'application vérifie. N'importez pas `business_api` depuis `my-agent/` (ce n'est pas une dépendance du projet) et n'émettez aucun jeton vous-même : l'échange passe par `exchange_entry_token`, le secret `TOKEN_SECRET` reste côté application. La route `POST /observation/test-token` renvoie pour un utilisateur un `entry_token` et un `app_token` ; les tests s'en servent.
+- `list_tools(jeton)` et `call_tool(..., jeton)` de `agent_sdk/src/agent_sdk/mcp_client.py` envoient le jeton en `Authorization: Bearer`. Dans un outil du serveur MCP (SDK `mcp` 2.3, `MCPServer` de la coquille), un paramètre annoté `Context` donne accès aux en-têtes de la requête HTTP ; il n'apparaît pas dans le schéma de l'outil, donc le modèle ne le voit pas :
+
+  ```python
+  from typing import Any
+
+  from mcp.server.mcpserver import Context
+  from agent_sdk.http_client import ServiceError, business_api, exchange_entry_token
+
+  @server.tool()
+  def data_query(source: str, filters: dict, ctx: Context) -> dict[str, Any]:
+      authorization = (ctx.headers or {}).get("authorization", "")  # ou ctx.request_context.request.headers
+      entry = authorization[7:].strip() if authorization.lower().startswith("bearer ") else None
+      try:
+          token = exchange_entry_token(entry)
+      except ServiceError:
+          return {"status": "denied", "error": "identité absente ou invalide"}
+      ...  # business_api(token).post(f"/sources/{source}/query", json=...)
+  ```
+
+  La liste des outils doit rester accessible sans en-tête (le test liste les outils sans jeton). La réponse de `POST /auth/exchange` (`user_id`, `role`, `organization`) peut servir au *harness* pour vérifier l'identité et renseigner `trace.identity`. Le filtre `id` n'est pas listé dans les champs de `GET /sources/orders`, mais l'application l'accepte.
+- Routes d'écriture : `POST /purchase-requests/drafts` (`subject`, `amount`, `supplier_id`), `GET /drafts/{id}`, `POST /drafts/{id}/submit` (renvoie `request_id`, `status`, `on_behalf_of`, `assigned_to`). La soumission n'est pas idempotente. Le `status` de cette réponse est le statut **métier** (`"submitted"`) : ne le fusionnez pas tel quel dans le résultat de l'outil, dont `status` reste `"ok"`, `"denied"` ou `"error"`. L'approbation de facture (`POST /invoices/{id}/approval/drafts`, rôle `accountant`) suit le même schéma ; elle n'est pas testée ici et sert à l'atelier 13.
+- `gateway/agent_gateway/src/agent_gateway/chat_app.py` : `app_token`, `POST /conversations/{id}/confirmation` et le paramètre `confirmation`. L'interface consomme le geste : `confirmation=True` n'est transmis qu'au tour **suivant** le geste, puis revient à `False` ; un brouillon préparé plus tard demande un nouveau geste. Décidez à quel brouillon il s'applique. `confirmation_requested(draft_id)` de `agent_sdk/src/agent_sdk/events.py` construit l'événement.
 - `agent_sdk/src/agent_sdk/sandbox.py` et `agent_testkit/src/agent_testkit/probes.py` disent exactement ce qui est comparé et observé. Les sondes ne voient que le code qui s'exécute dans le processus des tests ; le confinement réel d'un conteneur reste votre responsabilité.
 
 ## Vérifier
 
-Le mode live est la voie de référence : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Le secret des jetons est `TOKEN_SECRET`.
+Le mode live est la voie de référence : `PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT`. Le secret des jetons (`TOKEN_SECRET`) ne sert qu'à l'application ; il ne doit jamais apparaître dans le contexte du modèle, la trace ou la réponse.
 
 Les tests restent rouges tant que le critère n'est pas atteint. Ce qui se vérifie par le code (journal de l'application, état, politique, sondes, trace, événements) est vérifié d'abord, puis la rubrique de l'étape `ecritures` (juge sémantique s'il est configuré : `JUDGE_MODE`, `JUDGE_BASE_URL`, `JUDGE_API_KEY`, `AZURE_OPENAI_JUDGE_DEPLOYMENT`).
 
-La non-régression rejoue les ateliers 03 à 07. Seuls les tests de l'atelier 03 sont marqués `superseded_by("04")`. Les tests des ateliers précédents ouvrent leurs conversations avec `"sign_in": true` : vos lectures doivent continuer de réussir, et la politique active ne doit pas bloquer leurs outils.
+La non-régression rejoue les ateliers 03 à 07. Sont ignorés les tests marqués `superseded_by` : des tests de l'atelier 03 (`superseded_by("04")`) et le test 05 du filtre `late` (`superseded_by("06")`). Les tests des ateliers précédents ouvrent leurs conversations avec `"sign_in": true` : vos lectures doivent continuer de réussir (le jeton d'entrée est désormais échangé par le serveur MCP), et la politique active ne doit pas bloquer leurs outils.
 
 ```powershell
-workshop start 07
-workshop check 07 --etape identite      # première étape
-workshop check 07 --etape ecritures     # deuxième étape
-workshop check 07 --etape confinement   # troisième étape
-workshop check 07                       # les trois étapes
-workshop check 07 --non-regression      # ateliers 03 à 07
+uv run --project tooling/cli workshop start 07
+uv run --project tooling/cli workshop check 07 --etape identite      # première étape
+uv run --project tooling/cli workshop check 07 --etape ecritures     # deuxième étape
+uv run --project tooling/cli workshop check 07 --etape confinement   # troisième étape
+uv run --project tooling/cli workshop check 07                       # les trois étapes
+uv run --project tooling/cli workshop check 07 --non-regression      # ateliers 03 à 07
 ```

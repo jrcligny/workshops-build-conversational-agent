@@ -45,6 +45,7 @@ Ne rien garder ne suffit pas : l'agent ne doit pas laisser croire le contraire. 
 
 - L'annonce est un événement de l'interface au premier tour de la conversation, comme la mention de l'atelier 03.
 - Le signalement est un champ de la trace du tour : l'éditeur les agrège en lisant `traces/turns.jsonl`.
+- Pour reconnaître une préférence durable, quel que soit le phrasé, laissez le modèle la signaler par un outil local du harnais aux valeurs énumérées (par exemple `report_preference`, voir [contrat.md](contrat.md)) plutôt que par une règle sur le texte.
 - Si vous avez fait l'atelier bonus (mémoire de préférences), ses tests et ceux de cet atelier s'excluent : ce sont deux choix opposés du chapitre.
 
 ## Pour aller plus loin

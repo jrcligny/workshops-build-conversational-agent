@@ -1,6 +1,6 @@
 # Atelier 13 — Des procédures chargées à la demande (*skills*)
 
-Chapitre 14 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 13 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
@@ -36,11 +36,13 @@ Les outils d'écriture suivent la même logique (**révélation progressive des 
 ## Pistes
 
 - Le chargement ne doit servir que des procédures du catalogue, jamais un chemin fourni par le modèle.
-- La description d'un *skill* dit **quand** l'utiliser, pas comment faire.
+- La description d'un *skill* dit **quand** l'utiliser, pas comment faire ; rangez-la dans le manifeste, à côté de l'identifiant (un champ `description`, par exemple).
 - Les outils proposés se recalculent à chaque cycle, d'après les *skills* chargés **et** les droits de l'utilisateur.
 - La compaction de l'atelier 10 doit traiter les *skills* actifs à part, comme l'historique récent.
 - Un refus de chargement ne doit pas être retenu comme un résultat valable pour la suite.
 - Restent libres : les identifiants, titres et textes des trois *skills*, et la manière de les rendre au modèle après compaction.
+
+> **Ce que cet atelier change pour les précédents.** Dès que l'outil d'écriture est lié à son *skill*, toute préparation passe par un chargement préalable, y compris celles de l'atelier 07 rejouées en non-régression, et celles de l'atelier 14. Voir le [contrat](contrat.md) pour ce que ces tests continuent d'exiger.
 
 ## Pour aller plus loin
 

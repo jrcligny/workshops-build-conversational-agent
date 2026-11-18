@@ -1,6 +1,6 @@
 # Atelier 15 — Observer et évaluer
 
-Chapitre 16 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 15 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
@@ -26,7 +26,7 @@ Les huit cas limites, illustrés par les parcours officiels :
 - **Utilisateur sans droit d'écriture** : un utilisateur en lecture seule demande une demande d'achat → l'agent dit qu'il n'en a pas le droit, sans prétendre l'avoir fait.
 - **Facture en double** : une comptable demande d'approuver FAC-3301-BIS → l'agent signale un doublon probable de FAC-3301 avant toute approbation.
 
-Vos parcours doivent en proposer d'autres variantes. Exemple de contrefactuel : rejouer le parcours « CMD-1402 » avec la référence exacte CMD-1042 ; l'agent doit alors donner le statut (livrée) sans parler de référence approchée.
+Vos parcours doivent en proposer d'autres variantes. Exemple de contrefactuel : l'un de vos parcours demande le statut d'une référence inexistante, CMD-3015 (piste : CMD-3105) ; son contrefactuel rejoue la même question avec la référence exacte CMD-3105, et l'agent doit alors donner le statut (en préparation) sans parler de référence approchée.
 
 ## À éviter
 
