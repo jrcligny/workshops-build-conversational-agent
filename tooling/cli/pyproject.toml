@@ -54,6 +54,20 @@ packages = ["src/workshop_tools"]
 # Kit tests sit next to the component they test (`<component>/tests/`, `tooling/cli/integration/`);
 # clients/chat_ui has its own project.
 testpaths = ["../../agent_sdk", "../../agent_testkit", "../../business", "../../gateway", "../../tooling", "../../workshops"]
+# Same list as start.py and `workshop_tools.devstack.SOURCE_ROOTS`: imports must not depend on the
+# editable `.pth` files, which Python 3.12+ skips when macOS marks them hidden (iCloud Drive).
+pythonpath = [
+    "src",
+    "../../agent_sdk/src",
+    "../../agent_testkit/src",
+    "../../shared/workshop_config/src",
+    "../../shared/text_vectors/src",
+    "../../business/business_api/src",
+    "../../business/docs_search/src",
+    "../../gateway/agent_gateway/src",
+    "../../gateway/model_gateway/src",
+    "../../clients/chat_ui/src",
+]
 norecursedirs = [".*", "__pycache__", "node_modules", "venv", "inert_agent"]
 # Fixture loading and source paths remain explicit when running from another cwd.
 addopts = "-q --strict-markers --import-mode=importlib -p agent_testkit.fixtures -p agent_testkit.superseded -p agent_testkit.private -p agent_testkit.steps"

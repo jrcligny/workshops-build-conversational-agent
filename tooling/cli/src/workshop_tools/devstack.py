@@ -17,6 +17,20 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 TOOLS_SOURCE = REPO_ROOT / "tooling" / "cli" / "src"
+# Put on PYTHONPATH for every service (same list as start.py and the pytest `pythonpath`):
+# imports must not depend on the editable `.pth` files, which Python skips when macOS hides them.
+SOURCE_ROOTS = [
+    TOOLS_SOURCE,
+    REPO_ROOT / "agent_sdk" / "src",
+    REPO_ROOT / "agent_testkit" / "src",
+    REPO_ROOT / "shared" / "workshop_config" / "src",
+    REPO_ROOT / "shared" / "text_vectors" / "src",
+    REPO_ROOT / "business" / "business_api" / "src",
+    REPO_ROOT / "business" / "docs_search" / "src",
+    REPO_ROOT / "gateway" / "agent_gateway" / "src",
+    REPO_ROOT / "gateway" / "model_gateway" / "src",
+    REPO_ROOT / "clients" / "chat_ui" / "src",
+]
 UI_ROOT = REPO_ROOT / "clients" / "chat_ui"
 PROJECTS = {
     "business_api": REPO_ROOT / "business" / "business_api",
@@ -63,7 +77,7 @@ def services(port_offset: int = 0) -> list[Service]:
         **os.environ,
         "PYTHONUNBUFFERED": "1",
         "PYTHONPATH": os.pathsep.join(
-            [str(TOOLS_SOURCE)]
+            [str(path) for path in SOURCE_ROOTS]
             + ([os.environ["PYTHONPATH"]] if os.environ.get("PYTHONPATH") else [])
         ),
         "BUSINESS_API_URL": f"http://{HOST}:{ports['business_api']}",

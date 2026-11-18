@@ -111,7 +111,8 @@ an activated virtual environment. It works from any directory when given its
 absolute path. `--port-offset 10` and `--reset-data` work on both platforms.
 
 The script synchronizes only `tooling/cli/` with its lockfile, then runs
-`uv run --project tooling/cli --no-sync workshop serve`. It never installs
+`uv run --project tooling/cli --no-sync python -m workshop_tools serve`, with the
+kit's `src/` folders on `PYTHONPATH`. It never installs
 test dependencies. Alternatively, from the repository root on any supported OS:
 
 ```bash
@@ -157,8 +158,11 @@ and `.venv`. There is no shared application environment or uv workspace lock:
 
 All six select Python 3.13. The launcher synchronizes their lockfiles with
 `uv sync --project <path> --locked`, then starts each with its own interpreter.
-Shared source imports are resolved using the repository on `PYTHONPATH`, not by
-installing the test project's combined dependencies into the services.
+Shared source imports are resolved using the `src/` folders of the repository on
+`PYTHONPATH` (same list for `start.py`, the launcher and the pytest `pythonpath`), so
+they do not depend on the editable `.pth` files that macOS may hide (see the
+README, section Troubleshooting). The test project's combined dependencies are
+never installed into the services.
 Database initialization also runs in the owning application's environment.
 
 Tooling is a separate project set, not a root package:
