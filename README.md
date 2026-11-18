@@ -131,8 +131,9 @@ script, which relies on the `.pth` file.
 
 Fix: move the repository outside iCloud Drive (for example `~/workshops`), delete
 the `.venv` folders that were copied, then run `python start.py` again. As a
-temporary workaround, `chflags -R nohidden tooling/cli/.venv`, or
-`uv run --project tooling/cli python -m workshop_tools ...` instead of `workshop ...`.
+temporary workaround, clear the flag with `chflags -R nohidden tooling/cli/.venv`
+(again after each `uv sync`), or bypass the `workshop` script:
+`PYTHONPATH=tooling/cli/src uv run --project tooling/cli python -m workshop_tools check 03`.
 iCloud also syncs the large `.venv` folders and may evict their files, which is
 another reason to keep the repository outside of it.
 
