@@ -52,6 +52,10 @@ tant que le prompt n'énonce pas la règle.
   essais répétés, pas par un seul.
 - Un tour doit toujours produire du texte, sinon l'échange ne compte pas dans la
   conversation.
+- En mode simulé, le proxy répond toujours par la même phrase prudente : un vert sur les
+  tests de refus prouve seulement que le prompt énonce la règle. Seul le live éprouve le
+  refus ; le juge de sens, quand il est configuré, y vérifie ce que dit votre prompt, pas
+  les mots qu'il contient.
 
 ## Pour aller plus loin
 

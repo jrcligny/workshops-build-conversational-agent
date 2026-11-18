@@ -28,6 +28,7 @@ def masked_and_observable_traces(chat_client, traces, case: dict) -> None:
     assert model.get("usage") and "duration_ms" in model and model.get("calls"), "trace.model records usage, duration_ms and calls"
     if case.get("min_model_calls"):
         assert len(model.get("calls") or []) >= case["min_model_calls"], "a chained turn records one entry per model call"
-    assert len(tools(trace)) >= case["min_tool_calls"] and all("duration_ms" in c for c in tools(trace)), (
-        "each tool call records duration_ms"
+    assert len(tools(trace)) >= case["min_tool_calls"], (
+        f"the question needs at least {case['min_tool_calls']} tool call(s), recorded in tools[]"
     )
+    assert all("duration_ms" in c for c in tools(trace)), "each tool call records duration_ms"

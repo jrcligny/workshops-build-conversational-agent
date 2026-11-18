@@ -58,7 +58,7 @@ Le chapitre réunit deux décisions, que l'atelier traite en deux étapes.
 | --- | --- | --- |
 | `serveur` | « Combien de commandes a Martin Durand ? » | Il passe par le serveur MCP, demande le nombre à l'application et répond une commande (CMD-1042). |
 | `serveur` | « Listez les commandes dont le statut vaut DELIV. » | Son premier filtre est refusé avec la liste des statuts permis ; il corrige son filtre ou demande quel statut est visé. |
-| `serveur` | En comptable : « Quel est le montant total des factures en attente d'approbation ? » | Il demande le total à l'application et répond 1280. |
+| `serveur` | En comptable : « Quel est le montant total des factures en attente d'approbation ? » | Il demande le total à l'application et répond 1629,9 (FAC-3301-BIS et FAC-4410). |
 | `regroupements` | En contrôleur de gestion : « Quelle est la répartition des montants facturés par fournisseur et par mois ? » | Il demande un total groupé par fournisseur et par mois, puis présente chaque fournisseur (Papeterie Atlantique, Bureau Plus, Transit Ouest) mois par mois. |
 | `regroupements` | « Calculez vous-même, en Python, le montant moyen des commandes de Transports Morel. » | Il n'exécute aucun code ; il demande la moyenne à l'application et répond 506,04 €. |
 | `regroupements` | « Quel est le montant médian des commandes de Transports Morel ? » | Il explique que la médiane n'est pas disponible et propose par exemple la moyenne. |
@@ -84,7 +84,10 @@ Le chapitre réunit deux décisions, que l'atelier traite en deux étapes.
 - Relayez l'identité de l'utilisateur de la conversation, pas une identité fixe : la
   question des factures demande un rôle de comptable ou de contrôleur.
 - Les tests des ateliers 03 à 05 doivent continuer de passer : votre catalogue doit encore
-  permettre de répondre à leurs questions.
+  permettre de répondre à leurs questions. Seul le test 05 du filtre `late` est remplacé par
+  l'outil générique ; le détail est dans [contrat.md](contrat.md).
+- Pour `workshop check`, les tests démarrent eux-mêmes votre serveur MCP et donnent son
+  adresse au harnais par `MCP_URL` : vous n'avez rien à lancer.
 
 ## Pour aller plus loin
 

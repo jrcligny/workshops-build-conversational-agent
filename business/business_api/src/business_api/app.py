@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from business_api.auth import decode_token, issue_token, user_from_header
+from business_api.auth import ROLES, decode_token, issue_token, user_from_header
 from business_api.seed_data import DATASETS, case_catalog, load_dataset, user as user_record
 from business_api.services import (
     SOURCES,
@@ -47,6 +47,10 @@ class ResetIn(BaseModel):
 
 class TokenIn(BaseModel):
     user_id: str
+
+
+class ExchangeIn(BaseModel):
+    entry_token: str
 
 
 class FailureIn(BaseModel):
@@ -90,7 +94,9 @@ async def call_log_and_failures(request: Request, call_next):
             identity = decode_token(auth.split(" ", 1)[1].strip())
         except Exception:  # noqa: BLE001
             identity = None
-    if request.url.path.startswith("/observation"):
+    if request.url.path.startswith(("/observation", "/auth")):
+        # Test observation and the simulated token service: outside the business application's
+        # log and failures.
         return await call_next(request)
     failure = active_failure()
     if failure == "unavailable" and request.method in {"GET", "POST"}:
@@ -106,6 +112,29 @@ async def call_log_and_failures(request: Request, call_next):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.post("/auth/exchange")
+def auth_exchange(body: ExchangeIn):
+    """Simulated token service: exchanges a valid entry token for an application token.
+
+    The entry token (`typ` = "entry") is the one the interface gives the agent for the signed-in
+    user. The answer is an application token for the same user, role and organization, the only
+    kind the business API accepts. Any other token (forged, expired, already "application")
+    is refused with 401: an identity is never derived from a declared user id.
+    """
+    claims = decode_token(body.entry_token)
+    if claims.get("typ") != "entry":
+        raise HTTPException(status_code=401, detail="only an entry token can be exchanged")
+    if claims.get("role") not in ROLES:
+        raise HTTPException(status_code=401, detail="unknown role")
+    return {
+        "app_token": issue_token(claims["sub"], claims["role"], claims["organization"], typ="application"),
+        "token_type": "application",
+        "user_id": claims["sub"],
+        "role": claims["role"],
+        "organization": claims["organization"],
+    }
 
 
 @app.get("/customers")

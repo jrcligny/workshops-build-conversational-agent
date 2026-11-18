@@ -57,7 +57,11 @@ def several_cycles(chat_client, case: dict) -> None:
     def check():
         chat_client.open()
         _, trace = successful_turn(chat_client, case["question"])
-        assert isinstance(trace.get("cycles"), int) and trace["cycles"] >= 2, "trace.cycles counts the loop cycles (>= 2 here)"
+        assert isinstance(trace.get("cycles"), int) and trace["cycles"] >= 2, (
+            f"trace.cycles counts the cycles started in the turn (>= 2 here: a tool call, then the answer); "
+            f"got cycles={trace.get('cycles')!r} with {len(tools(trace))} tool call(s) "
+            "(no tool call means the model chose none: the simulated model never calls tools, run live)"
+        )
         names = [tool_name(c) for c in tools(trace)]
         assert len(names) >= 2, "a chained question needs a customer search, then a call on its orders"
         cycles = [c.get("cycle") for c in tools(trace)]
@@ -73,10 +77,15 @@ def independent_calls_grouped(chat_client, case: dict) -> None:
         chat_client.open()
         _, trace = successful_turn(chat_client, case["question"])
         calls = tools(trace)
-        assert len({tool_name(c) for c in calls}) >= 2, "two independent calls are expected"
+        assert len({tool_name(c) for c in calls}) >= 2, (
+            "two different tools are expected in the turn (the customer search, then the order lists); "
+            f"got {sorted({tool_name(c) for c in calls})} (none: the simulated model never calls tools, run live)"
+        )
         cycles = [c.get("cycle") for c in calls]
         assert all(isinstance(i, int) for i in cycles), "each tools[] entry records its cycle index"
-        assert len(set(cycles)) < len(cycles), "independent calls requested together run in the same cycle"
+        assert len(set(cycles)) < len(cycles), (
+            f"two tool calls returned by the same model call run in the same cycle (got cycles {cycles})"
+        )
 
     repeatedly(check, label=case["label"])
 

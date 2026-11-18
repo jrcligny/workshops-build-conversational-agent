@@ -4,13 +4,14 @@ Ce document complète le [README.md](README.md) : il détaille ce que lisent les
 
 ## Ce que lisent les tests
 
-Chaque question doit produire exactement un appel d'outil, lu dans `tools` de la trace.
-Pour chaque entrée de `tools`, sont imposés :
+Pour les questions sur CMD-1042, CMD-1402 et CMD-0881, chaque question doit produire exactement
+un appel d'outil (côté modèle ; l'outil peut faire plusieurs requêtes HTTP), lu dans `tools`
+de la trace. Pour chaque entrée de `tools`, sont imposés :
 
 - `name` (nom technique libre) et `arguments` (un objet) ;
 - `result.status`, parmi `ok`, `approximate`, `not_found` et `error` ;
-- en cas de rapprochement : `result.status` vaut `approximate` avec `result.order`,
-  ou `not_found` avec `result.suggestions`.
+- en cas de rapprochement : `result.status` vaut `not_found` avec `result.suggestions`
+  (forme recommandée, celle des exemples), ou, toléré, `approximate` avec `result.order`.
 
 Les tests vérifient aussi :
 
@@ -21,8 +22,10 @@ Les tests vérifient aussi :
   dit pas « livrée » sans point d'interrogation ;
 - CMD-0881 : statut `not_found`, sans `order` ni `suggestions`, et la réponse ne contient
   pas « supprim » ;
-- `1042;DROP` : aucun appel à `/orders` sur l'API métier, et chaque outil appelé renvoie
-  `error` (le format attendu est `CMD-NNNN`).
+- `1042;DROP` : aucun appel à `/orders` sur l'API métier, et `tools` contient **au moins
+  un** appel d'outil, tous avec le statut `error` (le format attendu est `CMD-NNNN`). Le
+  modèle transmet la référence telle quelle à l'outil, qui la rejette : un agent qui répond
+  sans appeler l'outil échoue à ce test ;
 - au tour suivant de la même conversation, `input.history` rejoue le message assistant
   porteur de l'appel d'outil (`tool_calls`) et le message `tool` qui lui répond (même
   `tool_call_id`), dont le contenu porte le statut lu (`delivered`).
@@ -63,7 +66,7 @@ uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne
-de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
+de `traces/turns.jsonl`. Lancez enfin `uv run --project tooling/cli workshop check 04`.
 
 ## Pistes techniques
 
@@ -76,17 +79,24 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 04`.
 - Les données de départ sont dans `business/business_api/src/business_api/seed_data.py`.
 - Le harnais trouve les services dans les variables d'environnement `BUSINESS_API_URL`,
   `PROXY_URL` et `DOCS_SEARCH_URL`, définies par `workshop serve` comme par
-  `workshop check` (ports différents : lisez-les au moment de l'appel). L'utilisateur remis
-  au harnais porte un jeton d'entrée (`TestUser.app_token`) ; jusqu'à l'atelier 07, vous
-  pouvez obtenir un jeton applicatif comme bon vous semble.
-- `agent_sdk/src/agent_sdk/http_client.py` porte le transport : `business_api(jeton).get("/orders/CMD-1042")`
+  `workshop check` (ports différents : lisez-les au moment de l'appel).
+- L'utilisateur remis au harnais porte un jeton d'entrée (`user.app_token`, `typ` = `entry`),
+  que l'API métier refuse (401). Échangez-le contre un jeton applicatif avec
+  `agent_sdk.http_client.exchange_entry_token` (route `POST /auth/exchange` de l'API métier),
+  puis présentez ce dernier : `token = exchange_entry_token(user.app_token)`, puis
+  `business_api(token).get(...)`. L'atelier 07 déplacera cet échange dans le serveur MCP.
+- `agent_sdk/src/agent_sdk/http_client.py` porte le transport : `business_api(token).get("/orders/CMD-1042")`
   lit `BUSINESS_API_URL` à l'appel, envoie `Authorization: Bearer`, applique un délai et lève
   `ServiceError` (`status_code` 404, 401… ou `None` si le service est injoignable). Le choix
   de la route, la validation et l'interprétation restent à vous.
 - `agent_sdk/src/agent_sdk/tool_schema.py` (`declare(fonction)`) construit la déclaration
   OpenAI d'un outil à partir d'une fonction annotée et de sa docstring. Le nom, la
   description, les paramètres et la validation restent à vous ; rien ne s'exécute seul.
-- `agent_sdk/src/agent_sdk/trace_store.py` montre comment enregistrer les appels d'outils.
+- Le protocole d'appel d'outil (`tools`, `tool_calls`, message `tool`, second appel) est
+  décrit pas à pas, avec un aller-retour JSON, dans le [README](README.md#le-tour-avec-outil-pas-à-pas).
+- `tracer.tool_call(nom, arguments, résultat)` (`Tracer`, `agent_sdk/src/agent_sdk/trace.py`)
+  enregistre chaque appel d'outil dans `tools` de la trace ; passez `tools=` à
+  `tracer.call_model(...)` pour que les outils proposés soient tracés.
 - `agent_sdk/src/agent_sdk/context.py` garde le contexte d'un tour à l'autre : enregistrez avec
   `ctx.record(...)` tous les messages du tour (utilisateur, assistant avec `tool_calls`,
   résultats `tool`, réponse finale), pas seulement le texte final ; `ctx.for_model(...)` les
@@ -110,7 +120,7 @@ La non-régression rejoue les ateliers 03 et 04. Les trois tests de l'atelier 03
 désormais un outil et doit donner un statut sourcé.
 
 ```powershell
-workshop start 04
-workshop check 04
-workshop check 04 --non-regression   # ateliers 03 à 04
+uv run --project tooling/cli workshop start 04
+uv run --project tooling/cli workshop check 04
+uv run --project tooling/cli workshop check 04 --non-regression   # ateliers 03 à 04
 ```

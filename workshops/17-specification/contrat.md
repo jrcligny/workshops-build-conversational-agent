@@ -5,14 +5,14 @@ Ce document détaille ce que vérifient les tests de l'atelier. Pour l'objectif 
 ## Ce que lisent les tests
 
 - **Dossier** : `my-agent/local-mode/` (`specifications/` et `controls/`).
-- **Spécification** : `my-agent/local-mode/specifications/*.md`. Seul le premier fichier par ordre alphabétique est lu. Il doit avoir un titre Markdown (ligne qui commence par `#`) pour chacune des cinq parties, avec ces intitulés :
+- **Spécification** : `my-agent/local-mode/specifications/*.md`. Seul le premier fichier par ordre alphabétique est lu : gardez-y **un seul** fichier `.md` (pas de `README.md` ni de notes à côté ; selon le système, les majuscules passent avant les minuscules). Il doit avoir un titre Markdown pour chacune des cinq parties, avec ces intitulés :
   - `Comportement`
   - `Cas limites`
   - `Résultats indésirables`
   - `Vérification`
   - `Hors périmètre`
 
-  Les accents, le singulier ou le pluriel, et `Hors-périmètre` sont acceptés. Sous chaque titre, au moins 40 caractères de texte avant le titre suivant.
+  Les accents, le singulier ou le pluriel, et `Hors-périmètre` sont acceptés. Un titre est une ligne `#` à `######` **suivie d'une espace** (`## Comportement`, pas `##Comportement`), hors des blocs de code : une ligne `# commentaire` dans un bloc ```` ``` ```` ou `~~~` n'est pas un titre. Sous chaque titre, au moins 40 caractères de texte, hors blocs de code, avant le titre suivant, quel que soit son niveau : un sous-titre (`### …`) termine la partie. En cas d'échec, le message nomme la partie par sa clé anglaise : `behaviour` (Comportement), `edge cases` (Cas limites), `undesirable results` (Résultats indésirables), `verification` (Vérification), `out of scope` (Hors périmètre).
 - **Essais** : `my-agent/local-mode/controls/test_*.py`. Le test les exécute deux fois depuis la racine du dépôt, avec l'environnement de test :
 
   ```powershell
@@ -30,7 +30,7 @@ Restent libres : le contrôle choisi (par exemple un contrôle déjà présent d
 
 ### Questions à essayer
 
-Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée ». Un essai fait répondre au modèle, sans aucun appel d'outil, « La commande CMD-0000 est livrée. » à la question « Où en est la commande CMD-0000 ? ». Contrôle actif : une `mention` signale CMD-0000 comme non vérifiée, l'essai passe. Contrôle désactivé : aucune mention, l'essai échoue.
+Exemple de contrôle : « une référence citée sans avoir été consultée est signalée comme non vérifiée ». Un essai fait répondre au modèle, sans aucun appel d'outil, « La commande CMD-0000 est livrée. » à la question « Où en est la commande CMD-0000 ? ». Contrôle actif : une `mention` signale CMD-0000 comme non vérifiée, l'essai passe. Contrôle désactivé : aucune mention, l'essai échoue. « Consultée » s'entend ici « lue par un outil pendant le tour » (aucune entrée de `tools[]` ne porte CMD-0000) : la citer dans la question ne la vérifie pas. Si votre spécification exempte les références citées par l'utilisateur (cas limite ci-dessous), cet essai échouera avec le contrôle actif : prenez alors une référence que seul le modèle introduit.
 
 Squelette de spécification attendu (le contenu est le vôtre) :
 
@@ -61,6 +61,32 @@ Une sortie fausse peut être imposée au modèle simulé par le proxy, qui la re
 
 Un script peut aussi porter un appel d'outil (`"tool"`, au format d'un `tool_call` OpenAI).
 
+Essai minimal (avec le plugin de fixtures déclaré dans `controls/conftest.py`) :
+
+```python
+# my-agent/local-mode/controls/conftest.py
+pytest_plugins = ["agent_testkit.fixtures"]
+```
+
+```python
+# my-agent/local-mode/controls/test_reference_non_verifiee.py
+import httpx
+
+def test_reference_inventee_signalee(services, chat_client, mcp_server):
+    proxy = services["proxy"]
+    token = httpx.post(f"{proxy}/_test/token", timeout=10).json()["token"]
+    script = {"if_contains": "CMD-0000", "content": "La commande CMD-0000 est livrée."}
+    httpx.post(f"{proxy}/_test/scripts", headers={"Authorization": f"Bearer {token}"},
+               json={"scripts": [script]}, timeout=10).raise_for_status()
+    chat_client.open()                                    # camille-renard par défaut
+    turn = chat_client.turn("Où en est la commande CMD-0000 ?")
+    assert turn.ok, turn.error
+    mentions = [data for kind, data in turn.events if kind == "mention"]
+    assert any("CMD-0000" in m.get("content", "") for m in mentions), turn.text
+```
+
+`chat_client.open(user_id, role, organization)` ouvre une conversation ; `turn(texte)` renvoie un tour avec `events` (liste de couples `(type, données)`), `types`, `text`, `ok` et `error` (`agent_testkit/src/agent_testkit/chat_client.py`). La fixture `mcp_server` démarre `my-agent/mcp_server.py` et fixe `MCP_URL` : hors de `workshops/`, elle n'est pas activée d'office, demandez-la si votre *harness* passe par le serveur MCP.
+
 ### Contre-exemples techniques
 
 - Des essais qui passent avec et sans le contrôle : la seconde exécution doit échouer, sinon rien ne prouve que le contrôle arrête la sortie fausse.
@@ -78,7 +104,7 @@ $env:MY_AGENT_DISABLE_CONTROL = "0"; uv run --project tooling/cli --group tests 
 $env:MY_AGENT_DISABLE_CONTROL = "1"; uv run --project tooling/cli --group tests python -m pytest my-agent/local-mode/controls -q -p no:cacheprovider --rootdir my-agent/local-mode/controls -o addopts=
 ```
 
-Pour observer le contrôle dans une conversation, lancez `uv run --project tooling/cli workshop serve`, ouvrez http://127.0.0.1:8080 et lisez la dernière ligne de `traces/turns.jsonl`. Puis lancez `workshop check 17`.
+Pour observer le contrôle dans une conversation, lancez `uv run --project tooling/cli workshop serve`, ouvrez http://127.0.0.1:8080 et lisez la dernière ligne de `traces/turns.jsonl`. Puis lancez `uv run --project tooling/cli workshop check 17`.
 
 ## Pistes techniques
 
@@ -93,7 +119,8 @@ Pour observer le contrôle dans une conversation, lancez `uv run --project tooli
 Prérequis : le mode live est la voie de référence de tous les ateliers (`PROXY_MODE=live` et `MODEL_MODE=live` dans `.env`, avec `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_CHAT_DEPLOYMENT`) ; les scripts du proxy restent prioritaires en mode live. Les tests de [`tests/`](tests/) restent rouges tant que le critère n'est pas atteint. Tout est vérifié par le code : structure de la spécification, codes de sortie de vos essais, empreinte des parcours. Aucune rubrique de juge dans cet atelier. Lancez la non-régression : elle rejoue tous les ateliers, dont les parcours de l'atelier 15.
 
 ```powershell
-uv run --project tooling/cli workshop start 19
 uv run --project tooling/cli workshop check 17
 uv run --project tooling/cli workshop check 17 --non-regression   # ateliers 03 à 17
 ```
+
+L'atelier 17 termine le parcours : il n'y a pas d'atelier suivant. L'atelier bonus (`uv run --project tooling/cli workshop check bonus`) reste facultatif et hors parcours.

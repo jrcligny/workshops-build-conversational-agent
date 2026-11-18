@@ -6,12 +6,12 @@ The workshop bounds the generic query tool of workshop 06 (`source`, `filters`, 
   most 20 rows, each without detail fields such as `amount`, `delivery_city`, `customer_id`; next to it
   `result.returned` (rows in this portion), `result.total`, `result.total_status` (`"exact"`, or
   `"minimum"` when the application's retrieval cap is reached) and `result.truncated`;
-- the next portion through a position (`arguments.offset`): rows not already received;
+- the next portion through a position (free name and form, e.g. `arguments.offset`): rows not already received;
 - count: `arguments.aggregate == "count"` and `result.value`, without rows;
 - a grouping (`arguments.group_by`) is bounded and declared the same way (private test);
-- the detail of one order through the consultation tool (business API `GET /orders/<reference>`), after a
-  loaded conversation in which the list was already shown (`case["conversation"]`, only the detail
-  question is played);
+- the detail of one order through the consultation tool (business API `GET /orders/<reference>` read during
+  the turn), after a loaded conversation in which the list was already shown (`case["conversation"]`, only
+  the detail question is played);
 - `model.calls[].context_size` for every cycle.
 
 An expected total given by a case is checked as is; a case without one reads it from the business API.
@@ -149,8 +149,12 @@ def detail_through_the_consultation_tool(chat_client, observation, business_clie
     shown = [c["result"] for c in tool_results(case["conversation"]) if is_listing(c["result"])][-1]
     reference = references(shown)[case["row"]]
     amount = business_client.get(f"/orders/{reference}").json()["amount"]
+    # The read above is logged too: only a read made during the agent's turn counts.
+    before = [str(e.get("route", "")) for e in business_log(observation)].count(f"/orders/{reference}")
     turn, _ = successful_turn(chat_client, case["detail_question"].format(reference=reference))
     routes = [str(e.get("route", "")) for e in business_log(observation)]
-    assert f"/orders/{reference}" in routes, "the detail is read with the consultation tool (GET /orders/<reference>)"
+    assert routes.count(f"/orders/{reference}") > before, (
+        "the detail is read with the consultation tool (GET /orders/<reference>) during the turn"
+    )
     text = turn.text.replace("\u202f", "").replace("\xa0", "").replace(" ", "")
     assert f"{amount:.2f}" in text or f"{amount:.2f}".replace(".", ",") in text, f"the answer gives the amount ({amount})"

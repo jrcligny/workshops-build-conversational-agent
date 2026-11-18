@@ -1,6 +1,6 @@
 # Atelier 17 — Spécifier un contrôle
 
-Chapitre 18 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 17 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
@@ -20,6 +20,8 @@ Exemple de contrôle : « une référence citée sans avoir été consultée est
 - Un essai pose la question « Où en est la commande CMD-0000 ? » et force le modèle à répondre, sans consulter aucun outil, « La commande CMD-0000 est livrée. ».
 - Contrôle actif : une mention signale CMD-0000 comme non vérifiée ; l'essai passe.
 - Contrôle désactivé : aucune mention ; l'essai échoue, ce qui prouve que c'est bien le contrôle qui arrête l'erreur.
+
+Ici, « consultée » veut dire « lue par un outil pendant le tour » : que l'utilisateur ait lui-même cité CMD-0000 ne la rend pas vérifiée. Si votre spécification exempte les références citées par l'utilisateur, choisissez un autre exemple pour vos essais, sinon celui-ci échoue avec le contrôle actif.
 
 Pour ce contrôle, la spécification dirait par exemple : ce que voit l'utilisateur et à quel moment du tour le contrôle agit ; les cas limites (référence approchée comme CMD-1402, plusieurs références dans une phrase, référence citée par l'utilisateur) ; ce qui ne doit jamais arriver (référence inventée affichée sans mention, mention sur une référence consultée) ; comment on le vérifie (les essais, dont la sortie fausse, et les parcours de l'atelier 15) ; ce qu'elle ne couvre pas (réécrire la réponse du modèle, vérifier le sens du texte).
 

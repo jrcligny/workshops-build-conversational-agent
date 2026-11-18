@@ -87,6 +87,22 @@ def test_entry_token_refused(observation, services):
     assert r.status_code == 401
 
 
+def test_entry_token_exchanged_for_the_application_token(observation, services):
+    tokens = observation.token("paul-buyer")
+    url = f"{services['business_api']}/auth/exchange"
+    r = httpx.post(url, json={"entry_token": tokens["entry_token"]}, timeout=10)
+    assert r.status_code == 200
+    data = r.json()
+    assert data["user_id"] == "paul-buyer" and data["token_type"] == "application"
+    order = httpx.get(
+        f"{services['business_api']}/orders/CMD-1042", headers={"Authorization": f"Bearer {data['app_token']}"}, timeout=10
+    )
+    assert order.status_code != 401
+    # Only an entry token is exchanged: an application token or a forged token is refused.
+    assert httpx.post(url, json={"entry_token": tokens["app_token"]}, timeout=10).status_code == 401
+    assert httpx.post(url, json={"entry_token": "forged"}, timeout=10).status_code == 401
+
+
 def test_prepare_has_no_effect_then_submit(observation, services):
     token = observation.token("paul-buyer")["app_token"]
     client = httpx.Client(base_url=services["business_api"], headers={"Authorization": f"Bearer {token}"}, timeout=10)

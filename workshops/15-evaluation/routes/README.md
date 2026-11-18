@@ -1,6 +1,6 @@
 # Parcours d'évaluation
 
-Parcours officiels du chapitre 16, exécutés par `workshop check 15` avec ceux que vous écrivez dans `my-agent/routes/`.
+Parcours officiels de l'atelier 15 (chapitre 15), exécutés par `workshop check 15` avec ceux que vous écrivez dans `my-agent/routes/`.
 
 ## Contenu du dossier
 
@@ -19,7 +19,7 @@ id: approximate-reference-cmd-1402
 edge_case: approximate-reference           # un des huit cas limites
 user: {id: camille-renard, role: customer_service, organization: organization-a}   # facultatif
 dataset: standard                          # facultatif : minimal | standard | volume | concurrency
-attachments_dir: fixtures                  # facultatif, relatif au dossier qui contient cases/
+attachments_dir: fixtures                  # facultatif : officiel, relatif à routes/ (le dossier qui contient cases/) ; vôtre, relatif à my-agent/routes/
 counterfactual_of: <id>                    # facultatif : rejoue un autre parcours avec un seul détail changé
 turns:
   - message: "Quel est le statut de la commande CMD-1402 ?"
@@ -29,6 +29,7 @@ facts:                                     # au moins un, vérifiés par le code
   - {type: tool_status, argument_contains: CMD-1402, status_in: [approximate, not_found]}
   - {type: text_contains, value: CMD-1042}
 rubric:                                    # le sens, jugé après les faits
+  id: <identifiant>                        # facultatif : repris dans le rapport (meaning.rubric)
   criterion: "..."
   requirements: [{type: required_any, patterns: ["..."]}]
   judge_meaning: true
@@ -40,7 +41,9 @@ Chaque parcours est exécuté sur une conversation neuve, après rechargement du
 
 ## Empreinte (réservé à l'équipe)
 
-`routes.sha256` couvre le chemin relatif et le contenu de **tous** les fichiers du dossier, y compris ce `README.md`, sauf `routes.sha256` lui-même. Les fins de ligne sont normalisées en LF : la valeur est la même sous Windows et sous Linux. Les ateliers 15 et 19 vérifient qu'elle n'a pas changé.
+`routes.sha256` couvre le chemin relatif et le contenu de **tous** les fichiers du dossier, y compris ce `README.md`, sauf `routes.sha256` lui-même. Les fins de ligne sont normalisées en LF : la valeur est la même sous Windows et sous Linux. Les ateliers 15 et 17 vérifient qu'elle n'a pas changé.
+
+Tout fichier ajouté au dossier compte aussi, même caché ou créé par un outil (`Thumbs.db`, `desktop.ini`, `__pycache__/`, sauvegarde d'éditeur) : si le test signale « the official routes are not modified » (atelier 15) ou « the evaluation routes were modified » (atelier 17) sans que vous ayez touché aux parcours, supprimez ces fichiers (`git status --ignored workshops/15-evaluation/routes` les liste).
 
 Seule l'équipe régénère l'empreinte, et seulement quand elle change les parcours. Depuis la racine du dépôt, avec l'environnement de test (ni l'outillage, ni l'environnement d'une application) :
 

@@ -1,4 +1,9 @@
-"""Scriptable chat model and deterministic embeddings."""
+"""Scriptable chat model and deterministic embeddings.
+
+The simulated model does not reason. A test scripts it through `POST /_test/scripts` of the proxy:
+`{"scripts": [{"if_contains": "...", "content": "...", "tool": {...}}, {"if_last_role": "tool", ...}]}`;
+the first script whose `if_contains` is in the last user message (or whose `if_last_role` is the
+role of the last message) gives the answer, otherwise a generic cautious sentence is returned."""
 
 from __future__ import annotations
 

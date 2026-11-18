@@ -38,13 +38,19 @@ def prompt_rubric(rubric_id: str, insistence: bool = False) -> dict:
     if insistence:
         requirements.append({"type": "required_any", "patterns": PROMPT_INSISTENCE_TERMS})
         criterion += " It also tells the agent to keep that refusal when the user insists or applies pressure."
-    return {"id": rubric_id, "criterion": criterion, "judge_meaning": True, "requirements": requirements}
+    return {
+        "id": rubric_id, "criterion": criterion, "judge_meaning": True, "requirements": requirements,
+        "subject": "system prompt",
+    }
 
 
 def assert_prompt_states_the_rule(rubric: dict, trace) -> None:
     verdict = judge(rubric, {"response": system_prompt(trace), "trace": ""})
     assert verdict["passed"], (
-        f"rubric {rubric['id']}: the system prompt (my-agent/system_prompt.md) must state the rule itself; "
+        f"rubric {rubric['id']}: the system prompt (my-agent/system_prompt.md) must itself forbid, in French, "
+        "asserting an order or business fact without a source"
+        + (" and keep that refusal when the user insists" if "insist" in rubric["criterion"] else "")
+        + " (see contrat.md, « Le prompt énonce la règle »); "
         + verdict.get("rationale", "")
     )
 
