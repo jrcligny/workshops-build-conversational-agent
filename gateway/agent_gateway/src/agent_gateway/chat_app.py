@@ -3,24 +3,41 @@
 from __future__ import annotations
 
 import json
+import logging
+import threading
 import uuid
 from collections import defaultdict
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from workshop_config import repo_path, settings
+from workshop_config.reload import (
+    Signature,
+    changed_files,
+    describe_error,
+    digest,
+    purge_modules,
+    source_signature,
+)
 
 from agent_sdk.context import clear_contexts, context, seed
 from agent_sdk.contract import Event, HarnessNotImplemented, Message, TestUser
-from agent_gateway.loader import load_harness
+from agent_gateway.loader import NO_RESTART, MyAgentLoadError, load_harness, wait_for_mcp_server
 
 app = FastAPI(title="Workshop chat interface", version="0.1.0")
+log = logging.getLogger("uvicorn.error")
 
 _conversations: dict[str, dict] = {}
 _histories: dict[str, list[Message]] = defaultdict(list)
 _confirmations: dict[str, bool] = {}
 _interruptions: set[str] = set()
 _harness = None
+# Folder and signature of my-agent/ at the last load attempt; kept by reset_conversations.
+_loaded: tuple[Path, Signature] | None = None
+_mcp_ready: str | None = None
+_reload_lock = threading.Lock()
 _urls: dict[str, str] = {}
 
 
@@ -30,10 +47,43 @@ def configure(urls: dict[str, str] | None = None) -> None:
 
 
 def harness():
-    global _harness
-    if _harness is None:
-        _harness = load_harness()
-    return _harness
+    """The harness of my-agent/, loaded again at the first turn after any change to its Python files.
+
+    The modules of my-agent/ are then forgotten and imported again, and a new Harness replaces the
+    previous one. The conversations (`agent_sdk.context`) are kept.
+    """
+    global _harness, _loaded, _mcp_ready
+    with _reload_lock:
+        folder = repo_path(settings.my_agent_dir).resolve()
+        current = source_signature(folder)
+        if _harness is None or _loaded != (folder, current):
+            changed: list[str] = []
+            if _loaded is not None and _loaded != (folder, current):
+                previous_folder, previous = _loaded
+                changed = changed_files(previous, current) if previous_folder == folder else ["*"]
+                purge_modules(previous_folder, changed if previous_folder == folder else ())
+                purge_modules(folder)
+            _harness = None
+            _loaded = (folder, current)
+            try:
+                _harness = load_harness()
+            except HarnessNotImplemented:
+                raise
+            except Exception as exc:  # noqa: BLE001 - any error of the student's code is reported
+                detail = describe_error(exc, folder)
+                log.exception("my-agent could not be loaded: %s", detail)
+                raise MyAgentLoadError(f"my-agent could not be loaded: {detail}. {NO_RESTART}") from exc
+            if changed:
+                log.info("my-agent reloaded (changed: %s)", ", ".join(changed))
+        signature = digest(current)
+        if _mcp_ready != signature:
+            try:
+                wait_for_mcp_server(signature)
+            except MyAgentLoadError as exc:
+                log.error("%s", exc)
+                raise
+            _mcp_ready = signature
+        return _harness
 
 
 def reset_conversations() -> None:
@@ -189,6 +239,10 @@ def send_message(conversation_id: str, body: MessageIn):
                 )
             )
         except HarnessNotImplemented as exc:
+            yield _sse(Event(type="error", data={"detail": str(exc)}))
+            yield _sse(Event(type="end", data={"ok": False, "detail": str(exc)}))
+            return
+        except MyAgentLoadError as exc:
             yield _sse(Event(type="error", data={"detail": str(exc)}))
             yield _sse(Event(type="end", data={"ok": False, "detail": str(exc)}))
             return

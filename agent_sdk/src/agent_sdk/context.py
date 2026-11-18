@@ -1,8 +1,9 @@
 """The context of each conversation: every message the model has seen, kept between turns.
 
-`harness.py` is reloaded at each turn, so it cannot keep anything itself from one turn to the
-next. This module stays loaded in the gateway process and keeps, per `conversation_id`, the
-complete messages of the conversation in the chat format of the proxy:
+A new `Harness` replaces the previous one whenever a Python file of `my-agent/` changes (hot
+reload, see the README), and at each `reset_conversations()` of the tests: what must cross turns
+cannot live in the `Harness` instance. This module stays loaded in the gateway process and keeps,
+per `conversation_id`, the complete messages of the conversation in the chat format of the proxy:
 
 - `{"role": "user", "content": ...}`
 - `{"role": "assistant", "content": ..., "tool_calls": [...]}`

@@ -30,6 +30,9 @@ def test_each_project_uses_its_own_environment():
     assert ui.env["CHAINLIT_APP_ROOT"] == str(devstack.UI_ROOT)
     assert ui.env["WORKSHOP_CHAT_BACKEND_URL"] == "http://127.0.0.1:8010"
     assert stack[3].env["MCP_PORT"] == "8014"
+    # The MCP server of my-agent/ is served by the runner, which reloads it; the interface reads its status.
+    assert stack[3].command[1:] == ("-m", "workshop_tools.mcp_runner")
+    assert stack[4].env[devstack.MCP_STATUS_ENV] == "http://127.0.0.1:8014/_workshop/status"
 
 
 @pytest.mark.parametrize("offset", [-1, 57456])

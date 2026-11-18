@@ -33,6 +33,13 @@ Open <http://127.0.0.1:8080>. It displays the existing agent's responses, steps,
 and tool calls without implementing any workshop for you. Each Python project
 keeps its own dependencies and environment.
 
+While the stack runs, your changes to `my-agent/` apply from the next message, without restarting:
+`harness.py`, its modules and `mcp_server.py` are loaded again when they change, and the prompt,
+skills and sandbox policy are read at each turn. An error in your code (a syntax error, for
+example) is shown in the chat with its file and line. Fix it and send the message again. Only
+`.env` and the code outside `my-agent/` need a restart. See
+[Hot reload of `my-agent/`](README.md#hot-reload-of-my-agent).
+
 For checks, first run `uv sync --project tooling/cli --locked --python 3.13`
 and `uv sync --project tooling/cli --group tests --locked --python 3.13` from the repository
 root. There is no root Python project or shared environment.
