@@ -43,7 +43,7 @@ Le chapitre en montre les risques : un souvenir faux se propage, arrive sans la 
 - Laisser le modèle décider quelle mémoire relire, ou partager la mémoire au niveau de l'organisation.
 - Enregistrer le texte libre du message : une donnée métier figée devient fausse dès que l'application change.
 - « Oublier » en retirant le souvenir du contexte seulement, alors qu'il reste stocké.
-- Mémoriser un contenu lu dans un résultat d'outil ou un document : un tiers pourrait y glisser une consigne (chapitre 15).
+- Mémoriser un contenu lu dans un résultat d'outil ou un document : un tiers pourrait y glisser une consigne (chapitre 14).
 - Répondre « je m'en souviendrai » à une demande refusée.
 
 ## Pistes

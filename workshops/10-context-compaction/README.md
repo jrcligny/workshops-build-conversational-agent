@@ -1,6 +1,6 @@
 # Atelier 10 — Compacter le contexte
 
-Chapitre 9 du livre ; l'état de la conversation que la compaction doit préserver est présenté au chapitre 7. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
+Chapitre 10 du livre ; l'état de la conversation que la compaction doit préserver est présenté au chapitre 8, qui n'a pas d'atelier propre : il est exercé ici. Vous travaillez dans `my-agent/` ; aucune solution n'est fournie.
 
 ## Ce que vous allez construire
 
@@ -55,11 +55,12 @@ Données : il existe deux clientes Léa Martin, l'une à Lille, l'autre à Lyon 
 
 ## Pistes
 
-- Décidez du seuil et du nombre de tours gardés d'après les relevés de taille du contexte de l'atelier 09 ; les tests, eux, règlent leurs propres valeurs (`COMPACTION_MESSAGE_THRESHOLD`, `COMPACTION_KEEP_TURNS`).
+- Décidez du seuil et du nombre de tours gardés d'après les relevés de taille du contexte de l'atelier 09 ; les tests, eux, règlent leurs propres valeurs dans `workshop_config.settings` (`compaction_message_threshold`, `compaction_keep_turns`) : relisez-les à chaque tour.
 - Rédigez le résumé à partir des tours sortants tels qu'ils étaient, résultats d'outils compris : c'est là que se trouvent les faits.
 - Dans le prompt de compaction, imposez les rubriques et demandez de citer la source de chaque fait.
 - Chaque compaction coûte un appel au modèle : ne compactez pas à chaque tour.
-- Décidez qui met l'état à jour et à quel moment : à partir des résultats d'outils, au changement de client, à la fin d'une tâche.
+- Décidez qui met l'état à jour et à quel moment : à partir des résultats d'outils, au changement de client, à la fin d'une tâche. Une commande lue ne donne que l'identifiant de son client : pour connaître son nom, il faut aussi lire le client.
+- Pour un choix entre homonymes (« Celle du Nord. »), faites trancher le modèle (par exemple un outil local qui fixe le client en cours parmi les candidats) plutôt qu'une règle sur le texte.
 
 ## Pour aller plus loin
 

@@ -20,6 +20,9 @@ def manifest_path() -> Path:
 
 
 def load_manifest() -> dict:
+    """The manifest as written, every field kept. Its `skills` list holds one entry per skill:
+    `id`, `title`, `version` and `path` (read by the tests), plus any field of yours, such as a
+    `description` saying when to load the skill: it is what the model sees before loading it."""
     return yaml.safe_load(manifest_path().read_text(encoding="utf-8")) or {}
 
 

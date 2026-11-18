@@ -38,7 +38,9 @@ def is_egress_allowed(url: str) -> bool | None:
     """Evaluates a destination against the allowlist of the policy.
 
     Returns None while no policy is active (empty shell). An allowlist entry is a host
-    (`127.0.0.1`, `api.example.com`) or a URL prefix (`http://127.0.0.1:8001/`). Calling this
+    (`127.0.0.1`, `api.example.com`), compared with the host of the URL without its port, or a
+    URL prefix containing `://` (`https://api.example.com/v1/`). Avoid a prefix with a port: the
+    tests start the services on free ports. Calling this
     check before every outgoing call of the tool server is the work of workshop 07.
     """
     if not is_policy_enforced():

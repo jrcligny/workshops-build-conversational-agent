@@ -21,6 +21,7 @@ def test_namesakes_several_candidates(chat_client):
 
 
 @pytest.mark.etape("outils")
+@pytest.mark.superseded_by("06")  # 06 replaces filter="late" by the generic query (filters)
 def test_late_filter_applied_by_the_tool(chat_client, observation, business_client):
     checks.late_filter_applied_by_the_tool(chat_client, observation, business_client, CASES["late_filter_applied_by_the_tool"])
 

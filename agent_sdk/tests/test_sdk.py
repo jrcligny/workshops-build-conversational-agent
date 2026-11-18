@@ -11,6 +11,16 @@ def test_http_client_reports_an_unreachable_service(monkeypatch):
     assert unreachable.value.status_code is None
 
 
+def test_exchange_entry_token_returns_the_application_token(observation, services):
+    from agent_sdk import http_client as http
+    token = http.exchange_entry_token(observation.token("paul-buyer")["entry_token"])
+    assert http.business_api(token).get("/orders/CMD-1042")["reference"] == "CMD-1042"
+    for refused in ("", observation.token("paul-buyer")["app_token"]):
+        with pytest.raises(http.ServiceError) as denied:
+            http.exchange_entry_token(refused)
+        assert denied.value.status_code == 401
+
+
 def test_events_carry_the_field_names_the_tests_read():
     from agent_sdk import events
     assert (events.step("get_order").type, events.step("get_order").data) == ("step", {"tool": "get_order"})

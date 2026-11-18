@@ -1,4 +1,7 @@
-"""JSONL traces, one per turn, without secrets."""
+"""JSONL traces, one per turn.
+
+Masking is minimal: `write` drops the top-level keys `azure_openai_api_key`, `api_key`,
+`authorization` and `token`, nothing nested. Never put a token or a key in a trace."""
 
 from __future__ import annotations
 

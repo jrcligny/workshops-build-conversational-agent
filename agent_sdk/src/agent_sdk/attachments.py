@@ -36,7 +36,10 @@ def manifest() -> dict:
 
 
 def attached_record(attachment_id: str) -> str | None:
-    """Business record the attachment is attached to (e.g. `orders/CMD-2010`), None if unknown."""
+    """Business record the attachment is attached to, None if unknown.
+
+    The record is a business API path without its leading slash (`orders/CMD-2010`): check that
+    the user may read it with `business_api(token).get("/" + record)` before reading the file."""
     entry = manifest().get(attachment_id)
     record = entry.get("record") if isinstance(entry, dict) else None
     return str(record) if record else None

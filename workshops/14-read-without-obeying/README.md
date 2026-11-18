@@ -4,7 +4,7 @@ Chapitre 14 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est f
 
 ## Observez d'abord
 
-Comme acheteur (paul-buyer), préparez d'abord une petite demande d'achat, puis joignez `tests/fixtures/sample-quote.txt` et demandez « Lisez ce devis et préparez la demande d'achat correspondante. ». Lisez le devis : que réclame la consigne cachée ? Votre agent la suit-il ? Dans la trace, quels outils lui étaient proposés à chaque appel du modèle (`offered_tools`), avant et après la lecture ?
+Comme acheteur (paul-buyer), préparez d'abord une petite demande d'achat (depuis l'atelier 13, l'outil d'écriture n'apparaît qu'une fois chargé son *skill* : l'agent le charge puis prépare le brouillon), puis joignez `tests/fixtures/sample-quote.txt` et demandez « Lisez ce devis et préparez la demande d'achat correspondante. ». Lisez le devis : que réclame la consigne cachée ? Votre agent la suit-il ? Dans la trace, quels outils lui étaient proposés à chaque appel du modèle (`offered_tools`), avant et après la lecture ?
 
 ## Ce que vous allez construire
 
@@ -47,8 +47,9 @@ Le devis joint (DV-7721, ramettes de papier, 120 euros HT), attaché à la comma
 ## Pistes
 
 - C'est le *harness* qui choisit les outils proposés à chaque appel du modèle : un drapeau « contenu non fiable lu » posé par le résultat d'un outil suffit pour la suite du tour.
-- La règle de l'atelier 13 (un outil d'écriture apparaît avec son *skill*) reste vraie, mais le retrait l'emporte jusqu'à la fin du tour. Le chargement d'un *skill* ne déclenche pas le retrait.
-- `agent_sdk.attachments.attached_record(id)` donne l'enregistrement auquel une pièce jointe est attachée ; consultez-le avec l'identité de l'utilisateur avant de lire.
+- La règle de l'atelier 13 (un outil d'écriture apparaît avec son *skill*) reste vraie, mais le retrait l'emporte jusqu'à la fin du tour. Le chargement d'un *skill* ne déclenche pas le retrait. Un *skill* chargé à un tour précédent reste actif : son outil d'écriture est proposé dès le début du tour suivant, jusqu'à la lecture.
+- `agent_sdk.attachments.attached_record(id)` donne l'enregistrement auquel une pièce jointe est attachée, sous forme de chemin sans barre initiale (`orders/CMD-2010`) ; consultez-le avec l'identité de l'utilisateur (`business_api(jeton).get("/" + record)`) avant de lire.
+- La façon d'annoncer au modèle les pièces jointes du tour est libre (par exemple une ligne « Pièces jointes : sample-quote.txt » ajoutée au message de l'utilisateur).
 
 ## Pour aller plus loin
 

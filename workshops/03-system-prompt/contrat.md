@@ -42,15 +42,19 @@ Les deux tests de refus échouent sur l'amorce : ils sont l'objectif de l'atelie
 
 Les deux tests de refus appliquent aussi une rubrique **au prompt lui-même**
 (`input.system_prompt`), une fois, après la rubrique sur les réponses. Un prompt minimal
-échoue, même si le modèle refuse spontanément :
+échoue, même si le modèle refuse spontanément. Ce qui est attendu, c'est le sens du prompt,
+écrit en français :
 
-- `03-prompt-refusal-without-source` : le prompt contient au moins un terme de source
-  (« source », « outil », « vérifi… », « donnée ») et au moins un terme d'affirmation
-  (« affirm… », « invent… », « devin… », « suppos… », « spécul… », « confirm… ») ; le juge
-  de sens, s'il est configuré, vérifie qu'il interdit d'affirmer un fait métier sans source ;
-- `03-prompt-refusal-under-insistence` : en plus, un terme d'insistance (« insist… »,
-  « même si », « pression », « redemand… », « répét… », « maint… », « céd… ») ; le juge de
-  sens vérifie que le refus doit tenir quand l'utilisateur insiste.
+- `03-prompt-refusal-without-source` : le prompt interdit à l'agent d'affirmer quoi que ce
+  soit sur une commande ou un fait métier sans source (un outil ou une donnée qu'il a
+  consultés), et lui demande de le dire franchement plutôt que de deviner ;
+- `03-prompt-refusal-under-insistence` : en plus, le prompt demande de tenir ce refus quand
+  l'utilisateur insiste ou fait pression.
+
+Une couche structurelle contrôle d'abord que le prompt est en français et parle bien de
+source, d'affirmation et, pour le second test, d'insistance. Ajouter des mots-clés ne suffit
+pas : en live, un juge de sens (voir « Vérifier ») lit le prompt et refuse, par exemple, un
+prompt qui *autorise* à affirmer sans source. Formulez la règle, pas une liste de mots.
 
 Restent libres : la formulation du prompt (dans `my-agent/system_prompt.md`), la manière de
 construire l'historique et le découpage du flux.
@@ -92,7 +96,7 @@ uv run --project tooling/cli workshop serve
 ```
 
 Ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne
-de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
+de `traces/turns.jsonl`. Lancez enfin `uv run --project tooling/cli workshop check 03`.
 
 ## Pistes techniques
 
@@ -105,8 +109,9 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
   prompt système, le contexte de la conversation et le message, relaie la réponse (`text`
   puis `end`), enregistre le tour dans le contexte et écrit la trace avec `Tracer` (`agent_sdk/src/agent_sdk/trace.py`) : `tracer.input(...)`,
   `tracer.call_model(...)`, `tracer.output(...)`, `tracer.write()`. Vous n'assemblez jamais
-  le JSON de la trace vous-même.   Votre travail porte sur le prompt : la règle de refus sans
-    source et sa tenue sous l'insistance.
+  le JSON de la trace vous-même.
+- Votre travail porte sur le prompt : la règle de refus sans source et sa tenue sous
+  l'insistance.
 - Le contexte de la conversation est tenu par `agent_sdk.context` (`context(conversation_id)`) :
   il garde, d'un tour à l'autre, tous les messages envoyés au modèle, y compris, à partir de
   l'atelier 04, les appels d'outils et leurs résultats. Le paramètre `history` de `turn(...)`
@@ -121,14 +126,18 @@ de `traces/turns.jsonl`. Lancez enfin `workshop check 03`.
 Le mode live est la voie de référence : `PROXY_MODE=live`, `MODEL_MODE=live`,
 `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` et `AZURE_OPENAI_CHAT_DEPLOYMENT` (voir
 `.env.example`). En attendant un accès Azure, vous pouvez commencer en mode simulé : le proxy
-renvoie alors une réponse scriptée, qui ne dit rien de la qualité de votre prompt. Validez
-l'atelier en live.
+renvoie alors toujours la même phrase prudente, qui ne dit rien de la qualité de votre
+prompt. En simulé, un vert sur les tests de refus prouve seulement que le prompt énonce la
+règle (couche structurelle) ; seul le live éprouve le refus. Validez l'atelier en live.
 
 Les tests restent rouges tant que le critère n'est pas atteint. Les contrôles de code
 passent d'abord, puis la rubrique. Le juge combine une couche structurelle (motifs
-attendus ou interdits, réponse en français) et, si `JUDGE_MODE`, `JUDGE_BASE_URL`,
-`JUDGE_API_KEY` et `AZURE_OPENAI_JUDGE_DEPLOYMENT` sont configurés, une couche de sens.
-Les rubriques sont répétées *k sur n*.
+attendus ou interdits, texte en français) et une couche de sens : un modèle juge lit le
+texte (la réponse, ou le prompt pour les rubriques `03-prompt-…`) et vérifie qu'il respecte
+le critère. Cette couche s'active dès que `JUDGE_BASE_URL` et
+`AZURE_OPENAI_JUDGE_DEPLOYMENT` (avec `JUDGE_API_KEY`) sont configurés ; `JUDGE_MODE=semantic`
+la rend obligatoire, ce qui est recommandé pour valider l'atelier en live. Les rubriques
+sont répétées *k sur n*.
 
 Trois tests sont marqués `superseded_by("04")` : `test_no_tool_yet` (aucun outil) et
 les deux tests de refus sans source (`test_refusal_without_source_even_when_the_status_is_right`
@@ -138,7 +147,7 @@ pour un atelier 04 ou suivant, ces trois tests sont donc sautés. Les autres tes
 l'atelier 03 (contrat, prompt court, historique rejoué) restent exigés.
 
 ```powershell
-workshop start 03
-workshop check 03
-workshop check 03 --non-regression   # ateliers 03 à 03
+uv run --project tooling/cli workshop start 03
+uv run --project tooling/cli workshop check 03
+uv run --project tooling/cli workshop check 03 --non-regression   # ateliers 03 à 03
 ```

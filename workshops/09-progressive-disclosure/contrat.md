@@ -6,28 +6,49 @@ Ce document complète le [README.md](README.md) : il détaille ce que lisent les
 
 Tous les tests rechargent le jeu `volume` (Transports Morel, C-VOLUMEX : 420 commandes, dont 60 en retard). Utilisateur : camille-renard (`customer_service`, organization-a).
 
-Les tests lisent l'outil d'interrogation générique de l'atelier 06 : un appel de `tools[]` avec `arguments.source == "orders"`. Pour une liste (ni `aggregate`, ni `group_by`), le dernier appel dont `result.rows` est une liste de lignes est retenu :
+Les tests lisent l'outil d'interrogation générique de l'atelier 06 : un appel de `tools[]` avec `arguments.source == "orders"`. Ses paramètres gardent les noms de l'atelier 06 : `source`, `filters`, `aggregate` et `group_by` sont **imposés**, car lus par les tests de cet atelier (`source`, `aggregate`, `group_by`) ou par ceux de l'atelier 06 rejoués en non-régression (`filters`). Un outil qui les renomme (`table`, `mode`, `group`…) échoue. Pour une liste (ni `aggregate`, ni `group_by`), le dernier appel dont `result.rows` est une liste de lignes (sans clé `group`) est retenu :
 
-- `rows` : au plus 20 lignes, chacune avec sa `reference` et sans champ de détail (`amount`, `delivery_city`, `delivery_date`, `customer_id`, `organization_id`, `deleted`) ;
+- `rows` : au plus 20 lignes, résumées : chacune avec sa `reference` et sans champ de détail (`amount`, `delivery_city`, `delivery_date`, `customer_id`, `organization_id`, `deleted`) ;
 - `returned` : le nombre de lignes de cette portion (égal à la longueur de `rows`) ;
 - `total` et `total_status` : `60` et `"exact"` pour les retards ; `200` et `"minimum"` pour toutes les commandes, car l'application ne récupère pas plus de 200 lignes ;
 - `truncated` : `true` quand la liste est coupée.
 
 Les tests vérifient aussi :
 
-- **liste bornée** (« Quelles sont les commandes en retard de Transports Morel ? ») : les champs ci-dessus, « 60 » dans la réponse, et `model.calls[].context_size` entier positif pour chaque appel au modèle (au moins deux) ;
-- **portion suivante** (même question, puis « Montrez-moi les suivantes. ») : le second tour relit une liste dont aucune `reference` n'était dans la première ;
+- **liste bornée** (« Quelles sont les commandes en retard de Transports Morel ? ») : les champs ci-dessus, « 60 » dans la réponse, et `model.calls[].context_size` entier positif pour **chaque** appel au modèle du tour, donc à chaque cycle (au moins deux appels) : passez la mesure à chaque appel, `tracer.call_model(client, messages, tools, context_size=...)` ;
+- **portion suivante** (même question, puis « Montrez-moi les suivantes. ») : le second tour relit une liste avec l'outil, dont aucune `reference` n'était dans la première. La forme de la demande de suite est libre (nom et valeur de la position, `next_offset` ou autre) : seules les lignes reçues sont comparées ;
 - **plafond** (« Listez toutes les commandes de Transports Morel. ») : `total` 200, `total_status` `"minimum"`, et la réponse contient « 200 » et « au moins », « plus de » ou « minimum » ;
-- **décompte** : un appel avec `arguments.aggregate == "count"` renvoie `result.value` à 60, sans `rows`, et la réponse contient « 60 » ;
-- **détail** (conversation chargée où la liste a déjà été montrée — appels écrits `resolve_name` puis `query`, jeu `volume`, voir `docs/interface-contract.md` —, puis seul tour joué « Quel est le montant de la première commande de cette liste ? ») : le journal de l'API métier contient `GET /orders/<référence de la première ligne>`, et la réponse donne son montant, avec deux décimales (point ou virgule).
+- **décompte** : un appel avec `arguments.aggregate == "count"` renvoie `result.value` à 60, sans lignes (`rows` absent ou vide), et la réponse contient « 60 » ;
+- **détail** (conversation chargée où la liste a déjà été montrée — appels écrits `resolve_name` puis `query`, jeu `volume`, voir l'exemple ci-dessous et `tests/cases.yaml` —, puis seul tour joué « Quel est le montant de la première commande de cette liste ? ») : **pendant ce tour**, l'agent lit la commande dans l'application (`GET /orders/<référence de la première ligne>` dans le journal de l'API métier, par l'outil de consultation de l'atelier 04), et la réponse donne son montant, avec deux décimales (point ou virgule). Une lecture faite avant le tour, ou un montant deviné, ne compte pas.
 
-Les tests privés ajoutent un **regroupement volumineux** : un appel avec `arguments.group_by` non vide sur `"source": "orders"` (par exemple un groupe par jour de commande, 86 groupes) renvoie au plus 20 `rows`, avec `returned`, `total` (le nombre de groupes calculé par l'application), `total_status` `"exact"` et `truncated` `true`, et la réponse donne ce nombre.
+Les tests privés ajoutent :
+
+- un **regroupement volumineux** : un appel avec `arguments.group_by` non vide sur `"source": "orders"` (par exemple un groupe par jour de commande, 86 groupes) renvoie au plus 20 `rows`, avec `returned`, `total` (le nombre de groupes calculé par l'application), `total_status` `"exact"` et `truncated` `true`, et la réponse donne ce nombre ;
+- une **liste courte** (jeu `standard`, moins de 20 commandes en retard) qui n'est pas déclarée partielle : `truncated` `false`, `total_status` `"exact"`, `returned` égal à `total`.
 
 Rubrique `09-partial-result-announced` sur la liste bornée : la réponse contient « partiel », « partielle », « une partie », « extrait » ou « premières ». Elle est appliquée une seule fois, pas en *k sur n*.
 
-Restent libres : le nom de l'outil et de ses paramètres (y compris celui de la position), la limite d'affichage tant qu'elle ne dépasse pas 20, les champs résumés autres que `reference`, et la mesure de taille utilisée.
+Restent libres : le nom de l'outil, le nom et la forme de la position (par exemple `offset`), la limite d'affichage tant qu'elle ne dépasse pas 20, les champs résumés autres que `reference`, et la mesure de taille utilisée.
 
-Les conversations chargées appellent des outils aux noms neutres (`resolve_name`, `query`) que votre agent ne propose pas forcément : il doit les rejouer tels quels.
+Les conversations chargées appellent des outils aux noms neutres (`resolve_name`, `query`) que votre agent ne propose pas forcément : il doit les rejouer tels quels. Le tour chargé du test « détail » a cette forme (format de `tests/cases.yaml`, transformé en messages de chat par `ChatClient.load`) :
+
+```yaml
+- user: "Quelles sont les commandes en retard de Transports Morel ?"
+  tools:
+    - name: resolve_name
+      arguments: {entity_type: customer, name: Transports Morel}
+      result: {matches: [{id: C-VOLUMEX, name: Transports Morel, city: Rennes}]}
+    - name: query
+      arguments: {source: orders, filters: {customer_id: C-VOLUMEX, late: true}, limit: 3}
+      result:
+        rows: [{reference: CMD-V0007, status: shipped, promised_date: "2026-02-23"}, …]
+        returned: 3
+        total: 60
+        total_status: exact
+        truncated: true
+        next_offset: 3
+  answer: "Transports Morel a 60 commandes en retard ; voici les 3 premières (liste partielle) : …"
+```
 
 ## Exemples techniques
 
@@ -59,14 +80,18 @@ Les conversations chargées appellent des outils aux noms neutres (`resolve_name
 uv run --project tooling/cli workshop serve
 ```
 
-Chargez le jeu `volume` par la route d'observation `POST /observation/reset` avec `{"dataset": "volume"}` et le jeton d'observation, ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne de `traces/turns.jsonl` (`tools`, `model.calls[].context_size`). Lancez enfin `workshop check 09`.
+Chargez le jeu `volume` par la route d'observation `POST /observation/reset` avec `{"dataset": "volume"}` et le jeton d'observation, ouvrez http://127.0.0.1:8080, posez les questions du README, puis lisez la dernière ligne de `traces/turns.jsonl` (`tools`, `model.calls[].context_size`). Lancez enfin `uv run --project tooling/cli workshop check 09`.
+
+Pendant `workshop check`, les tests démarrent eux-mêmes le serveur MCP de `my-agent/` (`application()` de `mcp_server.py`) et fixent `MCP_URL` : lisez `MCP_URL` au moment de l'appel, sans démarrer de serveur vous-même.
+
+En mode simulé, le modèle n'appelle aucun outil. Pour vérifier la forme de vos résultats sans le live, vous pouvez scripter ses réponses (`tool_calls` imposés) par `POST /_test/scripts` du proxy : voir `gateway/model_gateway/src/model_gateway/simulated.py`.
 
 ## Pistes techniques
 
 - `POST /sources/{name}/query` accepte `filters`, `limit`, `offset`, `aggregate` et `group_by`. Sur `orders`, le filtre calculé `late` (booléen) garde les commandes en retard. Une liste ou un regroupement renvoie `rows`, `total`, `total_status` (`exact` ou `minimum` au-delà de 200 lignes), `truncated`, `limit`, `offset` et `next_offset` ; voir `business/business_api/src/business_api/services.py`.
 - L'application renvoie les lignes complètes et accepte n'importe quelle `limit` : la limite d'affichage, le résumé des lignes et `returned` sont à votre charge.
-- `GET /resolution?type=customer&name=…` résout le nom du client ; `GET /orders/{reference}` donne le détail d'une commande.
-- Mesurez `context_size` juste avant chaque appel au modèle et enregistrez-le dans la trace du tour (`tracer.call_model(..., context_size=...)` ou `tracer.model_call(...)`, `agent_sdk/src/agent_sdk/trace.py`).
+- `GET /resolution?type=customer&name=…` résout le nom du client ; `GET /orders/{reference}` donne le détail d'une commande : c'est la route que doit appeler votre outil de consultation pendant le tour du détail.
+- Mesurez `context_size` juste avant chaque appel au modèle de la boucle et enregistrez-le dans la trace du tour (`tracer.call_model(..., context_size=...)` ou `tracer.model_call(..., context_size=...)`, `agent_sdk/src/agent_sdk/trace.py`) : un appel sans mesure fait échouer le test.
 - Les assertions détaillées sont dans [tests/](tests/).
 
 ## Vérifier
@@ -78,7 +103,7 @@ Les tests restent rouges tant que le critère n'est pas atteint. Les contrôles 
 La non-régression rejoue les ateliers 03 à 09. Les tests de l'atelier 03 marqués `superseded_by("04")` sont sautés.
 
 ```powershell
-workshop start 09
-workshop check 09
-workshop check 09 --non-regression   # ateliers 03 à 09
+uv run --project tooling/cli workshop start 09
+uv run --project tooling/cli workshop check 09
+uv run --project tooling/cli workshop check 09 --non-regression   # ateliers 03 à 09
 ```

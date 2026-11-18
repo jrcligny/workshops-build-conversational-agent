@@ -82,7 +82,24 @@ def _pytest_command() -> list[str]:
 
 
 def _test_env() -> dict[str, str]:
-    return {key: value for key, value in os.environ.items() if key != "VIRTUAL_ENV"}
+    env = {key: value for key, value in os.environ.items() if key != "VIRTUAL_ENV"}
+    # Accented French answers and traces must not depend on the console code page (Windows).
+    env.setdefault("PYTHONUTF8", "1")
+    env.setdefault("PYTHONIOENCODING", "utf-8")
+    return env
+
+
+def _proxy_mode() -> str:
+    """PROXY_MODE from the environment, else from the .env file at the root, else simulated."""
+    if os.environ.get("PROXY_MODE"):
+        return os.environ["PROXY_MODE"].strip().lower()
+    env_file = REPO_ROOT / ".env"
+    if env_file.is_file():
+        for line in env_file.read_text(encoding="utf-8", errors="replace").splitlines():
+            key, sep, value = line.partition("=")
+            if sep and key.strip() == "PROXY_MODE" and value.strip():
+                return value.split("#", 1)[0].strip().strip("\"'").lower()
+    return "simulated"
 
 
 def _pytest(folders: list[Path], extra: list[str] | None = None, env_overrides: dict[str, str] | None = None) -> int:
@@ -102,6 +119,13 @@ def cmd_check(workshop_id: str, non_regression: bool, private: bool = False, ste
         print(f"missing test folders: {', '.join(missing)}", file=sys.stderr)
         return 2
     print(f"Checking workshops: {', '.join(ids)}")
+    mode = _proxy_mode()
+    if mode != "live":
+        print(
+            f"PROXY_MODE={mode}: the model is simulated and does not reason. Tests on the agent's "
+            "behaviour only pass in live mode (PROXY_MODE=live in .env); a green run here only checks "
+            "the plumbing, a red one is not necessarily your agent's fault."
+        )
     # Tests marked superseded_by(<id>) are skipped once the target workshop reaches <id>.
     # --etape deselects the other steps of the target workshop only (agent_testkit.steps).
     extra = ["-m", "workshop", *(["--private"] if private else []), *(["--etape", step] if step else [])]

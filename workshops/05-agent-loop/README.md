@@ -4,10 +4,11 @@ Chapitre 5 du livre. Vous travaillez dans `my-agent/` ; aucune solution n'est fo
 
 ## Observez d'abord
 
-Avec l'agent de l'atelier 04, demandez « Quelles commandes de Léa Martin sont en retard ? ».
+En live, avec l'agent de l'atelier 04, demandez « Quelles commandes de Léa Martin sont en retard ? ».
 Il ne sait consulter qu'une commande par sa référence : il demande une référence ou répond
 de mémoire. La trace (`traces/turns.jsonl`) montre un seul appel au modèle, et aucun outil
-capable de retrouver un client ou de lister ses commandes.
+capable de retrouver un client ou de lister ses commandes. (En simulé, le modèle répond
+toujours par la même phrase prudente et n'appelle jamais d'outil.)
 
 ## Ce que vous allez construire
 
@@ -75,6 +76,9 @@ se fait en deux étapes, qui partagent ce scénario et ce dossier.
   précédents et décide de la suite, ou répond.
 - Choisissez une limite de cycles inférieure à ce qu'exige la revue de 30 commandes, sinon
   elle ne sera jamais atteinte. Vérifiez la demande d'interruption avant chaque cycle.
+- À la limite, il faut quand même une réponse : refaites un dernier appel au modèle **sans
+  outils** en lui demandant un bilan partiel, ou composez la réponse vous-même. Signalez la
+  limite (`mention`) avant le texte.
 
 ## Pour aller plus loin
 

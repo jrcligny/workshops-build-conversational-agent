@@ -69,7 +69,7 @@ def write_according_to_permissions(services, observation, case: dict) -> None:
     write_name = tool_name(writes[0])
     observation.reset("standard")
     turn, trace = successful_turn(client(services, case["denied_user"]), case["message"])
-    assert trace.get("offered_tools"), "trace.offered_tools is recorded"
+    assert any(trace.get("offered_tools") or []), "trace.offered_tools records the tools offered at each model call (none recorded)"
     assert not any(write_name in names for names in trace["offered_tools"]), "the write tool is never offered without the permission"
     assert observation.state("submissions")["drafts"] == []
     mentions_any(turn, case["refusal_words"], "the user is told they cannot approve")
@@ -81,7 +81,7 @@ def skill_still_present_after_compaction(services, case: dict) -> None:
     loaded_ids = {s.get("id") for s in trace.get("skills_loaded") or []}
     assert loaded_ids, "a skill is loaded"
     titles = {s.get("id"): str(s.get("title") or "") for s in load_manifest().get("skills") or []}
-    assert len(case["conversation"]) > int(settings.compaction_message_threshold), "the written exchange passes the threshold"
+    assert len(case["conversation"]) > int(settings.compaction_message_threshold), "the written exchange holds more turns than the compaction threshold (counted in turns, workshop 10)"
     chat.load(case["conversation"], append=True)
     _, trace = successful_turn(chat, case["follow_up"])
     assert "compaction" in trace, "the conversation went past the compaction threshold"

@@ -9,6 +9,9 @@
    `JUDGE_MODE=semantic` makes the meaning layer mandatory, `structural` disables it,
    `auto` (default) uses it when it is configured.
 
+A rubric may set `subject` (default "answer") to name what is judged in its messages, for
+example "system prompt" when the text judged is a prompt rather than an answer.
+
 Rubrics are applied k times out of n on fresh conversations by
 `agent_testkit.turns.apply_rubric_repeatedly` (`JUDGE_K`, `JUDGE_N`).
 """
@@ -137,12 +140,13 @@ def judge(
         "all": response + "\n" + trace,
     }
     if not response.strip() and (rubric.get("requirements") or rubric.get("judge_meaning")):
-        return _verdict(rubric, False, "no assistant response to judge", excerpts=[], mode="structural")
+        return _verdict(rubric, False, f"no {rubric.get('subject', 'assistant response')} to judge", excerpts=[], mode="structural")
 
     failures: list[str] = []
     excerpts: list[str] = []
     if rubric.get("language", AGENT_LANGUAGE) == "fr" and not looks_french(response):
-        failures.append("the answer is not in French (the agent converses in French)")
+        subject = rubric.get("subject", "answer")
+        failures.append(f"the {subject} is not in French (the agent converses in French)")
     for requirement in rubric.get("requirements") or []:
         kind = requirement.get("type")
         patterns = [str(p) for p in (requirement.get("patterns") or [])]

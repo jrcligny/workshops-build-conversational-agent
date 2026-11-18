@@ -56,14 +56,20 @@ def _run_controls(disabled: bool) -> subprocess.CompletedProcess:
 def test_specification_has_every_part():
     specs = sorted((_local_mode() / "specifications").glob("*.md"))
     assert specs, "a specification is written in my-agent/local-mode/specifications/"
-    text = specs[0].read_text(encoding="utf-8")
-    headings = " ".join(line.lower() for line in text.splitlines() if line.lstrip().startswith("#"))
+    # Lines inside fenced code blocks (``` or ~~~) are never headings, even when they start with #.
+    text = re.sub(r"^(```|~~~).*?^\1[^\n]*$", "", specs[0].read_text(encoding="utf-8"), flags=re.MULTILINE | re.DOTALL)
+    headings = " ".join(line.lower() for line in text.splitlines() if re.match(r"\s{0,3}#{1,6}\s", line))
     missing = [name for name, pattern in PARTS.items() if not re.search(pattern, headings)]
-    assert not missing, f"specification headings missing: {missing}"
+    assert not missing, (
+        f"{specs[0].name}: Markdown headings (# ...) missing for the parts {missing}; expected one heading per part: "
+        "Comportement, Cas limites, Résultats indésirables, Vérification, Hors périmètre"
+    )
     for name, pattern in PARTS.items():
-        section = re.split(r"^#+.*" + pattern + r".*$", text, flags=re.IGNORECASE | re.MULTILINE)
-        body = re.split(r"^#", section[-1], flags=re.MULTILINE)[0] if len(section) > 1 else ""
-        assert len(body.strip()) >= 40, f"the part '{name}' of the specification is filled in"
+        section = re.split(r"^\s{0,3}#{1,6}\s.*" + pattern + r".*$", text, flags=re.IGNORECASE | re.MULTILINE)
+        body = re.split(r"^\s{0,3}#{1,6}\s", section[-1], flags=re.MULTILINE)[0] if len(section) > 1 else ""
+        assert len(body.strip()) >= 40, (
+            f"{specs[0].name}: the part '{name}' holds at least 40 characters of text under its heading"
+        )
 
 
 def test_checks_pass_with_the_control_and_catch_a_wrong_output():

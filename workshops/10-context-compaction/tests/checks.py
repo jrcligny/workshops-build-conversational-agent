@@ -5,8 +5,9 @@ in the agent's context (`ChatClient.load`): only the turn that compacts is playe
 facts are only in tool results and in the agent's answers, never in a user message kept as is.
 
 Contract read here:
-- the thresholds: `COMPACTION_MESSAGE_THRESHOLD` (turns stored at the start of a turn from which it
-  compacts) and `COMPACTION_KEEP_TURNS` (the last turns kept as they are), set by the tests;
+- the thresholds: `settings.compaction_message_threshold` (turns stored at the start of a turn from which
+  it compacts) and `settings.compaction_keep_turns` (the last turns kept as they are), set by the tests
+  on `workshop_config.settings` (not in the environment): read them at every turn;
 - `compaction` (present only on the turn that compacts): `threshold`, `kept_turns`,
   `cleared_tool_results[]` (`tool_call_id`, `name`, `turn`: every older tool result replaced by a
   marker), `summarized_turns`, `system_prompt` (the compaction prompt sent, i.e.
@@ -76,7 +77,7 @@ def _compacting_turn(chat_client, scenario: dict, question: str):
     turn, trace = successful_turn(chat_client, question)
     compaction = trace.get("compaction")
     assert isinstance(compaction, dict), (
-        f"the context held {scenario['threshold']} turns (COMPACTION_MESSAGE_THRESHOLD) at the start of the turn: "
+        f"the context held {scenario['threshold']} turns (settings.compaction_message_threshold) at the start of the turn: "
         "this turn compacts and its trace holds a compaction object"
     )
     return turn, trace, compaction
@@ -133,7 +134,7 @@ def compaction_own_prompt_and_rolling_summary(chat_client, services, scenario: d
     assert isinstance(compaction.get("model_call"), dict), "compaction.model_call records the separate call"
     threshold, keep = scenario["threshold"], scenario["keep_turns"]
     assert compaction.get("threshold") == threshold, "compaction.threshold is the configured threshold, read at run time"
-    assert compaction.get("kept_turns") == keep, "compaction.kept_turns is COMPACTION_KEEP_TURNS, read at run time"
+    assert compaction.get("kept_turns") == keep, "compaction.kept_turns is settings.compaction_keep_turns, read at run time"
     assert compaction.get("summarized_turns") == threshold - keep, "the turns before the kept ones are summarized"
     kept_users = [t["user"] for t in scenario["conversation"][-keep:]]
     replayed_users = [m.get("content") for m in history(trace) if m.get("role") == "user"]
