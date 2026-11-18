@@ -1,7 +1,0 @@
-# Manifest of the attachments area (workshop 14), read by agent_sdk.attachments:
-# each attachment id is attached to a business record, as a business API route. The agent reads an
-# attachment only if the user can consult its record (GET /<record> with the user's token answers 200).
-#
-#   sample-quote.txt:
-#     record: orders/CMD-2010
-{}

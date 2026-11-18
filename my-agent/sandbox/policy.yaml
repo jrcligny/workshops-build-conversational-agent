@@ -1,12 +1,8 @@
-# Sandbox policy of the tool server (workshop 07). Read by agent_sdk.sandbox (setting `sandbox_policy_file`)
-# and enforced by my-agent/agent_sandbox.py (degraded mode: filter in the HTTP client, no container).
-active: true
-# Hosts the tool server may reach: the business API only (local run and in-process test host).
-allowlist:
-  - localhost
-  - 127.0.0.1
-  - testserver
-# Per-turn bounds; a conversation may tighten them, never loosen them.
+# Sandbox policy — empty base (workshop 10d).
+# No policy is enforced yet: the allowlist is empty and the "active" flag
+# stays false. Read by agent_sdk.sandbox (setting `sandbox_policy_file`). The student fills it in during workshop 10d.
+active: false
+allowlist: []
 limits:
-  duration_s: 120
-  token_budget: 60000
+  duration_s: null
+  token_budget: null
